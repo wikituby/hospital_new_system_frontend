@@ -1,6 +1,8 @@
 # Build and deploy ngwiki production bundle to GitHub Pages.
 # Requires GH_PAGES_TOKEN or GH_TOKEN with Contents:write on
 # venerandahospital/ihms_online_ui_for_local_veneranda
+#
+# Publishes the full Angular build (index, JS/CSS bundles, fonts, and assets/).
 
 param(
   [string]$CommitMessage = "Deploy frontend to GitHub Pages",
@@ -54,15 +56,15 @@ Set-Location repo
 git config user.email 'venerandahospital@users.noreply.github.com'
 git config user.name 'venerandahospital'
 
-Copy-Item -Path (Join-Path $dist 'index.html') -Destination (Join-Path (Get-Location) 'index.html') -Force
-Copy-Item -Path $mainBundle.FullName -Destination (Join-Path (Get-Location) $mainBundle.Name) -Force
-
-Get-ChildItem -Filter 'main.*.js' | Where-Object { $_.Name -ne $mainBundle.Name } | ForEach-Object {
-  git rm -f $_.Name 2>$null
-  if ($LASTEXITCODE -ne 0) { Remove-Item $_.FullName -Force }
+# Clear previous site files (keep .git) so removed assets/bundles do not linger.
+Get-ChildItem -Force | Where-Object { $_.Name -ne '.git' } | ForEach-Object {
+  Remove-Item -LiteralPath $_.FullName -Recurse -Force
 }
 
-git add index.html $mainBundle.Name
+# Copy full production build, including assets/images.
+Copy-Item -Path (Join-Path $dist '*') -Destination (Get-Location) -Recurse -Force
+
+git add -A
 git diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {
   Write-Host 'No changes to deploy.'
@@ -76,4 +78,8 @@ $pushExit = $LASTEXITCODE
 $ErrorActionPreference = 'Stop'
 if ($pushExit -ne 0) { throw "git push failed with exit code $pushExit" }
 
-Write-Host "Deployed $($mainBundle.Name) to https://venerandahospital.org/"
+$assetCount = 0
+if (Test-Path -LiteralPath '.\assets') {
+  $assetCount = (Get-ChildItem -LiteralPath '.\assets' -Recurse -File).Count
+}
+Write-Host "Deployed $($mainBundle.Name) + $assetCount asset files to https://venerandahospital.org/"
