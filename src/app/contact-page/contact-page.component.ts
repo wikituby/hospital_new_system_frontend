@@ -13,9 +13,7 @@ export class ContactPageComponent {
     email: 'venerandahospital@gmail.com',
     location: 'H5VH+6R, Lukwemigo',
     hours: [
-      { day: 'Monday – Friday', note: 'Open for clinics and appointments' },
-      { day: 'Saturday', note: 'Limited clinic hours — call to confirm' },
-      { day: 'Sunday', note: 'Emergency priority' }
+      { day: 'Open 24/7', note: 'Full hospital services every day of the week' }
     ]
   };
 
