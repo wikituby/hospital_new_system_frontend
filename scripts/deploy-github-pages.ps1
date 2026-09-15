@@ -64,6 +64,32 @@ Get-ChildItem -Force | Where-Object { $_.Name -ne '.git' } | ForEach-Object {
 # Copy full production build, including assets/images.
 Copy-Item -Path (Join-Path $dist '*') -Destination (Get-Location) -Recurse -Force
 
+# Publish static files under /media instead of /assets.
+# GitHub/Cloudflare cached 404s for /assets/* when an earlier deploy omitted the folder;
+# a new path avoids the stale negative cache without waiting for TTL.
+if (Test-Path -LiteralPath '.\assets') {
+  if (Test-Path -LiteralPath '.\media') {
+    Remove-Item -LiteralPath '.\media' -Recurse -Force
+  }
+  Rename-Item -LiteralPath '.\assets' -NewName 'media'
+}
+
+Get-ChildItem -File -Recurse | Where-Object {
+  $_.Extension -in '.html', '.js', '.css', '.json', '.txt', '.map'
+} | ForEach-Object {
+  $text = [System.IO.File]::ReadAllText($_.FullName)
+  $updated = $text.Replace('assets/', 'media/').Replace('assets\', 'media\')
+  if ($updated -ne $text) {
+    [System.IO.File]::WriteAllText($_.FullName, $updated)
+  }
+}
+
+# Keep custom domain binding for GitHub Pages / Cloudflare.
+Set-Content -LiteralPath (Join-Path (Get-Location) 'CNAME') -Value 'venerandahospital.org' -NoNewline -Encoding ascii
+
+# Prevent Jekyll from ignoring published files.
+Set-Content -LiteralPath (Join-Path (Get-Location) '.nojekyll') -Value '' -NoNewline -Encoding ascii
+
 git add -A
 git diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {
@@ -79,7 +105,9 @@ $ErrorActionPreference = 'Stop'
 if ($pushExit -ne 0) { throw "git push failed with exit code $pushExit" }
 
 $assetCount = 0
-if (Test-Path -LiteralPath '.\assets') {
-  $assetCount = (Get-ChildItem -LiteralPath '.\assets' -Recurse -File).Count
+$mediaRoot = '.\media'
+if (-not (Test-Path -LiteralPath $mediaRoot)) { $mediaRoot = '.\assets' }
+if (Test-Path -LiteralPath $mediaRoot) {
+  $assetCount = (Get-ChildItem -LiteralPath $mediaRoot -Recurse -File).Count
 }
-Write-Host "Deployed $($mainBundle.Name) + $assetCount asset files to https://venerandahospital.org/"
+Write-Host "Deployed $($mainBundle.Name) + $assetCount media/asset files to https://venerandahospital.org/"
