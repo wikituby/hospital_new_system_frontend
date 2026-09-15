@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { ApiConfigService } from './api-config.service';
-import { getDevProxyBase, isAngularDevServer } from '../config/api-server.config';
+import { ApiConfigService, SKIP_CONNECTION_HEADER } from './api-config.service';
+import { API_CLOUD_BASE, getDevProxyBase, isAngularDevServer } from '../config/api-server.config';
 import { Observable } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { HttpParams } from '@angular/common/http';
@@ -4733,6 +4733,34 @@ getAllUsers(): Observable<any> {
     console.log(res.data);
     return res.data;
   }));
+}
+
+/**
+ * Public staff directory for marketing pages (landing team carousel).
+ * Backend allows unauthenticated GET /user-management/get-all-users.
+ * On the published site, always use the cloud API; locally use the active base.
+ */
+getPublicUsers(): Observable<any[]> {
+  const headers = new HttpHeaders({ [SKIP_CONNECTION_HEADER]: '1' });
+  const base = this.publicMarketingApiBase();
+  return this.http.get(`${base}/user-management/get-all-users`, { headers }).pipe(
+    map((res: any) => {
+      const data = res?.data ?? res;
+      return Array.isArray(data) ? data : [];
+    }),
+    catchError(() => of([]))
+  );
+}
+
+/** Prefer cloud backend for public pages hosted outside the clinic LAN. */
+private publicMarketingApiBase(): string {
+  if (typeof window !== 'undefined') {
+    const host = (window.location.hostname || '').toLowerCase();
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      return API_CLOUD_BASE;
+    }
+  }
+  return this.apiBaseUrl || API_CLOUD_BASE;
 }
 
 createUser(data: any): Observable<any> {

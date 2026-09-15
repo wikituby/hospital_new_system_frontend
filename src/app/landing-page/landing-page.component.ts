@@ -1,7 +1,15 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
+import { ApiService } from '../services/api.service';
 import { getOfferedServices, getUpcomingServices } from './service-catalog';
+
+export interface TeamMemberCard {
+  name: string;
+  description: string;
+  image: string;
+  social?: { twitter: boolean; instagram: boolean; facebook: boolean; linkedin: boolean };
+}
 
 @Component({
   selector: 'app-landing-page',
@@ -400,61 +408,66 @@ export class LandingPageComponent implements OnInit, OnDestroy {
   }
 
   currentTeamIndex = 0;
-  teamMembers = [
-    {
-      name: 'Dr. Kabugo Nicholas',
-      description: 'Medical Director and supervising doctor — clinical leadership for patient care.',
-      image: 'assets/images/dr-kabugo.jpg',
-      social: { twitter: false, instagram: false, facebook: false, linkedin: false }
-    },
-    {
-      name: 'Mr. Colin Bwambale',
-      description: 'Human Resources — supporting our staff and hospital team.',
-      image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&h=200&fit=crop',
-      social: { twitter: false, instagram: false, facebook: false, linkedin: false }
-    },
-    {
-      name: 'Mr. Clyton Tumwesigye',
-      description: 'Administrator — operations and day-to-day facility management.',
-      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop',
-      social: { twitter: false, instagram: false, facebook: false, linkedin: false }
-    },
-    {
-      name: 'Aiden Tumwesigye',
-      description: 'Director — board leadership for Veneranda Hospital.',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop',
-      social: { twitter: false, instagram: false, facebook: false, linkedin: false }
-    },
-    {
-      name: 'Benjamin Tumwesigye',
-      description: 'Director — board leadership supporting hospital growth.',
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop',
-      social: { twitter: false, instagram: false, facebook: false, linkedin: false }
-    },
-    {
-      name: 'Dr. Festo',
-      description: 'Board of Advisors — clinical and professional guidance.',
-      image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200&h=200&fit=crop',
-      social: { twitter: false, instagram: false, facebook: false, linkedin: false }
-    },
-    {
-      name: 'Dr. Gyavira',
-      description: 'Board of Advisors — clinical and professional guidance.',
-      image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=200&fit=crop',
-      social: { twitter: false, instagram: false, facebook: false, linkedin: false }
-    },
-    {
-      name: 'Dr. Apulr Gerald Humble',
-      description: 'Board of Advisors — clinical and professional guidance.',
-      image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=200&h=200&fit=crop',
-      social: { twitter: false, instagram: false, facebook: false, linkedin: false }
-    }
-  ];
+  teamMembers: TeamMemberCard[] = [];
+  teamLoading = true;
 
-  constructor(private router: Router) {}
+  private readonly emptySocial = {
+    twitter: false,
+    instagram: false,
+    facebook: false,
+    linkedin: false
+  };
+
+  constructor(
+    private router: Router,
+    private api: ApiService
+  ) {}
 
   ngOnInit() {
     this.startAutoSlide();
+    this.loadTeamMembersFromUsers();
+  }
+
+  private loadTeamMembersFromUsers(): void {
+    this.teamLoading = true;
+    this.api.getPublicUsers().subscribe({
+      next: (users) => {
+        const mapped = (users || [])
+          .map((user) => this.mapUserToTeamCard(user))
+          .filter((member): member is TeamMemberCard => !!member);
+        this.teamMembers = mapped;
+        this.currentTeamIndex = 0;
+        this.teamLoading = false;
+      },
+      error: () => {
+        this.teamMembers = [];
+        this.teamLoading = false;
+      }
+    });
+  }
+
+  private mapUserToTeamCard(user: any): TeamMemberCard | null {
+    const name = String(user?.username || '').trim();
+    if (!name) {
+      return null;
+    }
+    const qualification = String(user?.qualification || '').trim();
+    const role = String(user?.role || '').trim();
+    const description = qualification || role || 'Care team member';
+    const pic = String(user?.profilePic || '').trim();
+    return {
+      name,
+      description,
+      image: pic || this.defaultPersonImage,
+      social: { ...this.emptySocial }
+    };
+  }
+
+  onTeamImageError(event: Event): void {
+    const img = event.target as HTMLImageElement | null;
+    if (img && img.src !== this.defaultPersonImage) {
+      img.src = this.defaultPersonImage;
+    }
   }
 
   ngOnDestroy() {
@@ -511,10 +524,16 @@ export class LandingPageComponent implements OnInit, OnDestroy {
   }
 
   nextTeamMember() {
+    if (!this.teamMembers.length) {
+      return;
+    }
     this.currentTeamIndex = (this.currentTeamIndex + 1) % this.teamMembers.length;
   }
 
   previousTeamMember() {
+    if (!this.teamMembers.length) {
+      return;
+    }
     this.currentTeamIndex =
       this.currentTeamIndex === 0 ? this.teamMembers.length - 1 : this.currentTeamIndex - 1;
   }

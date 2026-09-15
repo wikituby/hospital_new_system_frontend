@@ -1305,6 +1305,14 @@
   margin-bottom: 1.5rem;
 }
 
+.team-loading,
+.team-empty {
+  margin: 0;
+  padding: 1.5rem 1rem;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
 .social-icons {
   display: flex;
   justify-content: center;

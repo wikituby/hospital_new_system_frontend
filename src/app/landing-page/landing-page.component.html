@@ -190,14 +190,13 @@
       </div>
 
       <h2 class="team-title">People ready to care for you</h2>
-      <h3 class="team-subtitle">Leadership, administration &amp; board of advisors</h3>
+      <h3 class="team-subtitle">Our clinical &amp; care team</h3>
 
       <p class="team-description">
-        Meet the people behind Veneranda Hospital — our Medical Director Dr. Kabugo Nicholas, administration,
-        directors, and board of advisors who guide clinical excellence for our community.
+        Meet the people behind Veneranda Hospital — clinicians and staff ready to care for you and your family.
       </p>
 
-      <div class="carousel-navigation">
+      <div class="carousel-navigation" *ngIf="teamMembers.length > 1">
         <button class="nav-btn prev-btn" type="button" (click)="previousTeamMember()" aria-label="Previous">
           <i class="bi bi-chevron-left"></i>
         </button>
@@ -208,10 +207,20 @@
     </div>
 
     <div class="team-carousel">
-      <div class="team-members" [style.transform]="'translateX(' + currentTeamIndex * -320 + 'px)'">
+      <p class="team-loading" *ngIf="teamLoading">Loading care team…</p>
+      <p class="team-empty" *ngIf="!teamLoading && !teamMembers.length">Care team profiles will appear here soon.</p>
+      <div
+        class="team-members"
+        *ngIf="teamMembers.length"
+        [style.transform]="'translateX(' + currentTeamIndex * -320 + 'px)'"
+      >
         <div class="team-member" *ngFor="let member of teamMembers">
           <div class="member-image">
-            <img [src]="member.image" [alt]="member.name">
+            <img
+              [src]="personImage(member)"
+              [alt]="member.name"
+              (error)="onTeamImageError($event)"
+            >
           </div>
           <h4 class="member-name">{{ member.name }}</h4>
           <p class="member-description">{{ member.description }}</p>
