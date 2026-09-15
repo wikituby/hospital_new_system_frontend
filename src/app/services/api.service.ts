@@ -4737,30 +4737,20 @@ getAllUsers(): Observable<any> {
 
 /**
  * Public staff directory for marketing pages (landing team carousel).
+ * Always reads from api.venerandahospital.org (same host as Contact Us).
  * Backend allows unauthenticated GET /user-management/get-all-users.
- * On the published site, always use the cloud API; locally use the active base.
  */
 getPublicUsers(): Observable<any[]> {
   const headers = new HttpHeaders({ [SKIP_CONNECTION_HEADER]: '1' });
-  const base = this.publicMarketingApiBase();
-  return this.http.get(`${base}/user-management/get-all-users`, { headers }).pipe(
-    map((res: any) => {
-      const data = res?.data ?? res;
-      return Array.isArray(data) ? data : [];
-    }),
-    catchError(() => of([]))
-  );
-}
-
-/** Prefer cloud backend for public pages hosted outside the clinic LAN. */
-private publicMarketingApiBase(): string {
-  if (typeof window !== 'undefined') {
-    const host = (window.location.hostname || '').toLowerCase();
-    if (host && host !== 'localhost' && host !== '127.0.0.1') {
-      return API_CLOUD_BASE;
-    }
-  }
-  return this.apiBaseUrl || API_CLOUD_BASE;
+  return this.http
+    .get(`${API_VENERANDA_PUBLIC_BASE}/user-management/get-all-users`, { headers })
+    .pipe(
+      map((res: any) => {
+        const data = res?.data ?? res;
+        return Array.isArray(data) ? data : [];
+      }),
+      catchError(() => of([]))
+    );
 }
 
 createUser(data: any): Observable<any> {
