@@ -11,7 +11,7 @@ export class ContactPageComponent {
     phones: ['+256 784 411 848', '+256 704 968 736'],
     phoneLinks: ['tel:+256784411848', 'tel:+256704968736'],
     email: 'venerandahospital@gmail.com',
-    location: 'Bugogo Town Council, Kyegegwa District, Uganda',
+    location: 'H5VH+6R, Lukwemigo',
     hours: [
       { day: 'Monday – Friday', note: 'Open for clinics and appointments' },
       { day: 'Saturday', note: 'Limited clinic hours — call to confirm' },
@@ -40,13 +40,13 @@ export class ContactPageComponent {
   ];
 
   readonly mapUrl: SafeResourceUrl;
+  readonly mapsSearchUrl: string;
 
   constructor(private sanitizer: DomSanitizer) {
-    const query = encodeURIComponent(
-      'Veneranda Hospital, Bugogo Town Council, Kyegegwa District, Uganda'
-    );
+    const query = encodeURIComponent('H5VH+6R, Lukwemigo');
+    this.mapsSearchUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
     this.mapUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
-      `https://maps.google.com/maps?q=${query}&z=15&output=embed`
+      `https://maps.google.com/maps?q=${query}&z=16&output=embed`
     );
   }
 
