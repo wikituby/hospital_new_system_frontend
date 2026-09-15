@@ -2,5 +2,10 @@
 <app-server-connection *ngIf="showServerConnection"></app-server-connection>
 <!-- Overview hosts its own header beside the sidebar (university shell). -->
 <app-header *ngIf="showGlobalHeader"></app-header>
-<router-outlet></router-outlet>
+<!-- Public marketing website: shared nav + footer on every page with data.landingpage. -->
+<app-site-nav *ngIf="showPublicSiteChrome"></app-site-nav>
+<div class="public-site-shell" [class.public-site-shell--active]="showPublicSiteChrome">
+  <router-outlet></router-outlet>
+</div>
+<app-site-footer *ngIf="showPublicSiteChrome"></app-site-footer>
 <app-global-feedback></app-global-feedback>

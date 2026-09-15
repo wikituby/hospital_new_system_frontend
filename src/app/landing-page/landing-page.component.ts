@@ -273,7 +273,7 @@ export class LandingPageComponent implements OnInit, OnDestroy {
     phones: ['+256 784 411 848', '+256 704 968 736'],
     phoneLinks: ['tel:+256784411848', 'tel:+256704968736'],
     email: 'venerandahospital@gmail.com',
-    location: 'Bugogo Town Council, Kyegegwa District, Uganda'
+    location: 'H5VH+6R, Lukwemigo'
   };
 
   leadership = [

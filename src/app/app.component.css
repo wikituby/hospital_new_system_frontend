@@ -23,3 +23,8 @@
 .app-main {
   flex: 1;
 }
+
+.public-site-shell--active {
+  flex: 1 0 auto;
+  min-width: 0;
+}

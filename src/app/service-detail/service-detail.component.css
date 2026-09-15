@@ -1,13 +1,15 @@
 .service-detail {
   min-height: 100vh;
   background: #f8fafc;
-  padding-top: 88px; /* fixed site nav */
 }
 
 .service-detail-hero {
   position: relative;
   min-height: min(78vh, 760px);
   height: min(78vh, 760px);
+  /* Hero starts under fixed nav (same as home) — no grey gap above */
+  padding-top: 80px;
+  box-sizing: border-box;
   background-size: cover;
   background-position: 45% 18%;
   background-repeat: no-repeat;

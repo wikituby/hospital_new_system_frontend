@@ -1,18 +1,19 @@
 .book-page {
   min-height: 100vh;
   background: #f8fafc;
-  padding-top: 88px;
 }
 
 .book-hero {
   background: linear-gradient(135deg, #074a56 0%, #0b6e7a 55%, #0f8a8a 100%);
   color: #fff;
+  /* Hero starts under fixed nav (same as home) — no grey gap above */
+  padding-top: 80px;
 }
 
 .book-hero-inner {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 3rem 2rem 3.25rem;
+  padding: 2.5rem 2rem 3.25rem;
 }
 
 .book-eyebrow {

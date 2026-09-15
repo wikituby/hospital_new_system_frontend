@@ -66,6 +66,7 @@ import { AllPatientsComponent } from './overview/pages/patient-management/all-pa
 import { LandingPageComponent } from './landing-page/landing-page.component';
 import { ServiceDetailComponent } from './service-detail/service-detail.component';
 import { SiteNavComponent } from './site-nav/site-nav.component';
+import { SiteFooterComponent } from './site-footer/site-footer.component';
 import { AboutPageComponent } from './about-page/about-page.component';
 import { BookAppointmentComponent } from './book-appointment/book-appointment.component';
 import { ContactPageComponent } from './contact-page/contact-page.component';
@@ -308,6 +309,7 @@ export function initializeApiConfig(apiConfig: ApiConfigService): () => Promise<
     LandingPageComponent,
     ServiceDetailComponent,
     SiteNavComponent,
+    SiteFooterComponent,
     AboutPageComponent,
     BookAppointmentComponent,
     ContactPageComponent,

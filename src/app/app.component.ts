@@ -3,7 +3,7 @@ import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { NgxPaginationModule } from 'ngx-pagination';
 import { Subscription } from 'rxjs';
-import { isPublicAppPath } from './config/public-routes';
+import { isMarketingSitePath, isPublicAppPath } from './config/public-routes';
 import { ApiConfigService, ApiConnectionState } from './services/api-config.service';
 
 
@@ -29,10 +29,15 @@ export class AppComponent implements OnInit, OnDestroy {
   /** Overview embeds the toolbar next to the sidebar; hide the global one there. */
   isOverviewRoute: boolean = false;
 
+  /** Marketing website pages (home, about, contact, services, …) share nav + footer. */
+  get showPublicSiteChrome(): boolean {
+    return this.isLandingPageRoute || isMarketingSitePath(this.router.url);
+  }
+
   get showGlobalHeader(): boolean {
     return (
       !this.isOverviewRoute &&
-      !this.isLandingPageRoute &&
+      !this.showPublicSiteChrome &&
       !this.isLogin4Route &&
       !this.isLogin3Route &&
       !this.isLogin2Route &&
@@ -53,25 +58,14 @@ export class AppComponent implements OnInit, OnDestroy {
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(() => {
-        const routeData = this.route.firstChild?.snapshot.data;
-
-        // Check if the login or signup data property is true
-        this.isLogin2Route = routeData?.['login2'] || false;
-        this.isLogin3Route = routeData?.['login3'] || false;
-        this.isLogin4Route = routeData?.['login4'] || false;
-
-        this.isLoginRoute = routeData?.['login'] || false;
-        this.isSignupRoute = routeData?.['signup'] || false;
-        this.isResetPasswordRoute = routeData?.['resetpassword'] || false;
-        this.isSendEmail = routeData?.['sendemail'] || false;
-        this.isLandingPageRoute = routeData?.['landingpage'] || false;
-
+        this.syncRouteFlags();
         this.syncOverviewShellClass();
         this.applyApiConnectionState(this.apiConfig.getConnectionState());
       });
   }
 
   ngOnInit(): void {
+    this.syncRouteFlags();
     this.syncOverviewShellClass();
     this.applyApiConnectionState(this.apiConfig.getConnectionState());
     this.apiStateSub = this.apiConfig.state$.subscribe((state) =>
@@ -81,6 +75,23 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.apiStateSub?.unsubscribe();
+  }
+
+  private syncRouteFlags(): void {
+    let current: ActivatedRoute | null = this.route;
+    while (current?.firstChild) {
+      current = current.firstChild;
+    }
+    const routeData = current?.snapshot.data || {};
+
+    this.isLogin2Route = !!routeData['login2'];
+    this.isLogin3Route = !!routeData['login3'];
+    this.isLogin4Route = !!routeData['login4'];
+    this.isLoginRoute = !!routeData['login'];
+    this.isSignupRoute = !!routeData['signup'];
+    this.isResetPasswordRoute = !!routeData['resetpassword'];
+    this.isSendEmail = !!routeData['sendemail'];
+    this.isLandingPageRoute = !!routeData['landingpage'];
   }
 
   private applyApiConnectionState(state: ApiConnectionState): void {
