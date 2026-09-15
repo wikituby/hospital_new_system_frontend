@@ -1,0 +1,224 @@
+<div class="vital-signs-container">
+  <div class="vital-signs-header">
+    <h4 class="section-title">
+      <i class="fas fa-heartbeat"></i> Vital Signs
+    </h4>
+    <button class="btn btn-primary btn-sm" (click)="showAddForm()" [disabled]="!visitId">
+      <i class="fas fa-plus"></i> Add Vitals
+    </button>
+  </div>
+
+  <!-- Add/Edit Form -->
+  <div class="vital-form-container" *ngIf="isFormVisible">
+    <form [formGroup]="vitalForm" (ngSubmit)="onSubmit()" class="vital-form">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="bloodPressure">Blood Pressure (mmHg)</label>
+            <input 
+              type="text" 
+              id="bloodPressure"
+              formControlName="bloodPressure"
+              class="form-control"
+              placeholder="120/80"
+              [class.is-invalid]="hasError('bloodPressure', 'required') || hasError('bloodPressure', 'pattern')">
+            <div class="invalid-feedback" *ngIf="hasError('bloodPressure', 'required')">
+              Blood pressure is required
+            </div>
+            <div class="invalid-feedback" *ngIf="hasError('bloodPressure', 'pattern')">
+              Please enter valid blood pressure (e.g., 120/80)
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="temperature">Temperature (°C)</label>
+            <input 
+              type="number" 
+              id="temperature"
+              formControlName="temperature"
+              class="form-control"
+              placeholder="36.5"
+              step="0.1"
+              [class.is-invalid]="hasError('temperature', 'required') || hasError('temperature', 'min') || hasError('temperature', 'max')">
+            <div class="invalid-feedback" *ngIf="hasError('temperature', 'required')">
+              Temperature is required
+            </div>
+            <div class="invalid-feedback" *ngIf="hasError('temperature', 'min') || hasError('temperature', 'max')">
+              Temperature must be between 30°C and 45°C
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="heartRate">Heart Rate (bpm)</label>
+            <input 
+              type="number" 
+              id="heartRate"
+              formControlName="heartRate"
+              class="form-control"
+              placeholder="72"
+              [class.is-invalid]="hasError('heartRate', 'required') || hasError('heartRate', 'min') || hasError('heartRate', 'max')">
+            <div class="invalid-feedback" *ngIf="hasError('heartRate', 'required')">
+              Heart rate is required
+            </div>
+            <div class="invalid-feedback" *ngIf="hasError('heartRate', 'min') || hasError('heartRate', 'max')">
+              Heart rate must be between 40 and 200 bpm
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="respiratoryRate">Respiratory Rate (breaths/min)</label>
+            <input 
+              type="number" 
+              id="respiratoryRate"
+              formControlName="respiratoryRate"
+              class="form-control"
+              placeholder="16"
+              [class.is-invalid]="hasError('respiratoryRate', 'required') || hasError('respiratoryRate', 'min') || hasError('respiratoryRate', 'max')">
+            <div class="invalid-feedback" *ngIf="hasError('respiratoryRate', 'required')">
+              Respiratory rate is required
+            </div>
+            <div class="invalid-feedback" *ngIf="hasError('respiratoryRate', 'min') || hasError('respiratoryRate', 'max')">
+              Respiratory rate must be between 8 and 40 breaths/min
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="weight">Weight (kg)</label>
+            <input 
+              type="number" 
+              id="weight"
+              formControlName="weight"
+              class="form-control"
+              placeholder="70"
+              step="0.1"
+              [class.is-invalid]="hasError('weight', 'required') || hasError('weight', 'min') || hasError('weight', 'max')">
+            <div class="invalid-feedback" *ngIf="hasError('weight', 'required')">
+              Weight is required
+            </div>
+            <div class="invalid-feedback" *ngIf="hasError('weight', 'min') || hasError('weight', 'max')">
+              Weight must be between 20 and 300 kg
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="height">Height (cm)</label>
+            <input 
+              type="number" 
+              id="height"
+              formControlName="height"
+              class="form-control"
+              placeholder="170"
+              [class.is-invalid]="hasError('height', 'required') || hasError('height', 'min') || hasError('height', 'max')">
+            <div class="invalid-feedback" *ngIf="hasError('height', 'required')">
+              Height is required
+            </div>
+            <div class="invalid-feedback" *ngIf="hasError('height', 'min') || hasError('height', 'max')">
+              Height must be between 50 and 250 cm
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="form-group">
+            <label for="takenBy">Taken By</label>
+            <input 
+              type="text" 
+              id="takenBy"
+              formControlName="takenBy"
+              class="form-control"
+              placeholder="Doctor/Nurse name"
+              [class.is-invalid]="hasError('takenBy', 'required')">
+            <div class="invalid-feedback" *ngIf="hasError('takenBy', 'required')">
+              Taken by field is required
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-success" [disabled]="vitalForm.invalid || isUpdating">
+          <i class="fas fa-save"></i> {{ editingVitalId ? 'Update' : 'Save' }}
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="hideForm()">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Vital Signs List -->
+  <div class="vital-signs-list" *ngIf="vitals.length > 0; else noVitals">
+    <div class="vital-item" *ngFor="let vital of vitals">
+      <div class="vital-data">
+        <div class="vital-row">
+          <span class="vital-label">BP:</span>
+          <span class="vital-value">{{ vital.bloodPressure }} mmHg</span>
+        </div>
+        <div class="vital-row">
+          <span class="vital-label">Temp:</span>
+          <span class="vital-value">{{ vital.temperature }}°C</span>
+        </div>
+        <div class="vital-row">
+          <span class="vital-label">HR:</span>
+          <span class="vital-value">{{ vital.heartRate }} bpm</span>
+        </div>
+        <div class="vital-row">
+          <span class="vital-label">RR:</span>
+          <span class="vital-value">{{ vital.respiratoryRate }} /min</span>
+        </div>
+        <div class="vital-row">
+          <span class="vital-label">Weight:</span>
+          <span class="vital-value">{{ vital.weight }} kg</span>
+        </div>
+        <div class="vital-row">
+          <span class="vital-label">Height:</span>
+          <span class="vital-value">{{ vital.height }} cm</span>
+        </div>
+      </div>
+      <div class="vital-meta">
+        <small class="text-muted">
+          Taken by: {{ vital.takenBy }}<br>
+          {{ vital.recordedAt | date:'short' }}
+        </small>
+      </div>
+      <div class="vital-actions">
+        <button class="btn btn-sm btn-outline-primary" (click)="showEditForm(vital)">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger" (click)="onDelete(vital.id!)">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #noVitals>
+    <div class="no-data">
+      <i class="fas fa-heartbeat fa-2x text-muted"></i>
+      <p class="text-muted">No vital signs recorded yet</p>
+    </div>
+  </ng-template>
+
+  <!-- Loading State -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="spinner-border text-primary" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+  </div>
+</div>

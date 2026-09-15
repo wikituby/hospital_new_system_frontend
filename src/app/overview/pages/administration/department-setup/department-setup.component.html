@@ -1,0 +1,181 @@
+<div class="department-setup-component-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-building"></i>
+        Hospital Directory Setup
+      </h1>
+      <p class="page-subtitle">Configure departments, rooms, and clinics used by the patient queue</p>
+    </div>
+    <div class="header-right">
+      <button class="btn-primary" (click)="createNew()">
+        <i class="bi bi-plus-circle"></i>
+        New Department
+      </button>
+      <button class="btn-secondary" (click)="loadModules(); loadClinics()">
+        <i class="bi bi-arrow-repeat"></i>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card stat-departments">
+      <div class="stat-icon"><i class="bi bi-building"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ totalDepartments }}</div>
+        <div class="stat-label">Departments</div>
+      </div>
+    </div>
+    <div class="stat-card stat-active">
+      <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ activeDepartments }}</div>
+        <div class="stat-label">Active</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" placeholder="Search departments..." [(ngModel)]="searchQuery">
+    </div>
+    <div class="filter-group">
+      <select class="filter-select" [(ngModel)]="statusFilter">
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+  </div>
+
+  <p class="alert success" *ngIf="responseMessage">{{ responseMessage }}</p>
+
+  <div class="table-section">
+    <div class="table-header">
+      <h3 class="table-title">Departments &amp; Rooms</h3>
+    </div>
+
+    <div class="table-container" *ngIf="!isLoading; else loadingTpl">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Route</th>
+            <th>Rooms / Clinics</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of filteredItems">
+            <td><div class="item-id">{{ item.code }}</div></td>
+            <td>
+              <div class="item-name">{{ item.name }}</div>
+              <div class="item-desc" *ngIf="item.description">{{ item.description }}</div>
+            </td>
+            <td>{{ item.routeKey || '—' }}</td>
+            <td>
+              <div class="clinic-tags">
+                <span class="clinic-tag" *ngFor="let c of clinicsForModule(item.id)">{{ c.name }}</span>
+                <span class="clinic-empty" *ngIf="clinicsForModule(item.id).length === 0">No rooms yet</span>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [class.status-active]="item.active" [class.status-inactive]="!item.active">
+                {{ item.active ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon" title="Add room" (click)="openClinicModal(item)">
+                  <i class="bi bi-door-open"></i>
+                </button>
+                <button class="btn-icon" (click)="editItem(item)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn-icon danger" (click)="deleteModule(item)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredItems.length === 0">
+            <td colspan="6" class="empty-row">No departments found. Create one to start the hospital directory.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ng-template #loadingTpl>
+      <p class="loading-text">Loading departments...</p>
+    </ng-template>
+  </div>
+</div>
+
+<!-- Department modal -->
+<div class="modal-overlay" *ngIf="showModuleModal" (click)="closeModals()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <h3>{{ editingModule ? 'Edit Department' : 'New Department' }}</h3>
+    <p class="alert error" *ngIf="responseError">{{ responseError }}</p>
+    <div class="form-grid">
+      <label>Code <input type="text" [(ngModel)]="moduleForm.code" placeholder="e.g. RECEPTION"></label>
+      <label>Name * <input type="text" [(ngModel)]="moduleForm.name" placeholder="Department name"></label>
+      <label class="full">Description <textarea [(ngModel)]="moduleForm.description" rows="2"></textarea></label>
+      <label>Route key <input type="text" [(ngModel)]="moduleForm.routeKey" placeholder="e.g. lab, scan"></label>
+      <label>Sort order <input type="number" [(ngModel)]="moduleForm.sortOrder"></label>
+      <label class="checkbox-row"><input type="checkbox" [(ngModel)]="moduleForm.active"> Active</label>
+      <div class="full role-box" *ngIf="roles.length">
+        <div class="role-title">Allowed staff roles (blank = everyone)</div>
+        <div class="role-grid">
+          <label class="role-item" *ngFor="let r of roles">
+            <input type="checkbox"
+                   [checked]="moduleForm.allowedRoles.includes(r)"
+                   (change)="toggleModuleRole(r, $any($event.target).checked)" />
+            {{ r }}
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="closeModals()">Cancel</button>
+      <button class="btn-primary" [disabled]="isSaving" (click)="saveModule()">
+        {{ isSaving ? 'Saving...' : 'Save' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Clinic modal -->
+<div class="modal-overlay" *ngIf="showClinicModal" (click)="closeModals()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <h3>{{ editingClinic ? 'Edit Room / Clinic' : 'Add Room / Clinic' }}</h3>
+    <p class="alert error" *ngIf="responseError">{{ responseError }}</p>
+    <div class="form-grid">
+      <label>Department
+        <select [(ngModel)]="clinicForm.hospitalModuleId">
+          <option [ngValue]="null">Select department</option>
+          <option *ngFor="let m of modules" [ngValue]="m.id">{{ m.name }}</option>
+        </select>
+      </label>
+      <label>Room / Clinic name * <input type="text" [(ngModel)]="clinicForm.name"></label>
+      <label class="checkbox-row"><input type="checkbox" [(ngModel)]="clinicForm.active"> Active</label>
+      <div class="full role-box" *ngIf="roles.length">
+        <div class="role-title">Allowed staff roles (blank = everyone)</div>
+        <div class="role-grid">
+          <label class="role-item" *ngFor="let r of roles">
+            <input type="checkbox"
+                   [checked]="clinicForm.allowedRoles.includes(r)"
+                   (change)="toggleClinicRole(r, $any($event.target).checked)" />
+            {{ r }}
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="closeModals()">Cancel</button>
+      <button class="btn-primary" [disabled]="isSaving" (click)="saveClinic()">Save</button>
+    </div>
+  </div>
+</div>

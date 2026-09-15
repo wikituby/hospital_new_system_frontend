@@ -1,0 +1,185 @@
+<div class="si-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div>
+      <h1><i class="bi bi-box-arrow-in-right"></i> Stock Initializer</h1>
+      <p class="subtitle">
+        Set opening stock when setting up the system. Each {{ inventoryIsStockBatch ? 'batch' : 'item' }} can only be initialized once here.
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" type="button" (click)="loadDashboard()" [disabled]="isLoading">
+        <i class="bi bi-arrow-repeat" [class.spin]="isLoading"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="breadcrumb-row">
+    <span class="current"><i class="bi bi-box-seam"></i> Inventory</span>
+    <span class="sep">/</span>
+    <span class="current"><i class="bi bi-box-arrow-in-right"></i> Stock Initializer</span>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card accent-warn">
+      <i class="bi bi-hourglass-split"></i>
+      <div>
+        <div class="stat-value">{{ pendingCount }}</div>
+        <div class="stat-label">Pending setup</div>
+      </div>
+    </div>
+    <div class="stat-card accent-green">
+      <i class="bi bi-check-circle"></i>
+      <div>
+        <div class="stat-value">{{ initializedCount }}</div>
+        <div class="stat-label">Initialized</div>
+      </div>
+    </div>
+    <div class="stat-card accent-blue">
+      <i class="bi bi-sliders"></i>
+      <div>
+        <div class="stat-value">{{ inventoryIsStockBatch ? 'Batch' : 'Item' }}</div>
+        <div class="stat-label">Inventory mode</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="alert success" *ngIf="responseMessage">{{ responseMessage }}</p>
+  <p class="alert error" *ngIf="responseError">{{ responseError }}</p>
+
+  <div class="surface form-surface">
+    <div class="surface-head">
+      <h2>Initialize stock</h2>
+      <p class="surface-note">Mode: {{ modeLabel }} (from business settings)</p>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-field store-field" *ngIf="inventoryIsStockBatch">
+        <label>Store filter</label>
+        <select class="form-control" [(ngModel)]="selectedStoreId" (change)="loadDashboard()">
+          <option [ngValue]="null">All stores</option>
+          <option *ngFor="let s of stores" [ngValue]="s.id">{{ s.name || s.storeName }}</option>
+        </select>
+      </div>
+
+      <div class="form-field item-field">
+        <label>{{ inventoryIsStockBatch ? 'Stock batch / item' : 'Shop item' }}</label>
+        <div class="search-dropdown">
+          <i class="bi bi-search"></i>
+          <input
+            type="text"
+            [(ngModel)]="itemSearch"
+            (focus)="isItemDropdownOpen = true"
+            (input)="onItemSearchInput()"
+            [placeholder]="'Search ' + (inventoryIsStockBatch ? 'batches or catalog items' : 'shop items') + '...'"
+          />
+          <button type="button" class="clear-btn" *ngIf="selectedItem" (click)="clearSelection()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+          <ul class="dropdown-list" *ngIf="isItemDropdownOpen">
+            <li *ngIf="!filteredPendingItems.length" class="empty">No pending items</li>
+            <li
+              *ngFor="let item of filteredPendingItems"
+              (click)="selectItem(item)"
+              [class.selected]="selectedItem && itemKey(selectedItem) === itemKey(item)"
+            >
+              <strong>{{ item.itemName }}</strong>
+              <span *ngIf="inventoryIsStockBatch">
+                <span *ngIf="item.storeName"> · {{ item.storeName }}</span>
+                <span *ngIf="item.batchNumber"> · Batch {{ item.batchNumber }}</span>
+                <span *ngIf="!item.batchNumber && item.stockBatchId"> · Batch #{{ item.stockBatchId }}</span>
+              </span>
+              <small *ngIf="item.draftQuantity != null">Draft: {{ item.draftQuantity }}</small>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="form-field qty-field">
+        <label>Initial stock at hand</label>
+        <input
+          type="number"
+          min="0"
+          step="any"
+          class="form-control"
+          [(ngModel)]="initialStock"
+          placeholder="Enter counted quantity"
+        />
+        <small *ngIf="selectedItem?.currentStockAtHand != null" class="hint">
+          Current system quantity: {{ selectedItem?.currentStockAtHand }}
+        </small>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-secondary" type="button" (click)="saveDraft()" [disabled]="isSaving || isFinalizing || !selectedItem">
+        <i class="bi bi-pencil-square"></i>
+        {{ isSaving ? 'Saving...' : 'Update' }}
+      </button>
+      <button class="btn-primary" type="button" (click)="openFinalizeConfirm()" [disabled]="isSaving || isFinalizing || !selectedItem">
+        <i class="bi bi-check2-circle"></i>
+        Counted &amp; Initialized
+      </button>
+    </div>
+  </div>
+
+  <div class="surface list-surface">
+    <div class="surface-head">
+      <h2>Completed initializations</h2>
+      <div class="count-pill">{{ initializedCount }} done</div>
+    </div>
+
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading...</p>
+    </div>
+
+    <div class="empty-state" *ngIf="!isLoading && !initializedItems.length">
+      <i class="bi bi-inbox"></i>
+      <p>No items initialized yet.</p>
+    </div>
+
+    <div class="table-wrap" *ngIf="!isLoading && initializedItems.length">
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th *ngIf="inventoryIsStockBatch">Store</th>
+            <th>Initial qty</th>
+            <th>Current qty</th>
+            <th>Initialized by</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of initializedItems">
+            <td>
+              <strong>{{ row.itemName }}</strong>
+              <span class="sub" *ngIf="inventoryIsStockBatch && row.stockBatchId">Batch #{{ row.stockBatchId }}</span>
+            </td>
+            <td *ngIf="inventoryIsStockBatch">{{ row.storeName || '—' }}</td>
+            <td>{{ row.initialQuantity }}</td>
+            <td>{{ row.currentStockAtHand }}</td>
+            <td>{{ row.performedByUserName || '—' }}</td>
+            <td>{{ row.finalizedAt | date:'medium' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="showConfirmModal" (click)="closeConfirmModal()"></div>
+<div class="confirm-modal" *ngIf="showConfirmModal">
+  <h3>Confirm initialization</h3>
+  <p>
+    Set <strong>{{ initialStock }}</strong> as opening stock for
+    <strong>{{ selectedItem ? itemLabel(selectedItem) : '' }}</strong>?
+  </p>
+  <p class="warn-text">This action is permanent — the item cannot be initialized again on this page.</p>
+  <div class="modal-actions">
+    <button class="btn-secondary" type="button" (click)="closeConfirmModal()" [disabled]="isFinalizing">Cancel</button>
+    <button class="btn-primary" type="button" (click)="finalizeInitialization()" [disabled]="isFinalizing">
+      {{ isFinalizing ? 'Applying...' : 'Yes, initialize' }}
+    </button>
+  </div>
+</div>

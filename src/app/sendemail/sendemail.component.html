@@ -1,0 +1,66 @@
+<section class="vh-100" style="background-color: #405b8d;">
+    <div class="container py-1 h-100" style="border-radius: 24px;">
+        <div class="row d-flex justify-content-center align-items-center h-100">
+            <div class="col col-xl-12">
+                <div class="card" style="border-radius: 5rem;">
+                    <div class="row g-0">
+
+                        <div class="col-md-6 col-lg-5 d-none d-md-block login-side-image-wrap">
+                            <img src="assets/images/bro.png" alt="reset password" class="img-fluid login-side-image" />
+                        </div>
+
+                        <div class="col-md-6 col-lg-7 d-flex align-items-center">
+                            <div class="card-body p-3 p-lg-5 text-black">
+
+                                <form #usersForm="ngForm" (ngSubmit)="getUserFormData(usersForm.value)">
+
+                                    <div class="d-flex align-items-center mb-3 pb-1 login-brand-row">
+                                        <img src="assets/images/kmc.jpeg" alt="Kavuma Medical Clinic logo" class="login-brand-logo" />
+                                        <span class="login-brand-title">
+                                            Kavuma Medical<strong class="login-brand-subtitle">Clinic</strong>
+                                        </span>
+                                    </div>
+
+                                    <h5 class="fw-normal mb-3 pb-3" style="letter-spacing: 1px;font-size: 20px;">
+                                        Reset your password
+                                    </h5>
+                                    <h6 class="fw-normal mb-3 pb-1" style="letter-spacing: 1px;font-size: 15px;color: #656666;">
+                                        A temporary password will be sent to your email. Use it to sign in, then change your password in your profile.
+                                    </h6>
+
+                                    <div class="form-group input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">
+                                                <i class="bi bi-envelope-fill" style="font-size:20px; color: #5181da;"></i>
+                                            </span>
+                                        </div>
+                                        <input ngModel name="email" class="form-control form-control-lg" placeholder="Enter email" type="email" required email />
+                                    </div>
+
+                                    <div class="pt-1 mb-4">
+                                        <button [disabled]="usersForm.invalid" class="btn btn-success btn-lg btn-block" type="submit"
+                                            style="background-color: #5181da;border-radius: 24px;border-color: #5181da;">
+                                            Send reset email
+                                        </button>
+                                    </div>
+
+                                    <span style="color: #656666;">
+                                        Remember your password?
+                                        <u><a style="color: #5181da;margin-left: 8px;" [routerLink]="['/login']">Back to sign in</a></u>
+                                    </span>
+                                    <br><br>
+
+                                    <a class="small text-muted">Terms of use.</a>
+                                    <a class="small text-muted">Privacy policy</a>
+                                    <a class="small text-muted">Kavuma Medical Clinic</a>
+                                </form>
+                                <br>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

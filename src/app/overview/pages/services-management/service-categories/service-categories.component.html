@@ -1,0 +1,294 @@
+<!-- Delete Confirmation Modal -->
+<div class="delete-confirm-modal-overlay" *ngIf="showDeleteConfirmModal" (click)="closeDeleteConfirmModal()">
+  <div class="delete-confirm-modal-container" (click)="$event.stopPropagation()">
+    <div class="delete-confirm-modal">
+      <div class="delete-confirm-modal-header">
+        <div class="delete-confirm-icon">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <h2 class="delete-confirm-title">Delete Category</h2>
+        <button type="button" class="delete-confirm-close" (click)="closeDeleteConfirmModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="delete-confirm-modal-body">
+        <p class="delete-confirm-message">
+          Are you sure you want to delete <strong>"{{ getCategoryName(categoryToDelete) }}"</strong>?
+        </p>
+        <p class="delete-confirm-warning">
+          <i class="bi bi-info-circle"></i>
+          This action cannot be undone. All data associated with this category will be permanently deleted.
+        </p>
+      </div>
+
+      <div class="delete-confirm-modal-actions">
+        <button type="button" 
+                class="delete-confirm-btn-cancel" 
+                (click)="closeDeleteConfirmModal()"
+                [disabled]="isButtonDisabled">
+          Cancel
+        </button>
+        <button type="button" 
+                class="delete-confirm-btn-delete" 
+                (click)="confirmDelete()"
+                [disabled]="isButtonDisabled">
+          <i class="bi bi-trash"></i>
+          Delete Category
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Category Modal -->
+<div class="category-modal-overlay" id="categoryModal" *ngIf="!isCollapsedNewCategory">
+  <div class="category-modal-container">
+    <div class="category-modal">
+      <div class="category-modal-header">
+        <h2 class="category-modal-title">
+          <i class="bi" [ngClass]="isEditingCategory ? 'bi-pencil-square' : 'bi-tag'"></i>
+          {{ saveButtonStatus }}
+        </h2>
+        <button type="button" class="category-modal-close" (click)="closeCategoryModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="category-modal-body">
+        <form #categoryForm="ngForm" (ngSubmit)="saveCategory(categoryForm)">
+          <div class="category-form-grid">
+            <div class="category-form-field full-width">
+              <label for="categoryName" class="category-form-label">
+                Category Name <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     [(ngModel)]="currentCategory.name" 
+                     name="name" 
+                     class="category-form-input" 
+                     id="categoryName" 
+                     placeholder="Enter category name" 
+                     required>
+            </div>
+
+            <div class="category-form-field full-width">
+              <label for="parentCategory" class="category-form-label">
+                Parent Category
+              </label>
+              <select
+                [(ngModel)]="currentCategory.parentId"
+                name="parentId"
+                id="parentCategory"
+                class="category-form-input">
+                <option [ngValue]="null">Top Level (No Parent)</option>
+                <option *ngFor="let parent of getParentCategoryOptions()"
+                        [ngValue]="parent.id">
+                  {{ getCategoryName(parent) }}
+                </option>
+              </select>
+              <div class="category-form-helper" *ngIf="isParentCategoryLoading">
+                <span class="helper-spinner"></span>
+                <span>Loading categories...</span>
+              </div>
+              <div class="category-form-helper error" *ngIf="!isParentCategoryLoading && parentCategoryLoadError">
+                <span>{{ parentCategoryLoadError }}</span>
+                <button type="button" class="helper-link" (click)="retryParentCategoryLoad()">Try again</button>
+              </div>
+              <div class="category-form-helper subtle" *ngIf="!isParentCategoryLoading && !parentCategoryLoadError && parentCategoryList.length === 0">
+                <span>No categories found yet.</span>
+                <button type="button" class="helper-link" (click)="retryParentCategoryLoad()">Reload</button>
+              </div>
+            </div>
+
+            <div class="category-form-field full-width">
+              <label for="description" class="category-form-label">Description</label>
+              <textarea [(ngModel)]="currentCategory.categoryDescription" 
+                        name="categoryDescription" 
+                        class="category-form-textarea" 
+                        id="description" 
+                        placeholder="Additional notes or description about the category"
+                        rows="3"></textarea>
+            </div>
+          </div>
+
+          <div *ngIf="showDivAddToDataBaseNewCategory" class="category-form-message" [ngClass]="{'success': responseColor === 'rgb(11, 155, 112)', 'error': responseColor === 'rgb(238, 16, 16)'}">
+            <i class="bi" [ngClass]="responseColor === 'rgb(11, 155, 112)' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>
+            {{ responseMessage }}
+          </div>
+
+          <div *ngIf="showDivUpdatedLoaderNewCategory" class="category-form-loading">
+            <div class="category-loader"></div>
+            <p>{{ isEditingCategory ? 'Updating category...' : 'Saving category...' }}</p>
+          </div>
+
+          <div class="category-modal-actions">
+            <button type="button" 
+                    class="category-btn-secondary" 
+                    (click)="closeCategoryModal()"
+                    [disabled]="isButtonDisabled">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="category-btn-primary" 
+                    [disabled]="isButtonDisabled">
+              <span *ngIf="!showDivUpdatedLoaderNewCategory">
+                <i class="bi bi-save"></i>
+                {{ saveButtonStatus }}
+              </span>
+              <span *ngIf="showDivUpdatedLoaderNewCategory" class="button-loading">
+                <span class="spinner-small"></span>
+                {{ isEditingCategory ? 'Updating...' : 'Saving...' }}
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="category-management-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-tag"></i>
+        Service Categories
+      </h2>
+      <p class="page-subtitle">Manage your service categories</p>
+    </div>
+    
+    <div class="header-right">
+      <button class="add-category-btn" 
+              type="button"
+              (click)="openCategoryModal()">
+        <i class="bi bi-plus-circle-fill"></i>
+        Add New Category
+      </button>
+      <button class="refresh-btn" 
+              type="button" 
+              (click)="initializeTableData()" 
+              [disabled]="isLoadingService">
+        <i class="bi bi-arrow-repeat" [class.spinning]="isLoadingService"></i>
+        <span>{{ isLoadingService ? 'Refreshing...' : 'Reload List' }}</span>
+      </button>
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" 
+               [ngModel]="searchQuery" 
+               (ngModelChange)="onSearchQueryChange($event)"
+               placeholder="Search categories...">
+      </div>
+      
+      <select class="filter-select" [ngModel]="selectedColumn" (ngModelChange)="onSelectedColumnChange($event)">
+        <option value="all">All Fields</option>
+        <option value="category">Category Name</option>
+        <option value="parentCategory">Parent Category Name</option>
+      </select>
+
+      <div class="dropdown">
+        <button class="action-btn" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-download"></i>
+          Export
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li (click)="exportToExcel()" class="dropdown-item">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+          </li>
+          <li (click)="downloadPdf()" class="dropdown-item">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="bi bi-tag"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ totalItemsCount }}</div>
+        <div class="stat-label">Total Categories</div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isLoadingService" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading categories data...</p>
+  </div>
+
+  <div *ngIf="showDivUpdatedOut" class="alert" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div class="table-container" *ngIf="!isLoadingService">
+    <div class="table-wrapper" #htmlData>
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>SN</th>
+            <th>Category Name</th>
+            <th>Parent Category Name</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let category of filteredCategoryList | paginate: { itemsPerPage: itemsPerPage, currentPage: page }; let i = index">
+            <td>
+              <span class="shelf-number">{{ (page - 1) * itemsPerPage + i + 1 }}</span>
+            </td>
+            <td>
+              <div class="item-details">
+                <div class="item-title" [title]="getCategoryName(category)">
+                  {{ getCategoryName(category) }}
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="description-text">{{ getParentCategoryName(category) }}</span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon edit" title="Edit Category" (click)="editCategory(category)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn-icon delete" title="Delete Category" (click)="deleteCategory(category)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredCategoryList.length === 0">
+            <td colspan="4" class="no-data">
+              <i class="bi bi-inbox"></i>
+              <p>No categories found</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-wrapper">
+      <div class="pagination-info">
+        Showing {{ (page - 1) * itemsPerPage + 1 }} - {{ page * itemsPerPage > filteredCategoryList.length ? filteredCategoryList.length : page * itemsPerPage }} of {{ filteredCategoryList.length }} categories
+      </div>
+      <pagination-controls (pageChange)="onPageChange($event)"></pagination-controls>
+      <div class="pagination-size">
+        <select [ngModel]="itemsPerPage" (ngModelChange)="onItemsPerPageChange($event)" class="page-size-select">
+          <option [ngValue]="10">10 per page</option>
+          <option [ngValue]="15">15 per page</option>
+          <option [ngValue]="25">25 per page</option>
+          <option [ngValue]="50">50 per page</option>
+          <option [ngValue]="100">100 per page</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+

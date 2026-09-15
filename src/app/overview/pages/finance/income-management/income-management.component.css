@@ -1,0 +1,83 @@
+@import '../expense-accounts/expense-accounts.component.css';
+
+.stat-card.accent-gold { border-left-color: #d97706; }
+.stat-card.accent-gold i { color: #d97706; }
+.stat-card.accent-teal { border-left-color: #0d9488; }
+.stat-card.accent-teal i { color: #0d9488; }
+.stat-card.accent-purple { border-left-color: #8b5cf6; }
+.stat-card.accent-purple i { color: #8b5cf6; }
+.stat-card.accent-warn { border-left-color: #f59e0b; }
+.stat-card.accent-warn i { color: #f59e0b; }
+.dark .stat-card.accent-gold { border-left-color: #fbbf24; }
+.dark .stat-card.accent-teal { border-left-color: #2dd4bf; }
+
+.total-card {
+  grid-column: span 1;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.08), rgba(217, 119, 6, 0.02));
+}
+
+.date-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.date-filter-row label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.date-input {
+  width: 150px;
+  height: 40px;
+}
+
+.btn-ghost {
+  background: transparent;
+}
+
+.stat-meta {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.table-note {
+  padding: 0 16px 12px;
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.filter-select {
+  width: 190px;
+  height: 40px;
+  padding: 0 10px;
+}
+
+.dark .date-filter-row label,
+.dark .stat-meta,
+.dark .table-note {
+  color: #94a3b8;
+}
+
+@media (min-width: 1200px) {
+  .stats-row {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+.chart-surface { padding: 20px; margin-top: 16px; }
+.chart-title { font-size: 15px; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+.vertical-chart { display: flex; align-items: flex-end; gap: 12px; min-height: 180px; }
+.v-bar-wrapper { flex: 1; text-align: center; min-width: 48px; }
+.v-bar-value { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+.v-bar-track { height: 120px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: flex-end; overflow: hidden; }
+.v-bar-fill { width: 100%; border-radius: 6px 6px 0 0; min-height: 4px; }
+.v-bar-fill.green { background: linear-gradient(180deg, #22c55e, #16a34a); }
+.v-bar-label { font-size: 11px; margin-top: 6px; color: #475569; }
+.dark .v-bar-track { background: #1e293b; }
+.dark .v-bar-value, .dark .v-bar-label { color: #94a3b8; }

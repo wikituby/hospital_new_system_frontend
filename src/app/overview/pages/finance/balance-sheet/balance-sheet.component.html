@@ -1,0 +1,244 @@
+<div class="balance-sheet-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-journal-bookmark-fill"></i>
+        Balance Sheet
+      </h1>
+      <p class="page-subtitle">
+        Financial position as of {{ formatDisplayDate(asOfDate) }} · Income statement for {{ formatPeriodLabel() }}
+      </p>
+    </div>
+    <div class="header-right">
+      <button type="button" class="btn-secondary" (click)="loadBalanceSheet()" [disabled]="isLoading">
+        <i class="bi bi-arrow-repeat" [class.spin]="isLoading"></i>
+        Refresh
+      </button>
+      <button type="button" class="btn-secondary" (click)="printReport()">
+        <i class="bi bi-printer"></i>
+        Print
+      </button>
+    </div>
+  </div>
+
+  <div class="filters-bar">
+    <div class="filter-group">
+      <label for="asOfDate">As of date</label>
+      <input id="asOfDate" type="date" [(ngModel)]="asOfDate" (change)="loadBalanceSheet()" />
+    </div>
+    <div class="filter-group">
+      <label for="periodFrom">Period from</label>
+      <input id="periodFrom" type="date" [(ngModel)]="periodFrom" (change)="loadBalanceSheet()" />
+    </div>
+    <div class="filter-group">
+      <label for="periodTo">Period to</label>
+      <input id="periodTo" type="date" [(ngModel)]="periodTo" (change)="loadBalanceSheet()" />
+    </div>
+    <div class="preset-group">
+      <button type="button" class="preset-btn" (click)="applyPeriodPreset('month')">This month</button>
+      <button type="button" class="preset-btn" (click)="applyPeriodPreset('quarter')">This quarter</button>
+      <button type="button" class="preset-btn" (click)="applyPeriodPreset('year')">This year</button>
+      <button type="button" class="preset-btn" (click)="applyPeriodPreset('all')">All time</button>
+    </div>
+  </div>
+
+  <p class="alert error" *ngIf="loadError">{{ loadError }}</p>
+
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="loader"></div>
+    <span>Building balance sheet…</span>
+  </div>
+
+  <ng-container *ngIf="!isLoading">
+    <div class="stats-grid">
+      <div class="stat-card stat-assets">
+        <div class="stat-icon"><i class="bi bi-piggy-bank"></i></div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatAmount(totalAssets) }}</div>
+          <div class="stat-label">Total assets</div>
+        </div>
+      </div>
+      <div class="stat-card stat-liabilities">
+        <div class="stat-icon"><i class="bi bi-credit-card-2-front"></i></div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatAmount(totalLiabilities) }}</div>
+          <div class="stat-label">Total liabilities</div>
+        </div>
+      </div>
+      <div class="stat-card stat-equity">
+        <div class="stat-icon"><i class="bi bi-building"></i></div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatAmount(totalEquity) }}</div>
+          <div class="stat-label">Total equity</div>
+        </div>
+      </div>
+      <div class="stat-card" [class.stat-positive]="periodNetIncome >= 0" [class.stat-negative]="periodNetIncome < 0">
+        <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatAmount(periodNetIncome) }}</div>
+          <div class="stat-label">Net income (period)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="equation-banner" [class.balanced]="isBalanced()">
+      <i class="bi" [ngClass]="isBalanced() ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>
+      <span>
+        <strong>Assets</strong> {{ formatAmount(totalAssets) }}
+        =
+        <strong>Liabilities</strong> {{ formatAmount(totalLiabilities) }}
+        +
+        <strong>Equity</strong> {{ formatAmount(totalEquity) }}
+      </span>
+    </div>
+
+    <div class="sheet-grid">
+      <section class="sheet-panel">
+        <div class="panel-head">
+          <h2><i class="bi bi-wallet2"></i> Assets</h2>
+          <span class="panel-total">{{ formatAmount(totalAssets) }}</span>
+        </div>
+        <table class="sheet-table">
+          <tbody>
+            <tr *ngFor="let line of assetLines"
+              [class.section-row]="line.emphasis && line.amount === 0"
+              [class.subtotal-row]="line.emphasis && line.amount > 0"
+              [class.total-row]="line.label === 'Total assets'">
+              <td [class.indent]="line.indent">
+                {{ line.label }}
+                <small *ngIf="line.note" class="row-note">{{ line.note }}</small>
+              </td>
+              <td class="amount">
+                <span *ngIf="line.amount > 0 || line.label.startsWith('Total')">{{ formatAmount(line.amount) }}</span>
+                <span *ngIf="line.amount === 0 && !line.label.startsWith('Total')" class="muted">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="sheet-panel">
+        <div class="panel-head">
+          <h2><i class="bi bi-bank"></i> Liabilities &amp; Equity</h2>
+          <span class="panel-total">{{ formatAmount(totalLiabilities + totalEquity) }}</span>
+        </div>
+        <table class="sheet-table">
+          <tbody>
+            <tr class="section-row"><td colspan="2">Liabilities</td></tr>
+            <tr *ngFor="let line of liabilityLines"
+              [class.section-row]="line.emphasis && line.amount === 0"
+              [class.subtotal-row]="line.emphasis && line.label !== 'Current liabilities'"
+              [class.total-row]="line.label === 'Total liabilities'">
+              <td [class.indent]="line.indent">
+                {{ line.label }}
+                <small *ngIf="line.note" class="row-note">{{ line.note }}</small>
+              </td>
+              <td class="amount">
+                <span *ngIf="line.amount > 0 || line.label.startsWith('Total')">{{ formatAmount(line.amount) }}</span>
+                <span *ngIf="line.amount === 0 && !line.label.startsWith('Total')" class="muted">—</span>
+              </td>
+            </tr>
+            <tr class="section-row"><td colspan="2">Equity</td></tr>
+            <tr *ngFor="let line of equityLines"
+              [class.subtotal-row]="line.emphasis && line.label !== 'Total equity'"
+              [class.total-row]="line.label === 'Total equity'">
+              <td [class.indent]="line.indent">
+                {{ line.label }}
+                <small *ngIf="line.note" class="row-note">{{ line.note }}</small>
+              </td>
+              <td class="amount">{{ formatAmount(line.amount) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <section class="income-panel">
+      <div class="panel-head">
+        <h2><i class="bi bi-bar-chart-line"></i> Income Statement</h2>
+        <span class="panel-period">{{ formatPeriodLabel() }}</span>
+      </div>
+      <table class="sheet-table">
+        <tbody>
+          <tr *ngFor="let line of incomeLines"
+            [class.subtotal-row]="line.emphasis && line.label !== 'Net income'"
+            [class.total-row]="line.label === 'Net income' || line.label === 'Total income'"
+            [class.negative-row]="line.label === 'Net income' && line.amount < 0">
+            <td [class.indent]="line.indent">{{ line.label }}</td>
+            <td class="amount">{{ formatAmount(line.amount) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="breakdown-grid">
+      <section class="breakdown-panel">
+        <h3><i class="bi bi-cash-stack"></i> Revenue by payment method</h3>
+        <table class="data-table" *ngIf="revenueByMethod.length; else noRevenue">
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th class="text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of revenueByMethod">
+              <td>{{ row.name }}</td>
+              <td class="text-right">{{ formatAmount(row.amount) }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <ng-template #noRevenue>
+          <p class="empty-note">No approved payments in this period.</p>
+        </ng-template>
+      </section>
+
+      <section class="breakdown-panel">
+        <h3><i class="bi bi-receipt"></i> Expenses by account</h3>
+        <table class="data-table" *ngIf="expensesByCategory.length; else noExpenses">
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th class="text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of expensesByCategory">
+              <td>{{ row.name }}</td>
+              <td class="text-right">{{ formatAmount(row.amount) }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <ng-template #noExpenses>
+          <p class="empty-note">No expenses recorded in this period.</p>
+        </ng-template>
+      </section>
+    </div>
+
+    <div class="meta-row">
+      <span><i class="bi bi-check2-circle"></i> {{ totalPaymentsCount }} payment(s) loaded</span>
+      <span><i class="bi bi-receipt-cutoff"></i> {{ totalExpenseCount }} expense(s) loaded</span>
+      <span><i class="bi bi-person-lines-fill"></i> {{ receivableVisits }} receivable visit(s)</span>
+    </div>
+
+    <div class="quick-links">
+      <button type="button" class="link-card" (click)="goToCashier()">
+        <i class="bi bi-cash-coin"></i>
+        <span>Cashier Desk</span>
+      </button>
+      <button type="button" class="link-card" (click)="goToExpenses()">
+        <i class="bi bi-receipt"></i>
+        <span>Expense Management</span>
+      </button>
+      <button type="button" class="link-card" (click)="goToPatientBilling()">
+        <i class="bi bi-file-earmark-text"></i>
+        <span>Patient Billing</span>
+      </button>
+    </div>
+
+    <p class="footnote">
+      Cash positions are derived from approved payments minus recorded expenses. Accounts receivable reflects visit balances with outstanding debt.
+      Fixed asset values are not yet tracked — only the asset register count is shown.
+    </p>
+  </ng-container>
+</div>

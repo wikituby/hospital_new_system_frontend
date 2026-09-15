@@ -1,0 +1,115 @@
+<header class="site-header" (mouseleave)="closeMenus()">
+  <nav class="site-navbar">
+    <div class="site-nav-container">
+      <a class="site-logo" routerLink="/landingpage" fragment="home" (click)="closeMenus()">
+        <img class="site-logo-img" [src]="venerandaLogo" alt="Veneranda Hospital logo" />
+        <span>Veneranda Hospital</span>
+      </a>
+
+      <ul class="site-nav-menu">
+        <li><a routerLink="/landingpage" fragment="home" (click)="closeMenus()">Home</a></li>
+        <li><a routerLink="/about" (click)="closeMenus()">About Us</a></li>
+
+        <li
+          class="site-nav-dropdown"
+          [class.is-open]="openMenu === 'services'"
+          (mouseenter)="openOnHover('services')">
+          <button
+            type="button"
+            class="site-nav-trigger"
+            (click)="toggleMenu('services', $event)"
+            [attr.aria-expanded]="openMenu === 'services'">
+            Services
+            <i class="bi bi-chevron-down"></i>
+          </button>
+          <div class="site-mega-panel" *ngIf="openMenu === 'services'">
+            <div class="site-mega-inner">
+              <div class="site-mega-head">
+                <div>
+                  <h3>Services we offer today</h3>
+                  <p>Explore care available now at Veneranda Hospital.</p>
+                </div>
+                <a routerLink="/landingpage" fragment="services" (click)="closeMenus()">
+                  View all
+                  <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+              <div class="site-mega-grid">
+                <a
+                  class="site-mega-item"
+                  *ngFor="let service of offeredServices"
+                  [routerLink]="['/service', service.slug]"
+                  (click)="closeMenus()">
+                  <span
+                    class="site-mega-thumb"
+                    [style.background-image]="'url(' + service.image + ')'"
+                    [style.background-position]="service.imagePosition || '45% 20%'"></span>
+                  <span class="site-mega-copy">
+                    <strong>{{ service.title }}</strong>
+                    <small>{{ service.description }}</small>
+                  </span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li
+          class="site-nav-dropdown"
+          [class.is-open]="openMenu === 'upcoming'"
+          (mouseenter)="openOnHover('upcoming')">
+          <button
+            type="button"
+            class="site-nav-trigger"
+            (click)="toggleMenu('upcoming', $event)"
+            [attr.aria-expanded]="openMenu === 'upcoming'">
+            Coming Soon
+            <i class="bi bi-chevron-down"></i>
+          </button>
+          <div class="site-mega-panel" *ngIf="openMenu === 'upcoming'">
+            <div class="site-mega-inner">
+              <div class="site-mega-head">
+                <div>
+                  <h3>Coming soon</h3>
+                  <p>Projects and services we are growing next.</p>
+                </div>
+                <a routerLink="/landingpage" fragment="upcoming" (click)="closeMenus()">
+                  View all
+                  <i class="bi bi-arrow-right"></i>
+                </a>
+              </div>
+              <div class="site-mega-grid">
+                <a
+                  class="site-mega-item"
+                  *ngFor="let service of upcomingServices"
+                  [routerLink]="['/service', service.slug]"
+                  (click)="closeMenus()">
+                  <span
+                    class="site-mega-thumb"
+                    [style.background-image]="'url(' + service.image + ')'"
+                    [style.background-position]="service.imagePosition || '45% 20%'"></span>
+                  <span class="site-mega-copy">
+                    <strong>{{ service.title }}</strong>
+                    <small>{{ service.description }}</small>
+                  </span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li><a routerLink="/landingpage" fragment="stories" (click)="closeMenus()">Success Stories</a></li>
+        <li><a routerLink="/contact" (click)="closeMenus()">Contacts</a></li>
+      </ul>
+
+      <a class="site-donate-btn" routerLink="/landingpage" fragment="support" (click)="closeMenus()">
+        <i class="bi bi-heart-fill"></i>
+        Donate
+      </a>
+      <button class="site-appointment-btn" type="button" (click)="navigateToOverview()">
+        <i class="bi bi-calendar-event"></i>
+        Login
+      </button>
+    </div>
+  </nav>
+</header>

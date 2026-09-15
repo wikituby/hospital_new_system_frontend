@@ -1,0 +1,13 @@
+<ng-container *ngIf="visible">
+  <div *ngIf="mode === 'page'" class="hms-loading-page" role="status" aria-live="polite">
+    <div class="hms-spinner" [class.hms-spinner--sm]="size === 'sm'" [class.hms-spinner--lg]="size === 'lg'"></div>
+    <p *ngIf="label">{{ label }}</p>
+  </div>
+
+  <div *ngIf="mode === 'inline'" class="hms-loading-inline" [class.hms-loading-inline--table]="inlineVariant === 'table'" role="status" aria-live="polite">
+    <div class="hms-spinner hms-spinner--inline" [class.hms-spinner--sm]="size === 'sm'" [class.hms-spinner--lg]="size === 'lg'"></div>
+    <span *ngIf="label" class="hms-loading-inline__label">{{ label }}</span>
+  </div>
+
+  <span *ngIf="mode === 'button'" class="hms-spinner hms-spinner--button" aria-hidden="true"></span>
+</ng-container>

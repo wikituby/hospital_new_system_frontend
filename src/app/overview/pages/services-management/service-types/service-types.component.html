@@ -1,0 +1,255 @@
+<!-- Delete Confirmation Modal -->
+<div class="delete-confirm-modal-overlay" *ngIf="showDeleteConfirmModal" (click)="closeDeleteConfirmModal()">
+  <div class="delete-confirm-modal-container" (click)="$event.stopPropagation()">
+    <div class="delete-confirm-modal">
+      <div class="delete-confirm-modal-header">
+        <div class="delete-confirm-icon">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <h2 class="delete-confirm-title">Delete Type</h2>
+        <button type="button" class="delete-confirm-close" (click)="closeDeleteConfirmModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="delete-confirm-modal-body">
+        <p class="delete-confirm-message">
+          Are you sure you want to delete <strong>"{{ typeToDelete?.procedureType || typeToDelete?.name || 'this type' }}"</strong>?
+        </p>
+        <p class="delete-confirm-warning">
+          <i class="bi bi-info-circle"></i>
+          This action cannot be undone. All data associated with this type will be permanently deleted.
+        </p>
+      </div>
+
+      <div class="delete-confirm-modal-actions">
+        <button type="button" 
+                class="delete-confirm-btn-cancel" 
+                (click)="closeDeleteConfirmModal()"
+                [disabled]="isButtonDisabled">
+          Cancel
+        </button>
+        <button type="button" 
+                class="delete-confirm-btn-delete" 
+                (click)="confirmDelete()"
+                [disabled]="isButtonDisabled">
+          <i class="bi bi-trash"></i>
+          Delete Type
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Type Modal -->
+<div class="type-modal-overlay" id="typeModal" *ngIf="!isCollapsedNewType">
+  <div class="type-modal-container">
+    <div class="type-modal">
+      <div class="type-modal-header">
+        <h2 class="type-modal-title">
+          <i class="bi" [ngClass]="isEditingType ? 'bi-pencil-square' : 'bi-list-ul'"></i>
+          {{ saveButtonStatus }}
+        </h2>
+        <button type="button" class="type-modal-close" (click)="closeTypeModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="type-modal-body">
+        <form #typeForm="ngForm" (ngSubmit)="saveType(typeForm)">
+          <div class="type-form-grid">
+            <div class="type-form-field full-width">
+              <label for="procedureType" class="type-form-label">
+                Type Name <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     [(ngModel)]="currentType.procedureType" 
+                     name="procedureType" 
+                     class="type-form-input" 
+                     id="procedureType" 
+                     placeholder="Enter type name" 
+                     required>
+            </div>
+
+            <div class="type-form-field full-width">
+              <label for="description" class="type-form-label">Description</label>
+              <textarea [(ngModel)]="currentType.description" 
+                        name="description" 
+                        class="type-form-textarea" 
+                        id="description" 
+                        placeholder="Additional notes or description about the type"
+                        rows="3"></textarea>
+            </div>
+          </div>
+
+          <div *ngIf="showDivAddToDataBaseNewType" class="type-form-message" [ngClass]="{'success': responseColor === 'rgb(11, 155, 112)', 'error': responseColor === 'rgb(238, 16, 16)'}">
+            <i class="bi" [ngClass]="responseColor === 'rgb(11, 155, 112)' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>
+            {{ responseMessage }}
+          </div>
+
+          <div *ngIf="showDivUpdatedLoaderNewType" class="type-form-loading">
+            <div class="type-loader"></div>
+            <p>{{ isEditingType ? 'Updating type...' : 'Saving type...' }}</p>
+          </div>
+
+          <div class="type-modal-actions">
+            <button type="button" 
+                    class="type-btn-secondary" 
+                    (click)="closeTypeModal()"
+                    [disabled]="isButtonDisabled">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="type-btn-primary" 
+                    [disabled]="isButtonDisabled">
+              <span *ngIf="!showDivUpdatedLoaderNewType">
+                <i class="bi bi-save"></i>
+                {{ saveButtonStatus }}
+              </span>
+              <span *ngIf="showDivUpdatedLoaderNewType" class="button-loading">
+                <span class="spinner-small"></span>
+                {{ isEditingType ? 'Updating...' : 'Saving...' }}
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="type-management-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-list-ul"></i>
+        Service Types
+      </h2>
+      <p class="page-subtitle">Manage your service types</p>
+    </div>
+    
+    <div class="header-right">
+      <button class="add-type-btn" 
+              type="button"
+              (click)="openTypeModal()">
+        <i class="bi bi-plus-circle-fill"></i>
+        Add New Type
+      </button>
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" 
+               [ngModel]="searchQuery" 
+               (ngModelChange)="onSearchQueryChange($event)"
+               placeholder="Search types...">
+      </div>
+      
+      <select class="filter-select" [ngModel]="selectedColumn" (ngModelChange)="onSelectedColumnChange($event)">
+        <option value="all">All Fields</option>
+        <option value="procedureType">Type Name</option>
+        <option value="description">Description</option>
+      </select>
+
+      <div class="dropdown">
+        <button class="action-btn" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-download"></i>
+          Export
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li (click)="exportToExcel()" class="dropdown-item">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+          </li>
+          <li (click)="downloadPdf()" class="dropdown-item">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="bi bi-list-ul"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ totalItemsCount }}</div>
+        <div class="stat-label">Total Types</div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isLoadingService" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading types data...</p>
+  </div>
+
+  <div *ngIf="showDivUpdatedOut" class="alert" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div class="table-container" *ngIf="!isLoadingService">
+    <div class="table-wrapper" #htmlData>
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>SN</th>
+            <th>Type Name</th>
+            <th>Description</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let type of filteredTypeList | paginate: { itemsPerPage: itemsPerPage, currentPage: page }; let i = index">
+            <td>
+              <span class="shelf-number">{{ (page - 1) * itemsPerPage + i + 1 }}</span>
+            </td>
+            <td>
+              <div class="item-details">
+                <div class="item-title" [title]="type.procedureType || type.name">
+                  {{ type.procedureType || type.name || 'N/A' }}
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="description-text">{{ type.description || 'N/A' }}</span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon edit" title="Edit Type" (click)="editType(type)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn-icon delete" title="Delete Type" (click)="deleteType(type)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredTypeList.length === 0">
+            <td colspan="4" class="no-data">
+              <i class="bi bi-inbox"></i>
+              <p>No types found</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-wrapper">
+      <div class="pagination-info">
+        Showing {{ (page - 1) * itemsPerPage + 1 }} - {{ page * itemsPerPage > filteredTypeList.length ? filteredTypeList.length : page * itemsPerPage }} of {{ filteredTypeList.length }} types
+      </div>
+      <pagination-controls (pageChange)="onPageChange($event)"></pagination-controls>
+      <div class="pagination-size">
+        <select [ngModel]="itemsPerPage" (ngModelChange)="onItemsPerPageChange($event)" class="page-size-select">
+          <option [ngValue]="10">10 per page</option>
+          <option [ngValue]="15">15 per page</option>
+          <option [ngValue]="25">25 per page</option>
+          <option [ngValue]="50">50 per page</option>
+          <option [ngValue]="100">100 per page</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+

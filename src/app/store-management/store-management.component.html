@@ -1,0 +1,128 @@
+<div class="store-management-page standalone-modern" [class.dark]="isDarkMode">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0 sm-title" style="font-size: 1.25rem;">
+              <i class="bi bi-building-gear" style="margin-right: 8px;"></i>
+              Store Management
+            </h4>
+            <button type="button" class="btn btn-primary btn-sm" (click)="openAddStoreForm()">
+              <i class="bi bi-plus-circle" style="margin-right: 5px;"></i>
+              Add Store
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <input type="text" class="form-control form-control-sm" placeholder="Search stores..."
+                  [(ngModel)]="searchText">
+              </div>
+            </div>
+
+            <div *ngIf="showForm" class="border rounded p-3 mb-3 sm-card">
+              <form #storeForm="ngForm" (ngSubmit)="saveStore(storeForm)">
+                <div class="form-row">
+                  <div class="form-group col-md-4">
+                    <label class="form-label">Store Name</label>
+                    <input type="text" name="name" class="form-control form-control-sm"
+                      [(ngModel)]="currentStore.name" required>
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label class="form-label">Store Code</label>
+                    <input type="text" name="code" class="form-control form-control-sm"
+                      [(ngModel)]="currentStore.code">
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label class="form-label">Location</label>
+                    <input type="text" name="location" class="form-control form-control-sm"
+                      [(ngModel)]="currentStore.location">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group col-md-4">
+                    <label class="form-label">Manager</label>
+                    <input type="text" name="manager" class="form-control form-control-sm"
+                      [(ngModel)]="currentStore.manager">
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label class="form-label">Phone</label>
+                    <input type="text" name="phone" class="form-control form-control-sm"
+                      [(ngModel)]="currentStore.phone">
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select form-select-sm" [(ngModel)]="currentStore.status">
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="mt-2 d-flex justify-content-end">
+                  <button type="button" class="btn btn-outline-secondary btn-sm mr-2"
+                    (click)="cancelForm(storeForm)">Cancel</button>
+                  <button type="submit" class="btn btn-primary btn-sm" [disabled]="storeForm.invalid">
+                    {{ saveButtonLabel }}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 5%;">ID</th>
+                    <th style="width: 20%;">Store</th>
+                    <th style="width: 12%;">Code</th>
+                    <th style="width: 18%;">Location</th>
+                    <th style="width: 18%;">Manager</th>
+                    <th style="width: 12%;">Phone</th>
+                    <th style="width: 10%;">Status</th>
+                    <th style="width: 5%;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let store of filteredStores">
+                    <td>{{ store.id }}</td>
+                    <td>{{ store.name }}</td>
+                    <td>{{ store.code }}</td>
+                    <td>{{ store.location }}</td>
+                    <td>{{ store.manager }}</td>
+                    <td>{{ store.phone }}</td>
+                    <td>{{ store.status }}</td>
+                    <td>
+                      <div class="btn-group">
+                        <button type="button" class="btn btn-xs btn-outline-primary dropdown-toggle"
+                          data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                          style="height: 22px; font-size: 10px; padding: 2px 6px;">
+                          Action
+                        </button>
+                        <div class="dropdown-menu" style="border-radius: 12px; padding: 0;">
+                          <a class="dropdown-item" (click)="openEditStoreForm(store)"
+                            style="cursor: pointer; font-size: 13px; padding-left: 10px;">
+                            <i class="bi bi-pencil-square" style="margin-right: 5px; font-size: 10px;"></i>Edit
+                          </a>
+                          <a class="dropdown-item" (click)="deleteStore(store)"
+                            style="cursor: pointer; font-size: 13px; padding-left: 10px;">
+                            <i class="bi bi-trash" style="margin-right: 5px; font-size: 10px;"></i>Delete
+                          </a>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr *ngIf="!filteredStores.length">
+                    <td colspan="8" class="text-center text-muted">No stores found.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

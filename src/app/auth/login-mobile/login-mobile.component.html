@@ -1,0 +1,93 @@
+<section class="login-mobile-container">
+    <div class="login-mobile-card">
+        <div class="login-header">
+            <img [src]="facilityLogoUrl" [alt]="facilityName + ' logo'" class="login-logo" />
+            <h1 class="login-title">{{ facilityName }}</h1>
+        </div>
+
+        <h5 class="login-subtitle">Sign into your {{ facilityName }} account</h5>
+
+        <div class="login-server-row">
+            <span class="login-server-label">Server:</span>
+            <span class="login-server-value" [title]="connectedServerLabel">{{ connectedServerLabel }}</span>
+            <button type="button" class="login-change-server" (click)="changeServer()">Change server</button>
+        </div>
+
+        <form *ngIf="loginForm" [formGroup]="loginForm" #usersForm="ngForm" (ngSubmit)="getUserFormData(usersForm.value)">
+            
+            <div class="form-group-mobile">
+                <div class="input-wrapper">
+                    <i class="bi bi-envelope-fill input-icon"></i>
+                    <input 
+                        formControlName="email" 
+                        class="form-control-mobile" 
+                        placeholder="Enter email" 
+                        type="email" 
+                        required 
+                        email 
+                    />
+                </div>
+                <div *ngIf="loginForm.controls['email'].dirty && loginForm.controls['email'].hasError('required')" class="error-message">
+                    *Email is required
+                </div>
+                <div *ngIf="loginForm.controls['email'].dirty && loginForm.controls['email'].hasError('email')" class="error-message">
+                    *Please enter a valid email
+                </div>
+            </div>
+
+            <div class="form-group-mobile">
+                <div class="input-wrapper">
+                    <i class="bi bi-person-fill-lock input-icon"></i>
+                    <input 
+                        formControlName="password" 
+                        class="form-control-mobile" 
+                        placeholder="Enter password"
+                        [type]="type" 
+                    />
+                    <i class="{{eyeIcon}} input-icon-right" (click)="hideShowPassword()"></i>
+                </div>
+                <div *ngIf="loginForm.controls['password'].dirty && loginForm.controls['password'].hasError('required')" class="error-message">
+                    *Password is required
+                </div>
+            </div>
+
+            <div *ngIf="showDivUpdatedLoaderDeletePatient" class="loader-container">
+                <div *ngIf="isLoadingNewPatient" class="simple-loader"></div>
+            </div>
+
+            <div *ngIf="loginErrorMessage" class="error-message-main">
+                {{ loginErrorMessage }}
+            </div>
+
+            <div *ngIf="notFound && !loginErrorMessage" class="error-message-main">
+                Email or password incorrect. Please check and try again.
+            </div>
+
+            <button 
+                [disabled]="loginForm.invalid || isLoadingNewPatient" 
+                class="btn-login-mobile" 
+                type="submit"
+            >
+                <span *ngIf="isLoadingNewPatient" class="spinner-border spinner-border-sm" style="margin-right: 8px;"></span>
+                {{ isLoadingNewPatient ? 'Logging in...' : 'Login' }}
+            </button>
+
+            <div class="login-links">
+                <a [routerLink]="['/sendemail']" class="link-forgot">Forgot password?</a>
+            </div>
+
+            <div class="signup-link">
+                <span class="signup-text">Don't have an account?</span>
+                <a [routerLink]="['/signup']" class="link-signup">Register here</a>
+            </div>
+
+            <div class="footer-links">
+                <a class="footer-link">Terms of use</a>
+                <span class="footer-separator">•</span>
+                <a class="footer-link">Privacy policy</a>
+                <span class="footer-separator">•</span>
+                <a class="footer-link">{{ facilityName }}</a>
+            </div>
+        </form>
+    </div>
+</section>

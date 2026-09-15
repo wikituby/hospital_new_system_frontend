@@ -1,0 +1,330 @@
+<!-- Delete Confirmation Modal -->
+<div class="delete-confirm-modal-overlay" *ngIf="showDeleteConfirmModal" (click)="closeDeleteConfirmModal()">
+  <div class="delete-confirm-modal-container" (click)="$event.stopPropagation()">
+    <div class="delete-confirm-modal">
+      <div class="delete-confirm-modal-header">
+        <div class="delete-confirm-icon">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <h2 class="delete-confirm-title">Delete Asset</h2>
+        <button type="button" class="delete-confirm-close" (click)="closeDeleteConfirmModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="delete-confirm-modal-body">
+        <p class="delete-confirm-message">
+          Are you sure you want to delete <strong>"{{ assetToDelete?.name || 'this asset' }}"</strong>?
+        </p>
+        <p class="delete-confirm-warning">
+          <i class="bi bi-info-circle"></i>
+          This action cannot be undone. All data associated with this asset will be permanently deleted.
+        </p>
+      </div>
+
+      <div class="delete-confirm-modal-actions">
+        <button type="button" 
+                class="delete-confirm-btn-cancel" 
+                (click)="closeDeleteConfirmModal()"
+                [disabled]="isButtonDisabled">
+          Cancel
+        </button>
+        <button type="button" 
+                class="delete-confirm-btn-delete" 
+                (click)="confirmDelete()"
+                [disabled]="isButtonDisabled">
+          <i class="bi bi-trash"></i>
+          Delete Asset
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Asset Modal -->
+<div class="asset-modal-overlay" id="assetModal" *ngIf="!isCollapsedNewAsset">
+  <div class="asset-modal-container">
+    <div class="asset-modal">
+      <div class="asset-modal-header">
+        <h2 class="asset-modal-title">
+          <i class="bi" [ngClass]="isEditingAsset ? 'bi-pencil-square' : 'bi-boxes'"></i>
+          {{ saveButtonStatus }}
+        </h2>
+        <button type="button" class="asset-modal-close" (click)="closeAssetModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="asset-modal-body">
+        <form #assetForm="ngForm" (ngSubmit)="saveAsset(assetForm.value)">
+          <div class="asset-form-grid">
+            <div class="asset-form-field full-width">
+              <label for="title" class="asset-form-label">
+                Title <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     [(ngModel)]="currentAsset.title" 
+                     name="title" 
+                     class="asset-form-input" 
+                     id="title" 
+                     placeholder="e.g., Ultrasound Machine" 
+                     required>
+            </div>
+
+            <div class="asset-form-field">
+              <label for="depreciationRate" class="asset-form-label">
+                Depreciation Rate (%) <span class="required">*</span>
+              </label>
+              <input type="number" 
+                     [(ngModel)]="currentAsset.depreciationRate" 
+                     name="depreciationRate" 
+                     class="asset-form-input" 
+                     id="depreciationRate" 
+                     placeholder="e.g., 10.5"
+                     step="0.1"
+                     min="0"
+                     max="100"
+                     required>
+            </div>
+
+            <div class="asset-form-field">
+              <label for="usefulLifeMonths" class="asset-form-label">
+                Useful Life (Months) <span class="required">*</span>
+              </label>
+              <input type="number" 
+                     [(ngModel)]="currentAsset.usefulLifeMonths" 
+                     name="usefulLifeMonths" 
+                     class="asset-form-input" 
+                     id="usefulLifeMonths" 
+                     placeholder="e.g., 60"
+                     min="1"
+                     required>
+            </div>
+
+            <div class="asset-form-field">
+              <label for="acquisitionDate" class="asset-form-label">
+                Acquisition Date <span class="required">*</span>
+              </label>
+              <input type="date" 
+                     [(ngModel)]="currentAsset.acquisitionDate" 
+                     name="acquisitionDate" 
+                     class="asset-form-input" 
+                     id="acquisitionDate"
+                     required>
+            </div>
+
+            <div class="asset-form-field">
+              <label for="serialNumber" class="asset-form-label">Serial Number</label>
+              <input type="text" 
+                     [(ngModel)]="currentAsset.serialNumber" 
+                     name="serialNumber" 
+                     class="asset-form-input" 
+                     id="serialNumber" 
+                     placeholder="e.g., SN-ULTRA-2023-001">
+            </div>
+
+            <div class="asset-form-field full-width">
+              <label for="description" class="asset-form-label">Description</label>
+              <textarea [(ngModel)]="currentAsset.description" 
+                        name="description" 
+                        class="asset-form-textarea" 
+                        id="description" 
+                        placeholder="Detailed description or additional information about the asset"
+                        rows="3"></textarea>
+            </div>
+          </div>
+
+          <div *ngIf="showDivAddToDataBaseNewAsset" class="asset-form-message" [ngClass]="{'success': responseColor === 'rgb(11, 155, 112)', 'error': responseColor === 'rgb(238, 16, 16)'}">
+            <i class="bi" [ngClass]="responseColor === 'rgb(11, 155, 112)' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>
+            {{ responseMessage }}
+          </div>
+
+          <div *ngIf="showDivUpdatedLoaderNewAsset" class="asset-form-loading">
+            <div class="asset-loader"></div>
+            <p>{{ isEditingAsset ? 'Updating asset...' : 'Saving asset...' }}</p>
+          </div>
+
+          <div class="asset-modal-actions">
+            <button type="button" 
+                    class="asset-btn-secondary" 
+                    (click)="closeAssetModal()"
+                    [disabled]="isButtonDisabled">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="asset-btn-primary" 
+                    [disabled]="isButtonDisabled">
+              <span *ngIf="!showDivUpdatedLoaderNewAsset">
+                <i class="bi bi-save"></i>
+                {{ saveButtonStatus }}
+              </span>
+              <span *ngIf="showDivUpdatedLoaderNewAsset" class="button-loading">
+                <span class="spinner-small"></span>
+                {{ isEditingAsset ? 'Updating...' : 'Saving...' }}
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="asset-management-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-boxes"></i>
+        Asset Management
+      </h2>
+      <p class="page-subtitle">Manage your assets and equipment</p>
+    </div>
+    
+    <div class="header-right">
+      <button class="add-asset-btn" 
+              type="button"
+              (click)="openAssetModal()">
+        <i class="bi bi-plus-circle-fill"></i>
+        Add New Asset
+      </button>
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" 
+               [ngModel]="searchQuery" 
+               (ngModelChange)="onSearchQueryChange($event)"
+               placeholder="Search assets...">
+      </div>
+      
+      <select class="filter-select" [ngModel]="selectedColumn" (ngModelChange)="onSelectedColumnChange($event)">
+        <option value="all">All Fields</option>
+        <option value="title">Title</option>
+        <option value="serialNumber">Serial Number</option>
+        <option value="description">Description</option>
+      </select>
+
+      <div class="dropdown">
+        <button class="action-btn" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-download"></i>
+          Export
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li (click)="exportToExcel()" class="dropdown-item">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+          </li>
+          <li (click)="downloadPdf()" class="dropdown-item">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="bi bi-boxes"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ assetList.length }}</div>
+        <div class="stat-label">Total Assets</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #2563eb;">
+        <i class="bi bi-check-circle"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ activeAssetsCount }}</div>
+        <div class="stat-label">Active Assets</div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isLoadingService" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading assets data...</p>
+  </div>
+
+  <div *ngIf="showDivUpdatedOut" class="alert" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div class="table-container" *ngIf="!isLoadingService">
+    <div class="table-wrapper" #htmlData>
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>SN</th>
+            <th>Title</th>
+            <th>Depreciation Rate (%)</th>
+            <th>Useful Life (Months)</th>
+            <th>Acquisition Date</th>
+            <th>Serial Number</th>
+            <th>Description</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let asset of filteredAssetList | paginate: { itemsPerPage: itemsPerPage, currentPage: page }; let i = index">
+            <td>
+              <span class="shelf-number">{{ (page - 1) * itemsPerPage + i + 1 }}</span>
+            </td>
+            <td>
+              <div class="item-details">
+                <div class="item-title">{{ asset.title || asset.name || 'N/A' }}</div>
+              </div>
+            </td>
+            <td>
+              <span class="depreciation-text">{{ asset.depreciationRate ? (asset.depreciationRate + '%') : 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="useful-life-text">{{ asset.usefulLifeMonths || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="date-text">{{ asset.acquisitionDate || asset.purchaseDate || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="serial-text">{{ asset.serialNumber || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="description-text">{{ asset.description || 'N/A' }}</span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon edit" title="Edit Asset" (click)="editAsset(asset)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn-icon delete" title="Delete Asset" (click)="deleteAsset(asset)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredAssetList.length === 0">
+            <td colspan="8" class="no-data">
+              <i class="bi bi-inbox"></i>
+              <p>No assets found</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-wrapper">
+      <div class="pagination-info">
+        Showing {{ (page - 1) * itemsPerPage + 1 }} - {{ page * itemsPerPage > filteredAssetList.length ? filteredAssetList.length : page * itemsPerPage }} of {{ filteredAssetList.length }} assets
+      </div>
+      <pagination-controls (pageChange)="onPageChange($event)"></pagination-controls>
+      <div class="pagination-size">
+        <select [ngModel]="itemsPerPage" (ngModelChange)="onItemsPerPageChange($event)" class="page-size-select">
+          <option [ngValue]="10">10 per page</option>
+          <option [ngValue]="15">15 per page</option>
+          <option [ngValue]="25">25 per page</option>
+          <option [ngValue]="50">50 per page</option>
+          <option [ngValue]="100">100 per page</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,294 @@
+<div class="shop-item-modal-overlay" *ngIf="showForm" [class.dark]="isDarkMode" (click)="closeForm()">
+  <div class="shop-item-modal" (click)="$event.stopPropagation()">
+    <div class="shop-item-modal-header">
+      <h3>
+        <i class="bi bi-box-seam"></i>
+        {{ form.id ? 'Edit item' : 'New item' }}
+      </h3>
+      <button type="button" class="modal-close" (click)="closeForm()" aria-label="Close">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <form class="shop-item-modal-body" #itemForm="ngForm" (ngSubmit)="saveItem(itemForm)">
+      <div class="form-grid">
+        <div class="form-field half">
+          <label>Item name</label>
+          <input type="text" name="title" [(ngModel)]="form.title" required placeholder="e.g. Paracetamol 500mg" />
+        </div>
+        <div class="form-field half">
+          <app-unit-selling-model-picker
+            [shopItemId]="form.id"
+            [unitCostPrice]="form.costPrice"
+            [selectedModelId]="form.unitSellingModelId"
+            (selectedModelIdChange)="form.unitSellingModelId = $event">
+          </app-unit-selling-model-picker>
+        </div>
+        <div class="category-row">
+          <div class="form-field">
+            <app-searchable-select
+              label="Parent category"
+              placeholder="Select category"
+              [options]="parentCategoryOptions"
+              [value]="form.parentCategoryId"
+              [isAdding]="isAddingParentCategory"
+              addButtonLabel="Add category"
+              (valueChange)="onParentCategorySelected($event)"
+              (addNew)="addParentCategory($event)">
+            </app-searchable-select>
+          </div>
+          <div class="form-field">
+            <app-searchable-select
+              label="Sub category"
+              placeholder="Select sub category"
+              [options]="subCategoryOptions"
+              [(value)]="form.subCategoryId"
+              [disabled]="!form.parentCategoryId"
+              [optional]="true"
+              optionalLabel="Optional"
+              [isAdding]="isAddingSubCategory"
+              addButtonLabel="Add sub category"
+              (addNew)="addSubCategory($event)">
+            </app-searchable-select>
+          </div>
+        </div>
+        <div class="unit-row">
+          <div class="form-field">
+            <app-searchable-select
+              label="Unit of measure"
+              placeholder="Select unit"
+              [options]="unitOfMeasureOptions"
+              [(value)]="form.unitOfMeasure"
+              [isAdding]="isAddingUnitOfMeasure"
+              addButtonLabel="Add unit"
+              (addNew)="addUnitOfMeasure($event)">
+            </app-searchable-select>
+          </div>
+          <div class="form-field">
+            <label>Last unit value</label>
+            <input type="number" name="lastUnitValue" [(ngModel)]="form.lastUnitValue" min="0" />
+          </div>
+          <div class="form-field">
+            <app-searchable-select
+              label="Last unit of measure"
+              placeholder="Select unit"
+              [options]="lastUnitOfMeasureOptions"
+              [(value)]="form.lastUnitOfMeasure"
+              [optional]="true"
+              optionalLabel="Select"
+              [isAdding]="isAddingLastUnitOfMeasure"
+              addButtonLabel="Add unit"
+              (addNew)="addLastUnitOfMeasure($event)">
+            </app-searchable-select>
+          </div>
+        </div>
+        <div class="stock-row">
+          <div class="form-field">
+            <label>Stock at hand</label>
+            <input type="number" name="stockAtHand" [(ngModel)]="form.stockAtHand" min="0" />
+          </div>
+          <div class="form-field">
+            <label>Cost price</label>
+            <input type="number" name="costPrice" [(ngModel)]="form.costPrice" min="0" />
+          </div>
+          <div class="form-field">
+            <label>Selling price</label>
+            <input type="number" name="sellingPrice" [(ngModel)]="form.sellingPrice" min="0" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-field full description-row">
+        <label>Description</label>
+        <textarea name="description" [(ngModel)]="form.description" rows="2" placeholder="Optional"></textarea>
+      </div>
+
+      <ng-container *ngIf="isDrugCategory">
+        <h4 class="section-title">Drug details</h4>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Dosage</label>
+            <input type="number" name="dosage" [(ngModel)]="form.dosage" />
+          </div>
+          <div class="form-field">
+            <app-searchable-select
+              label="Dose unit"
+              placeholder="Select unit"
+              [options]="dosageUnitSelectOptions"
+              [(value)]="form.dosageUnit"
+              [optional]="true"
+              optionalLabel="Unit"
+              [isAdding]="isAddingDosageUnit"
+              addButtonLabel="Add dose unit"
+              (addNew)="addDosageUnit($event)">
+            </app-searchable-select>
+          </div>
+          <div class="form-field">
+            <label>Frequency</label>
+            <input type="number" name="frequency" [(ngModel)]="form.frequency" />
+          </div>
+          <div class="form-field">
+            <app-searchable-select
+              label="Freq unit"
+              placeholder="Select unit"
+              [options]="frequencyUnitSelectOptions"
+              [(value)]="form.frequencyUnit"
+              [optional]="true"
+              optionalLabel="Unit"
+              [isAdding]="isAddingFrequencyUnit"
+              addButtonLabel="Add freq unit"
+              (addNew)="addFrequencyUnit($event)">
+            </app-searchable-select>
+          </div>
+          <div class="form-field">
+            <label>Duration</label>
+            <input type="number" name="duration" [(ngModel)]="form.duration" />
+          </div>
+          <div class="form-field">
+            <app-searchable-select
+              label="Dur unit"
+              placeholder="Select unit"
+              [options]="durationUnitSelectOptions"
+              [(value)]="form.durationUnit"
+              [optional]="true"
+              optionalLabel="Unit"
+              [isAdding]="isAddingDurationUnit"
+              addButtonLabel="Add duration unit"
+              (addNew)="addDurationUnit($event)">
+            </app-searchable-select>
+          </div>
+          <div class="form-field">
+            <app-searchable-select
+              label="Route"
+              placeholder="Select route"
+              [options]="routeSelectOptions"
+              [(value)]="form.route"
+              [optional]="true"
+              optionalLabel="Route"
+              [isAdding]="isAddingRoute"
+              addButtonLabel="Add route"
+              (addNew)="addRoute($event)">
+            </app-searchable-select>
+          </div>
+        </div>
+        <app-shop-item-dosage-rules-editor [itemId]="form.id"></app-shop-item-dosage-rules-editor>
+      </ng-container>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeForm()" [disabled]="isSaving">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="isSaving">
+          {{ isSaving ? 'Saving…' : form.id ? 'Update item' : 'Save item' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="shop-item-modal-overlay" *ngIf="showDeleteConfirm" [class.dark]="isDarkMode" (click)="cancelDelete()">
+  <div class="shop-item-modal shop-item-modal--sm" (click)="$event.stopPropagation()">
+    <div class="shop-item-modal-header">
+      <h3>Delete item</h3>
+      <button type="button" class="modal-close" (click)="cancelDelete()" aria-label="Close">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="shop-item-modal-body">
+      <p>Delete <strong>{{ deletingItem?.title }}</strong>? This cannot be undone.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="cancelDelete()">Cancel</button>
+        <button type="button" class="btn-danger" (click)="deleteItem()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="shop-item-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-box"></i>
+        Item management
+      </h2>
+      <p class="page-subtitle">
+        Create, update, and retire shop items used when inventory type is set to <strong>item</strong>.
+      </p>
+    </div>
+    <div class="header-right">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Search items…" />
+      </div>
+      <button type="button" class="action-btn" (click)="loadItems()" title="Refresh">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+      <button type="button" class="action-btn action-btn--primary" (click)="openCreate()">
+        <i class="bi bi-plus-lg"></i>
+        New item
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="showFeedback" class="alert" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading items…</p>
+  </div>
+
+  <div class="table-container" *ngIf="!isLoading">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th class="no-sort">SN</th>
+          <th class="no-sort">Item</th>
+          <th class="no-sort">Parent category</th>
+          <th class="no-sort">Category</th>
+          <th class="no-sort">UOM</th>
+          <th class="no-sort">In stock</th>
+          <th class="no-sort">Sell</th>
+          <th class="no-sort">Cost</th>
+          <th class="no-sort">Reorder to</th>
+          <th class="no-sort">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let item of filteredItems | paginate: { itemsPerPage: itemsPerPage, currentPage: page }; let i = index">
+          <td>{{ (page - 1) * itemsPerPage + i + 1 }}</td>
+          <td class="cell-item">{{ item.title || '—' }}</td>
+          <td>{{ parentCategoryLabel(item) }}</td>
+          <td>{{ categoryLabel(item) }}</td>
+          <td>{{ item.unitOfMeasure || '—' }}</td>
+          <td>{{ item.stockAtHand ?? '—' }}</td>
+          <td>{{ item.sellingPrice ?? '—' }}</td>
+          <td>{{ item.costPrice ?? '—' }}</td>
+          <td>{{ item.reOrderTo ?? '—' }}</td>
+          <td class="td-actions">
+            <button type="button" class="btn-row" (click)="openEdit(item)">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button type="button" class="btn-row btn-row--danger" (click)="confirmDelete(item)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredItems.length === 0">
+          <td colspan="10" class="no-data">
+            <i class="bi bi-inbox"></i>
+            <p>No shop items found.</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pagination-wrapper">
+      <pagination-controls (pageChange)="page = $event"></pagination-controls>
+      <select [(ngModel)]="itemsPerPage" class="page-size-select">
+        <option [ngValue]="10">10</option>
+        <option [ngValue]="15">15</option>
+        <option [ngValue]="25">25</option>
+        <option [ngValue]="50">50</option>
+      </select>
+    </div>
+  </div>
+</div>

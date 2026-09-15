@@ -1,0 +1,167 @@
+<div class="store-analytics-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <h1 class="page-title">
+      <i class="bi bi-graph-up-arrow"></i>
+      Store Analytics
+    </h1>
+    <nav class="breadcrumbs">
+      <a [routerLink]="['/']">Home</a>
+      <span class="sep">/</span>
+      <a [routerLink]="['/overview']">Dashboard</a>
+      <span class="sep">/</span>
+      <a [routerLink]="['/overview/store-management']">Store Management</a>
+      <span class="sep">/</span>
+      <span class="current">Store Analytics</span>
+    </nav>
+  </div>
+
+  <div class="analytics-content">
+    <!-- Key Metrics -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-icon">
+          <i class="bi bi-shop"></i>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">12</div>
+          <div class="metric-label">Total Stores</div>
+          <div class="metric-change positive">
+            <i class="bi bi-arrow-up"></i>
+            +2 this month
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon">
+          <i class="bi bi-box-seam"></i>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">1,245</div>
+          <div class="metric-label">Total Items</div>
+          <div class="metric-change positive">
+            <i class="bi bi-arrow-up"></i>
+            +5.2% growth
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon">
+          <i class="bi bi-cash-stack"></i>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">$2.45M</div>
+          <div class="metric-label">Total Inventory Value</div>
+          <div class="metric-change positive">
+            <i class="bi bi-arrow-up"></i>
+            +8.1% increase
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">23</div>
+          <div class="metric-label">Low Stock Items</div>
+          <div class="metric-change warning">
+            <i class="bi bi-arrow-down"></i>
+            Requires attention
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics Sections -->
+    <div class="analytics-sections">
+      <div class="analytics-section">
+        <div class="section-header">
+          <h2>
+            <i class="bi bi-bar-chart"></i>
+            Store Performance
+          </h2>
+          <p class="section-description">Track performance metrics across all stores</p>
+        </div>
+        <div class="chart-placeholder">
+          <i class="bi bi-bar-chart-line"></i>
+          <p>Performance chart will be displayed here</p>
+        </div>
+      </div>
+
+      <div class="analytics-section">
+        <div class="section-header">
+          <h2>
+            <i class="bi bi-pie-chart"></i>
+            Inventory Distribution
+          </h2>
+          <p class="section-description">View inventory distribution by store and category</p>
+        </div>
+        <div class="chart-placeholder">
+          <i class="bi bi-pie-chart-fill"></i>
+          <p>Distribution chart will be displayed here</p>
+        </div>
+      </div>
+
+      <div class="analytics-section">
+        <div class="section-header">
+          <h2>
+            <i class="bi bi-graph-up"></i>
+            Stock Movement Trends
+          </h2>
+          <p class="section-description">Analyze stock movement patterns over time</p>
+        </div>
+        <div class="chart-placeholder">
+          <i class="bi bi-graph-up-arrow"></i>
+          <p>Trend analysis chart will be displayed here</p>
+        </div>
+      </div>
+
+      <div class="analytics-section">
+        <div class="section-header">
+          <h2>
+            <i class="bi bi-speedometer2"></i>
+            Real-time Insights
+          </h2>
+          <p class="section-description">Get instant insights into store operations</p>
+        </div>
+        <div class="insights-grid">
+          <div class="insight-card">
+            <i class="bi bi-arrow-down-circle"></i>
+            <h3>Stock Receiving</h3>
+            <p>Last 7 days: 145 transactions</p>
+          </div>
+          <div class="insight-card">
+            <i class="bi bi-arrow-left-right"></i>
+            <h3>Stock Transfers</h3>
+            <p>Last 7 days: 89 transfers</p>
+          </div>
+          <div class="insight-card">
+            <i class="bi bi-calendar-x"></i>
+            <h3>Expiring Soon</h3>
+            <p>15 items expiring in next 30 days</p>
+          </div>
+          <div class="insight-card">
+            <i class="bi bi-clock-history"></i>
+            <h3>Reorder Alerts</h3>
+            <p>23 items below reorder level</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+

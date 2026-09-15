@@ -1,0 +1,34 @@
+<div class="pd-dsp-adm" [class.pd-dsp-adm--dispensed-only]="mode === 'dispensed-only'" title="PD paid · DSP dispensed · ADM administered">
+  <label *ngIf="showPaid" [attr.for]="inputIdPrefix + '-pd-' + (item?.id || 'x')" title="Paid (on invoice)">
+    <input
+      type="checkbox"
+      [id]="inputIdPrefix + '-pd-' + (item?.id || 'x')"
+      [checked]="paid"
+      [disabled]="disabled"
+      (change)="onPaid($event)" />
+    <span>PD</span>
+  </label>
+  <label
+    [attr.for]="inputIdPrefix + '-dsp-' + (item?.id || 'x')"
+    [title]="dispensedReadonly ? 'Dispensed from pharmacy (set automatically)' : 'Dispensed from pharmacy'">
+    <input
+      type="checkbox"
+      [id]="inputIdPrefix + '-dsp-' + (item?.id || 'x')"
+      [checked]="dispensed"
+      [disabled]="dispensedDisabled"
+      (change)="onDispensed($event)" />
+    <span>DSP</span>
+  </label>
+  <label
+    *ngIf="showAdministered"
+    [attr.for]="inputIdPrefix + '-adm-' + (item?.id || 'x')"
+    [title]="administeredReadonly ? 'Administered on treatment chart (set automatically)' : 'Administered / given to patient'">
+    <input
+      type="checkbox"
+      [id]="inputIdPrefix + '-adm-' + (item?.id || 'x')"
+      [checked]="administered"
+      [disabled]="administeredDisabled"
+      (change)="onAdministered($event)" />
+    <span>ADM</span>
+  </label>
+</div>

@@ -1,0 +1,598 @@
+
+<div style="padding-left: 22px;padding-right: 22px;padding-top: 10px;padding-bottom: 10px;">
+
+  <div style="display: flex;align-items: end;padding-bottom: 10px;display: flex; justify-content: space-between;">
+
+      <div>
+         <button  class="btn btn-outline-primary btn-sm"
+         (click)="isCollapsedNewItem = !isCollapsedNewItem"
+         [attr.aria-expanded]="!isCollapsedNewItem" (click)="clearFormShowSaveNewItem()"
+             style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem; background-color: #467de4;color: white;border-color: #467de4; ">
+             <span>
+                 <i class="bi bi-bag-plus-fill"></i>
+             </span>
+             <span style="margin-left: 3px;">
+                Receive New Stock
+             </span>
+             <span>
+              <i class="bi bi-chevron-down" style="font-size: 14px;font-weight: bold;color: rgb(255, 255, 255);"></i>
+          </span>
+
+         </button>
+
+
+
+
+
+
+
+     </div>
+     
+     <div> 
+         <div style="display: flex;align-items: end;display: flex; margin-right: 5px;">
+
+          <input type="text" class="form-control form-control-sm"
+              style="width: 250px; border-color: rgb(191, 191, 191);margin-right: 5px;" [(ngModel)]="searchQuery"
+              placeholder="Search items..." (input)="onSearchChange()">
+          
+          <select class="form-select btn-sm" style="width: 180px; border-color: rgb(191, 191, 191);margin-right: 5px;"
+              [(ngModel)]="selectedColumn">
+              <option value="all">All Fields</option>
+              <option value="title">Title</option>
+              <option value="brand">Brand</option>
+          </select>
+
+
+         <select class="form-select btn-sm" aria-label="Default select example" style="width: 120px; border-color: rgb(191, 191, 191);margin-right: 5px;" name="pageSize" [(ngModel)]="itemsPerPage">
+             <option selected value="9">9 per page</option>
+             <option value="1">1 per page </option>
+             <option value="4">4 per page </option>
+             <option value="8">8 per page </option>
+             <option value="9">9 per page </option>
+             <option value="10">10 per page </option>
+             <option value="20">20 per page </option>
+             <option value="100">100 per page </option>
+             <option [value]="productList.length">All Items</option>
+
+         </select>
+
+
+         <div class="dropdown" >
+             <button (click)="buttonClickIconChange()" 
+             class="btn btn-sm" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false" style="border-color: rgb(191, 191, 191);">
+                 <i class="bi bi-save" style="margin-right: 5px;"></i>
+                 Save
+          
+                 <i class="{{iconChange}}" style="font-size: 14px;font-weight: bold;color: black;"></i>
+             </button>
+             <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+               <li (click)="exportToExcel()" style="cursor: pointer; "><a class="dropdown-item">Save as Excell</a></li>
+               <li (click)="downloadPdf()" style="cursor: pointer; "><a class="dropdown-item">PDF</a></li>
+               <li><a class="dropdown-item" >Word Document</a></li>
+             </ul>
+           </div>
+
+         <button
+         type="button"
+         class="btn ms-2 btn-sm"
+         (click)="isCollapsed = !isCollapsed"
+         [attr.aria-expanded]="!isCollapsed"
+         (click)="hideShowPassword()"
+         aria-controls="collapseExample" style="border-color: rgb(191, 191, 191);">
+         
+         <i class="{{eyeIcon}}" style="font-size: 13px;margin-right: 3px;"></i>
+         Filter
+         <i class="{{eyeIconDrop}}" style="font-size: 14px;font-weight: bold;color: black;"></i>
+
+
+
+       </button>
+
+
+
+         </div>
+         <div>
+
+         </div>
+
+
+     </div>     
+     
+
+
+
+     </div>
+
+      <div *ngIf="!isCollapsed"   >
+          <div class="border rounded pr-3 pl-3" style="border-color: rgb(137, 134, 134);border-radius: 8px;">
+              
+              <form #usersSearchForm="ngForm" (ngSubmit)="getUserFormDataForAdvancedSearch(usersSearchForm.value)"><br>
+                  <div class="form-row">
+        
+
+                    <div class="col-md-2 mb-3">
+                      <label for="inputGroupSelect01" style="font-size: 14px;">Select Category:</label>
+                      <select class="form-control form-control-sm form-select btn-sm" id="inputGroupSelect01" ngModel name="category" placeholder="Choose Category...">
+                        <option selected>Choose Category...</option>
+                        <option value="Mens Clothing">Mens Clothing</option>
+                        <option value="swaeter">swaeter</option>
+                        <option value="Women Gamets">Women Gamets</option>
+
+                      </select>
+                    </div>
+
+
+              
+                          <div class="col-md-2 mb-3">
+                              <label for="inputGroupSelect01" style="font-size: 14px;">select start date from:</label>
+
+                              <div class="input-group">
+                                  <input
+                                      class="form-control form-control-sm"
+                                      placeholder="Start Date" 
+                                      ngModel name="datefrom" id="inputGroupSelect01"
+                                      ngbDatepicker
+                                      #d="ngbDatepicker"
+                                  />
+                                  <button class="btn btn-outline-success btn-sm" (click)="d.toggle()" type="button"><i class="bi bi-calendar3" style="font-size: 13px"></i></button>
+                              </div>
+        
+                      
+                    </div>
+
+                         <div class="col-md-2 mb-3">
+                              <label for="inputGroupSelect01" style="font-size: 14px;">select end date to:</label>
+
+                              <div class="input-group">
+                                  <input
+                                      class="form-control form-control-sm"
+                                      placeholder="End Date" id="inputGroupSelect01"
+                                      ngModel name="dateto"
+                                      ngbDatepicker
+                                      #t="ngbDatepicker"
+                                  />
+                                  <button class="btn btn-outline-success btn-sm" (click)="t.toggle()" type="button"><i class="bi bi-calendar3" style="font-size: 13px"></i></button>
+                              </div>
+        
+                      
+                    </div>
+
+                    <div class="col-md-2 mb-3">
+                      <label for="inputGroupSelect01" style="font-size: 14px;">Select Title:</label>
+                      <select class="form-select btn-sm" id="inputGroupSelect01" ngModel name="title">
+                        <option selected disabled>Choose Title...</option>
+                        <option value="Mens Clothing">Mens Clothing</option>
+                        <option value="Men Cotton Jacket">Men Cotton Jacket</option>
+                        <option value="Women Gamets">Women Gamets</option>
+                      </select>
+                    </div>
+
+                    <div class="col-md-2 mb-3">
+                      <label for="inputGroupSelect01" style="font-size: 14px;">Select Title:</label>
+                      <select class="form-select btn-sm" id="inputGroupSelect01" ngModel name="title">
+                        <option selected disabled>Choose Title...</option>
+                        <option value="Mens Clothing">Mens Clothing</option>
+                        <option value="Men Cotton Jacket">Men Cotton Jacket</option>
+                        <option value="Women Gamets">Women Gamets</option>
+                      </select>
+                    </div>
+                    
+              <div class="col-md-2 mb-3">
+
+                  <!--<button type="submit" class="btn btn-success btn-sm">
+                          Load data
+                  </button>-->
+                  <label for="inputGroupSelect01" style="font-size: 14px;"></label>
+
+                  <div style="padding-top: 6px;">
+
+                  <button class="btn btn-outline-success btn-sm" style="margin-right: 6px;" type="submit">
+                      Load data
+                  </button>
+
+                  <button (click)="toggleCollapse()"
+                  class="btn btn-outline-secondary btn-sm" type="submit">
+                      Clear Fields
+                  </button>
+              </div>
+
+                  </div>
+              </div>
+             
+          
+                </form><br>
+              
+              </div><br>
+        </div>
+
+
+
+
+        <div id="legacy-stock-receive-form" *ngIf="!isCollapsedNewItem">
+          <div class="border rounded pr-3 pl-3 mb-2" style="border-color: rgb(137, 134, 134);border-radius: 8px;">
+  
+              <form #usersFormNewItem="ngForm" (ngSubmit)="getUserFormDataNewItem(usersFormNewItem.value)">
+  
+                  <div> 
+
+                  <div class="form-row mt-3">
+
+                  <div class="form-group col-md-6">
+                       <label for="exampleFormControlInput1" class="form-label">Item Received | InStock: {{availableQuantity}} {{itemUnitOfMeasure | uppercase}}S | Unit Cost: {{itemUnitCostPrice}} | Unit sell: {{itemUnitSellingPrice}}  </label>
+                      <div class="dropdown" [ngClass]="{ 'disabled-dropdown': isUpdatingTreatment }">
+                        <!-- Dropdown Button -->
+                        <button
+                          class="btn btn-lg btn-block btn-sm br-12 dropdown-toggle"
+                          type="button" name="itemId"
+                          id="dropdownMenuButton"
+                          [(ngModel)]="currentItemId"
+                          (click)="isUpdatingTreatment ? $event.stopPropagation() : loadDrugList()"
+
+
+                          (click)="onDropdownClick($event)"
+
+                          data-bs-toggle="dropdown"
+                          aria-expanded="false"
+                          style="border: 1px solid rgb(204, 204, 204); text-align: left; width: 450px;"
+                        >
+                          {{ currentItem || 'Treatment' }} 
+                        </button>
+                  
+                        <!-- Dropdown List (Hidden When Updating) -->
+                        <ul
+                          class="dropdown-menu custom-scrollbar pl-2 pr-2"
+                          *ngIf="!isUpdatingTreatment"
+                          aria-labelledby="dropdownMenuButton"
+                          style="max-height: 400px; overflow-y: auto; width: 450px;"
+                        >
+                          <!-- Search Box -->
+                          <li class="mt-2 mb-2 justify-content-left align-items-left">
+                              <input #serviceSearchInput type="text" class="form-control dropdown-search ml-0" placeholder="Search"
+                                  [(ngModel)]="searchText" (input)="filteredItemList()" style="height: 30px; font-size: 14px; width: 100%;" />
+                          </li>
+                          
+
+                  
+                          <!-- List of Procedures -->
+                          <ng-container *ngIf="filteredItemList().length; else noData">
+                            <div class="dropdown-items pb-2" *ngFor="let item of filteredItemList()">
+                              <li>
+                                <button
+                                  type="button"
+                                  (click)="changeCurrentItem(item)"
+                                  class="dropdown-item mt-1 d-flex align-items-center"
+                                  style="border: 1px solid rgb(233, 233, 233); border-radius: 5px; text-align: center; padding-right: 20px; white-space: normal; word-wrap: break-word; font-size: 12px;"
+                                >
+                                  {{item.title}}
+                                </button>
+                              </li>
+                            </div>
+                          </ng-container>
+                  
+                          <!-- No Data Found Message -->
+                          <ng-template #noData>
+                            <li class="text-muted text-center p-2">Loading items...</li>
+                            
+
+                          </ng-template>
+                        </ul>
+                      </div>
+                    </div>
+
+
+
+
+
+
+
+
+
+
+
+                          <div class="form-group col-md-1">
+                              <label for="quantity" class="form-label">Quantity</label>
+                              <input type="number" [(ngModel)]="currentStockReceived.quantityReceived" name="quantityReceived"
+                                     class="form-control form-control-sm" id="quantityReceived" placeholder="Qty" required (input)="calculateUnitCost()">
+                          </div>
+                          
+<div class="form-group col-md-1">
+<label for="totalCostPrice" class="form-label">Total Cost</label>
+<input type="number"
+       [(ngModel)]="currentStockReceived.totalCostPrice"
+       name="totalCostPrice"
+       class="form-control form-control-sm"
+       id="totalCostPrice"
+       placeholder="Cost"
+       required
+       (input)="calculateUnitCost()">
+</div>
+
+<div class="col-md-1">
+<label for="unitCost" class="form-label">Unit cost</label>
+<input type="number"
+       [(ngModel)]="unitCost"
+       class="form-control form-control-sm"
+       id="unitCost"
+       placeholder="00"
+       required
+       (input)="calculateTotalCostFromUnitCost()">
+</div>
+
+                          
+
+
+                          <div class="form-group col-md-1" >
+                              <label for="unitSellingPrice" class="form-label">Unit sell</label>
+                              <input type="number" [(ngModel)]="currentStockReceived.unitSellingPrice" name="unitSellingPrice"
+                                     class="form-control form-control-sm" id="unitSellingPrice" placeholder="Unit Sell" required>
+                          </div>
+
+  
+                          <div class="form-group col-md-2">
+                              <label for="notes" class="form-label">Stock Receive Notes</label>
+                              <input type="text" [(ngModel)]="currentStockReceived.notes" name="notes" 
+                                     class="form-control form-control-sm" id="notes" placeholder="Stock Receive Notes" required>
+                          </div>
+
+                          <div class="form-group col-md-2">
+                              <label for="brand" class="form-label">Item Brand</label>
+                              <input type="text" [(ngModel)]="currentStockReceived.brand" name="brand" 
+                                     class="form-control form-control-sm" id="brand" placeholder="Brand" required>
+                          </div>
+
+                          <div class="form-group col-md-2">
+                              <label for="packaging" class="form-label">Item Package</label>
+                              <input type="text" [(ngModel)]="currentStockReceived.packaging" name="packaging" 
+                                     class="form-control form-control-sm" id="packaging" placeholder="Package" required>
+                          </div>
+                        
+                        
+                            <div class="form-group col-md-2">
+                              <label for="store" class="form-label">Store</label>
+                              <select [(ngModel)]="itemStore" name="store" class="form-control form-control-sm" id="store">
+                                <option value="store" disabled >Store</option>
+                                <option value="main">Main</option>
+                                <option value="pharmacy">Pharmacy</option>
+
+                              </select>
+                            </div>
+                            <div class="form-group col-md-2">
+                              <label for="receiveDate" class="form-label">Receive Date</label>
+                              <div class="input-group">
+                                <input class="form-control form-control-sm" [(ngModel)]="currentStockReceived.receiveDate" name="receiveDate"
+                                       id="receiveDate" placeholder="Receive Date" ngbDatepicker #receiveDatePicker="ngbDatepicker">
+                                <button class="btn btn-primary btn-sm" (click)="receiveDatePicker.toggle()" type="button">
+                                  <i class="bi bi-calendar3" style="font-size: 13px"></i>
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div class="form-group col-md-2">
+                              <label for="expiryDate" class="form-label">Expiry Date</label>
+                              <div class="input-group">
+                                <input class="form-control form-control-sm" [(ngModel)]="currentStockReceived.expiryDate" name="expiryDate"
+                                       id="expiryDate" placeholder="Expiry Date" ngbDatepicker #expiryDatePicker="ngbDatepicker">
+                                <button class="btn btn-primary btn-sm" (click)="expiryDatePicker.toggle()" type="button">
+                                  <i class="bi bi-calendar3" style="font-size: 13px"></i>
+                                </button>
+                              </div>
+                            </div>
+                            
+                        
+              
+                        
+            
+                        
+
+
+            
+                        
+          
+  
+  
+  
+                          <div class="form-group col-md-2">
+  
+              
+                      
+                                  <label for="inputGroupSelect01" style="font-size: 14px;"></label>
+          
+                                  <div style="padding-top: 6px;">
+          
+                                      <button class="btn btn-primary btn-sm" style="margin-right: 6px;" type="submit">
+                                          {{saveButtonStatus}}
+                                      </button>
+          
+                                      <button (click)="toggleCollapseNewItem()" class="btn btn-outline-primary btn-sm" type="button">
+                                          Clear Fields
+                                      </button>
+                                 
+          
+                              </div>
+                          </div>
+  
+                      </div></div>
+  
+  
+  
+                      <div *ngIf="showDivUpdatedLoaderNewItem" style="align-items: center;padding-left: 600px;">
+
+                          <button class="btn btn-primary btn-sm" style="border-radius: 24px;margin-top: 10px;margin-bottom:20px;height: 50px;width: 50px;">
+                                          
+                              <div *ngIf="isLoadingNewItem" class="simple-loader" style="height: 30px;width: 30px;"></div>
+                          
+                          </button>
+                  
+                      </div>
+  
+       
+
+          <div *ngIf="showDivAddToDataBaseNewItem"
+          [ngStyle]="{'background-color': responseColor, 'border-radius': '18px', 'margin-bottom': '10px', 'text-align': 'center', 'padding-bottom': '1px', 'padding-top': '10px'}">
+          <h5 style="color: white; font-size: 18px;">{{ responseMessage }}</h5>
+         </div>
+  
+
+  
+              </form>
+              
+  
+          </div>
+
+
+
+
+
+
+      </div>
+
+      <div *ngIf="showDivAddToDataBaseNewItemOut"
+      [ngStyle]="{'background-color': responseColor, 'border-radius': '18px', 'margin-bottom': '10px', 'text-align': 'center', 'padding-bottom': '1px', 'padding-top': '10px'}">
+      <h5 style="color: white; font-size: 18px;">{{ responseMessage }}</h5>
+     </div>
+  
+  <ng-container *ngIf="productList && productList.length != 0; else noData">
+
+        <div style="max-height: 400px;" id="htmlData">
+
+
+   
+          <table class="table table-responsive table-bordered " style="border-radius: 10px;max-height: 470px; background-color: #e4ebf8;table-layout: fixed;width: 100%;">
+              <thead class="table-success" style="background-color: #e4ebf8;">
+                  <tr style="background-color: #e4ebf8;">
+                      <!--<th style="padding: 5px;width: 16%; background-color: #e4ebf8;border-color:#e4ebf8;border-right-color: #c6c7c9;">ID</th>
+                      <th style="padding: 5px;width: 16%; background-color: #e4ebf8;border-color:#e4ebf8;border-right-color: #c6c7c9;">Number</th>-->
+                      <th style="font-size: small;padding: 5px;width: 30%; background-color: #e4ebf8;border-color:#e4ebf8;border-right-color: #c6c7c9;">TITLE | BRAND | GENERIC NAME</th>
+                      <th style="font-size: small;padding: 5px;width: 5%; background-color: #e4ebf8;border-color:#e4ebf8;border-right-color: #c6c7c9;">BRAND</th>
+
+                      <th style="font-size: small;padding: 5px;width: 7%; background-color: #e4ebf8;border-color:#e4ebf8;border-right-color: #c6c7c9;border-left-color: #c6c7c9;">QTY RECVD</th>
+                      <th style="font-size: small;padding: 5px;width: 6%; background-color: #e4ebf8;border-color:#e4ebf8;border-right-color: #c6c7c9;">NEW QTY</th>
+                      <th style="font-size: small;padding: 5px;width: 6%; background-color: #e4ebf8;border-color:#e4ebf8;border-right-color: #c6c7c9;">QTY AVAIL</th>
+                      
+                      <th style="font-size: small;padding: 5px;width: 8%; background-color: #e4ebf8;border-color:#e4ebf8;border-right-color: #c6c7c9;border-left-color: #c6c7c9;">TOTAL COST</th>
+
+
+                      <th style="font-size: small;padding: 5px;width: 6%; background-color: #e4ebf8;border-color:#e4ebf8;border-right-color: #c6c7c9;">UNIT COST</th>
+                      <th style="font-size: small;padding: 5px;width: 6%; background-color: #e4ebf8;border-color:#e4ebf8;border-right-color: #c6c7c9;border-left-color: #c6c7c9;">UNIT SELL</th>
+
+                      <th style="font-size: small;padding: 5px;width: 8%; background-color: #e4ebf8;border-color:#e4ebf8;border-right-color: #c6c7c9;border-left-color: #c6c7c9;">EXPIRY DATE</th>
+                      <th style="font-size: small;padding: 5px;width: 8%; background-color: #e4ebf8;border-color:#e4ebf8;border-right-color: #c6c7c9;border-left-color: #c6c7c9;">DATE RECVD</th>
+
+
+                      
+          
+                      <!--<th>creationDate</th>-->
+                      <th style="font-size: small;padding: 5px;width: 6%; background-color: #e4ebf8;border-color:#e4ebf8;">ACTION</th>
+                  </tr>
+              </thead>
+              <tbody>
+
+                  <tr *ngFor="let item of filteredProductList3 | paginate: { itemsPerPage: itemsPerPage, currentPage: page }">
+                        
+                      <td style="font-size: smaller;padding: 6px;">{{item.title | uppercase}}</td>
+                      <td style="font-size: smallv">{{item.brand | uppercase}}</td>
+
+                      <td style="font-size: smaller;padding: 6px;">{{item.quantityReceived}}</td>
+                      <td style="font-size: smaller;padding: 6px;">{{item.newQuantity}}</td>
+                      <td style="font-size: smaller;padding: 6px;">{{item.quantityAvailable}}</td>
+                      
+                      <td style="font-size: smaller;padding: 6px;">UGX:{{item.totalCostPrice}}</td>
+                      
+                      <td style="font-size: smaller;padding: 6px;">UGX:{{item.unitCostPrice}}</td>
+                      <td style="font-size: smaller;padding: 6px;">UGX:{{item.unitSellingPrice}}</td>
+
+                      <td style="font-size: smaller;padding: 6px;">{{item.expiryDate}}</td>
+
+                      <td style="font-size: smaller;padding: 6px;">{{item.receiveDate}}</td>
+                 
+                                              
+                      <td style="padding: 6px; position: relative;">
+
+
+                          <div class="btn-group">
+                              <button type="button" class="btn btn-xs btn-outline-primary dropdown-toggle"
+                              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" 
+                              style="height: 22px; font-size: 10px; padding: 2px 6px;">
+                          <i class="bi bi-save" style="margin-right: 3px; font-size: 9px;"></i>
+                          Action
+                      </button>
+                      
+
+                              
+                      <div class="dropdown-menu" style="position: absolute; z-index: 1050; top: -20px; left: 0; border-radius: 16px; padding: 0px 0;">
+                  
+
+
+                          <a class="dropdown-item" (click)="editItem(item)" style="cursor: pointer; font-size: 13px; padding-left: 10px;border-bottom: 1px solid rgb(219, 219, 219);">
+                            <i class="bi bi-x-square" style="margin-right: 5px; font-size: 10px;"></i>Edit Stock
+                          </a>
+
+
+                   
+                          <a class="dropdown-item" (click)="deleteStockReceived(item.id)" style="cursor: pointer; font-size: 13px; padding-left: 10px">
+                            <i class="bi bi-x-square" style="margin-right: 5px; font-size: 10px;"></i>Delete Stock
+                          </a>
+
+                      </div>
+
+                      
+
+
+                          </div>
+                      </td>
+
+
+                  </tr>
+
+              </tbody>
+
+          </table>
+          <div class="has-text-centered">
+              <pagination-controls (pageChange)="page = $event"></pagination-controls>
+ 
+          </div>
+          <br>
+          <br>
+          <br>
+
+      </div>
+
+
+  </ng-container>
+
+
+
+  <ng-template #noData>
+      <div class="container">
+          <div class="card" style="align-items: center;">
+          
+
+              <img src="assets/images/doc6.png" alt="login form" class="img-fluid" width="250" height="250"
+              style="border-radius: 1rem 0 0 1rem;" />
+
+
+              <button class="btn btn-primary btn-sm" style="border-radius: 24px;margin-top: 20px;height: 50px;width: 50px;">
+                      
+                  <div *ngIf="isLoadingStockReceive" class="simple-loader" style="height: 30px;width: 30px;"></div>
+              
+              </button>
+
+
+              <h4 class="card-title" style="margin-top: 10px;">Loading Stock Receive List...</h4>
+  
+          </div>
+
+
+
+          <div class="center">
+
+
+              <div class="container">
+
+
+              </div>
+          </div>
+      </div>
+  </ng-template>
+
+</div>

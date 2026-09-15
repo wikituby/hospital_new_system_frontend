@@ -1,0 +1,294 @@
+<div class="stock-adj-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-sliders"></i>
+        Stock adjustments
+      </h2>
+      <p class="page-subtitle">
+        Record quantity corrections (damage, recount, etc.). Positive <strong>quantity change</strong> adds stock;
+        negative removes. Types are managed on the <strong>Adjustment types</strong> tab.
+      </p>
+    </div>
+    <div class="header-right">
+      <button type="button" class="action-btn" (click)="refreshAll()" title="Refresh">
+        <i class="bi bi-arrow-clockwise"></i>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <nav class="adj-tabs" aria-label="Stock adjustments sections">
+    <button
+      type="button"
+      class="adj-tab"
+      [class.active]="activeTab === 'adjustments'"
+      (click)="setTab('adjustments')"
+    >
+      <i class="bi bi-list-ul"></i>
+      Record &amp; history
+    </button>
+    <button
+      type="button"
+      class="adj-tab"
+      [class.active]="activeTab === 'types'"
+      (click)="setTab('types')"
+    >
+      <i class="bi bi-tags"></i>
+      Adjustment types
+    </button>
+  </nav>
+
+  <!-- Tab: record + list -->
+  <ng-container *ngIf="activeTab === 'adjustments'">
+    <div class="card form-card">
+      <h3 class="card-title"><i class="bi bi-plus-circle"></i> New adjustment</h3>
+      <form (ngSubmit)="submitAdjustment()" #adjForm="ngForm" class="adj-form">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>{{ inventoryIsStockBatch ? 'Stock batch' : 'Item' }} <span class="req">*</span></label>
+            <button type="button" class="picker-trigger" (click)="openBatchPicker()">
+              <span [class.placeholder]="!selectedBatchSummary">{{ selectedBatchSummary || pickerPlaceholder }}</span>
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+          <div class="form-field">
+            <label for="adjTypeId">Adjustment type <span class="req">*</span></label>
+            <select
+              id="adjTypeId"
+              name="adjustmentTypeId"
+              [(ngModel)]="form.adjustmentTypeId"
+              class="form-control"
+              required
+            >
+              <option [ngValue]="null" disabled>Select type</option>
+              <option *ngFor="let t of adjustmentTypesActive" [ngValue]="t.id">
+                {{ t.name }} ({{ t.code }})
+              </option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="qtyChg">Quantity change <span class="req">*</span></label>
+            <input
+              id="qtyChg"
+              name="quantityChanged"
+              type="number"
+              step="any"
+              [(ngModel)]="form.quantityChanged"
+              class="form-control"
+              placeholder="e.g. -5 or +2"
+              required
+            />
+            <span class="hint">Signed: negative removes, positive adds.</span>
+          </div>
+          <div class="form-field">
+            <label for="adjReason">Reason</label>
+            <input
+              id="adjReason"
+              name="reason"
+              type="text"
+              [(ngModel)]="form.reason"
+              class="form-control"
+              placeholder="Optional note"
+            />
+          </div>
+          <div class="form-field">
+            <label for="adjDate">Adjustment date/time</label>
+            <input
+              id="adjDate"
+              name="date"
+              type="datetime-local"
+              [(ngModel)]="form.date"
+              class="form-control"
+            />
+            <span class="hint">Leave empty to use current server time.</span>
+          </div>
+          <div class="form-field">
+            <label for="doneBy">Done by</label>
+            <input
+              id="doneBy"
+              name="doneBy"
+              type="text"
+              [(ngModel)]="form.doneBy"
+              class="form-control"
+              placeholder="User or staff name"
+            />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="submitting || adjForm.invalid">
+            <span *ngIf="!submitting"><i class="bi bi-check2"></i> Save adjustment</span>
+            <span *ngIf="submitting">Saving…</span>
+          </button>
+        </div>
+        <div *ngIf="formMessage" class="banner" [class.error]="formError">
+          <i class="bi" [ngClass]="formError ? 'bi-exclamation-circle' : 'bi-check-circle'"></i>
+          {{ formMessage }}
+        </div>
+      </form>
+    </div>
+
+    <div class="card list-card">
+      <div class="list-toolbar">
+        <h3 class="card-title"><i class="bi bi-clock-history"></i> History</h3>
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input
+            type="text"
+            [(ngModel)]="adjustmentSearch"
+            [ngModelOptions]="{ standalone: true }"
+            [placeholder]="inventoryIsStockBatch ? 'Search batch, type, reason…' : 'Search item, type, reason…'"
+          />
+        </div>
+      </div>
+
+      <div *ngIf="loadingAdjustments" class="loading">
+        <div class="loader"></div>
+        <p>Loading adjustments…</p>
+      </div>
+
+      <div class="table-wrap" *ngIf="!loadingAdjustments">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>{{ inventoryIsStockBatch ? 'Batch' : 'Item' }}</th>
+              <th>Type</th>
+              <th>Before</th>
+              <th>Change</th>
+              <th>After</th>
+              <th>Reason</th>
+              <th>Date</th>
+              <th>By</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of filteredAdjustments | paginate: { itemsPerPage: itemsPerPage, currentPage: page }">
+              <td>{{ row.id ?? 'N/A' }}</td>
+              <td>{{ adjustmentTargetLabel(row) }}</td>
+              <td>
+                <span class="type-pill">{{ row.adjustmentTypeName || row.adjustmentTypeCode || '—' }}</span>
+              </td>
+              <td>{{ formatQty(row.quantityBefore) }}</td>
+              <td [class.neg]="(row.quantityChanged ?? 0) < 0" [class.pos]="(row.quantityChanged ?? 0) > 0">
+                {{ formatQty(row.quantityChanged) }}
+              </td>
+              <td>{{ formatQty(row.quantityAfter) }}</td>
+              <td class="cell-clip" [title]="row.reason">{{ row.reason || '—' }}</td>
+              <td class="cell-nowrap">{{ formatAdjustmentDate(row.date) }}</td>
+              <td>{{ row.doneBy || '—' }}</td>
+            </tr>
+            <tr *ngIf="filteredAdjustments.length === 0">
+              <td colspan="9" class="no-data">No adjustments found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination-bar" *ngIf="!loadingAdjustments && filteredAdjustments.length > 0">
+        <pagination-controls (pageChange)="page = $event"></pagination-controls>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Tab: adjustment types -->
+  <ng-container *ngIf="activeTab === 'types'">
+    <div class="card form-card">
+      <h3 class="card-title"><i class="bi bi-plus-lg"></i> Add adjustment type</h3>
+      <div class="type-add-row">
+        <input
+          type="text"
+          [(ngModel)]="newType.name"
+          [ngModelOptions]="{ standalone: true }"
+          class="form-control"
+          placeholder="Display name (e.g. Damaged)"
+        />
+        <input
+          type="text"
+          [(ngModel)]="newType.code"
+          [ngModelOptions]="{ standalone: true }"
+          class="form-control"
+          placeholder="Code (e.g. DAMAGED)"
+        />
+        <label class="chk">
+          <input type="checkbox" [(ngModel)]="newType.active" [ngModelOptions]="{ standalone: true }" />
+          Active
+        </label>
+        <button type="button" class="btn-primary" (click)="addNewType()" [disabled]="typeSaving">
+          {{ typeSaving ? 'Saving…' : 'Add type' }}
+        </button>
+      </div>
+      <div *ngIf="typeMessage" class="banner" [class.error]="typeError">
+        <i class="bi" [ngClass]="typeError ? 'bi-exclamation-circle' : 'bi-check-circle'"></i>
+        {{ typeMessage }}
+      </div>
+    </div>
+
+    <div class="card list-card">
+      <h3 class="card-title"><i class="bi bi-tags"></i> All types</h3>
+      <div *ngIf="loadingTypes" class="loading">
+        <div class="loader"></div>
+        <p>Loading types…</p>
+      </div>
+      <div class="table-wrap" *ngIf="!loadingTypes">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Code</th>
+              <th>Active</th>
+              <th class="th-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of typesList">
+              <td>{{ t.id }}</td>
+              <td>{{ t.name }}</td>
+              <td><code>{{ t.code }}</code></td>
+              <td>
+                <span class="badge" [class.on]="t.active" [class.off]="!t.active">
+                  {{ t.active ? 'Yes' : 'No' }}
+                </span>
+              </td>
+              <td class="td-actions">
+                <button type="button" class="btn-sm" (click)="toggleTypeActive(t)">
+                  {{ t.active ? 'Deactivate' : 'Activate' }}
+                </button>
+                <button type="button" class="btn-sm danger" (click)="deleteType(t)">Delete</button>
+              </td>
+            </tr>
+            <tr *ngIf="typesList.length === 0">
+              <td colspan="5" class="no-data">No adjustment types. Add one above.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+</div>
+
+<!-- Batch picker dialog -->
+<div class="picker-overlay" *ngIf="showBatchPicker" (click)="onBatchPickerBackdrop($event)">
+  <div class="picker-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <div class="picker-head">
+      <h3>{{ pickerTitle }}</h3>
+      <button type="button" class="icon-close" (click)="closeBatchPicker()" aria-label="Close">×</button>
+    </div>
+    <div class="picker-search">
+      <i class="bi bi-search"></i>
+      <input type="text" [(ngModel)]="batchPickerSearch" [ngModelOptions]="{ standalone: true }" placeholder="Search…" />
+    </div>
+    <div class="picker-list">
+      <button
+        type="button"
+        class="picker-row"
+        *ngFor="let batch of filteredStockBatchesForPicker; trackBy: trackBatchById"
+        (click)="selectStockBatch(batch)"
+      >
+        {{ pickerRowLabel(batch) }}
+      </button>
+      <p class="picker-empty" *ngIf="filteredStockBatchesForPicker.length === 0">{{ pickerEmptyLabel }}</p>
+    </div>
+  </div>
+</div>

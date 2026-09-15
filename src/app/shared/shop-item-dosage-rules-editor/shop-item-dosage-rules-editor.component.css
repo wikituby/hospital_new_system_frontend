@@ -1,0 +1,98 @@
+.shop-dose-editor {
+  width: 100%;
+  margin: 8px 0 16px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+.shop-dose-editor__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.shop-dose-editor__head p,
+.shop-dose-editor__hint {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.shop-dose-editor__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.shop-dose-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  margin-bottom: 8px;
+}
+
+.shop-dose-card__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
+.shop-dose-card__toggle {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: 0;
+  font-weight: 600;
+}
+
+.shop-dose-card__toggle small {
+  display: block;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.shop-dose-card__active {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+
+.shop-dose-card__body {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px 10px 12px;
+  border-top: 1px solid #eef1f4;
+}
+
+.shop-dose-card__body label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  margin: 0;
+}
+
+.shop-dose-card__body input,
+.shop-dose-card__body select,
+.shop-dose-card__body textarea {
+  font-size: 13px;
+  padding: 4px 6px;
+}
+
+.shop-dose-card__wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 860px) {
+  .shop-dose-card__body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

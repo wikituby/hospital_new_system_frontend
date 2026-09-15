@@ -1,0 +1,180 @@
+<div class="hmis-tracer-page" [class.dark]="isDarkMode">
+
+  <header class="page-header">
+
+    <div>
+
+      <h1 class="page-title"><i class="bi bi-clipboard2-pulse"></i> HMIS tracer medicine mapping</h1>
+
+      <p class="page-subtitle">
+
+        Link each official HMIS tracer line to your pharmacy stock item (new inventory) or shop item (legacy).
+
+        Open each dropdown and use the search box to find the drug — same catalog as Old Inventory → Item Management.
+
+      </p>
+
+    </div>
+
+  </header>
+
+
+
+  <div *ngIf="message" class="feedback-banner" [style.background-color]="messageColor">{{ message }}</div>
+
+
+
+  <section class="preview-range">
+
+    <label>
+
+      Preview period (treatments prescribed)
+
+      <div class="range-row">
+
+        <input type="date" [(ngModel)]="previewFrom" />
+
+        <span>to</span>
+
+        <input type="date" [(ngModel)]="previewTo" />
+
+        <button type="button" class="btn-secondary btn-sm" (click)="applyPreviewRange()">Refresh counts</button>
+
+      </div>
+
+    </label>
+
+  </section>
+
+
+
+  <div *ngIf="loading || catalogLoading" class="loading-state">
+
+    {{ catalogLoading ? 'Loading inventory catalogs…' : 'Loading tracer mappings…' }}
+
+  </div>
+
+
+
+  <div class="table-wrap" *ngIf="!loading && !catalogLoading">
+
+    <table class="mapping-table">
+
+      <thead>
+
+        <tr>
+
+          <th>HMIS code</th>
+
+          <th>Tracer (official)</th>
+
+          <th>Pharmacy stock item (new)</th>
+
+          <th>Shop item (legacy)</th>
+
+          <th>Stock balance</th>
+
+          <th>Prescribed in period</th>
+
+          <th></th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        <tr *ngFor="let row of tracers">
+
+          <td><strong>{{ row.hmisTracerCode }}</strong></td>
+
+          <td>{{ row.tracerName }}</td>
+
+          <td class="picker-cell">
+
+            <app-searchable-select
+
+              placeholder="Search pharmacy stock…"
+
+              searchPlaceholder="Type drug name or ID…"
+
+              emptyLabel="No stock items match"
+
+              [options]="stockItemOptions"
+
+              [value]="row.stockItemId"
+
+              [allowAdd]="false"
+
+              [optional]="true"
+
+              optionalLabel="— Not mapped —"
+
+              (valueChange)="onStockSelected(row, $event)">
+
+            </app-searchable-select>
+
+            <small *ngIf="row.stockItemName" class="mapped-hint">{{ row.stockItemName }}</small>
+
+          </td>
+
+          <td class="picker-cell">
+
+            <app-searchable-select
+
+              placeholder="Search shop items…"
+
+              searchPlaceholder="Type drug name or ID…"
+
+              emptyLabel="No shop items match"
+
+              [options]="shopItemOptions"
+
+              [value]="row.shopItemId"
+
+              [allowAdd]="false"
+
+              [optional]="true"
+
+              optionalLabel="— Not mapped —"
+
+              (valueChange)="onShopSelected(row, $event)">
+
+            </app-searchable-select>
+
+            <small *ngIf="row.shopItemName" class="mapped-hint">{{ row.shopItemName }}</small>
+
+          </td>
+
+          <td>{{ row.stockBalance | number:'1.0-2' }}</td>
+
+          <td>{{ row.dispensedInPeriod }}</td>
+
+          <td>
+
+            <button
+
+              type="button"
+
+              class="btn-primary btn-sm"
+
+              (click)="saveRow(row)"
+
+              [disabled]="savingId === row.id">
+
+              {{ savingId === row.id ? 'Saving…' : 'Save' }}
+
+            </button>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>
+

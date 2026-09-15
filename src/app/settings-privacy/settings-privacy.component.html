@@ -1,0 +1,262 @@
+<div class="settings-privacy-page standalone-modern" [class.dark]="isDarkMode" style="padding: 20px;">
+  <!-- Header Section -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2 class="sm-title" style="margin: 0;">
+      <i class="bi bi-gear" style="margin-right: 8px;"></i>
+      Settings & Privacy
+    </h2>
+  </div>
+
+  <!-- Response Message -->
+  <div *ngIf="responseMessage" 
+       class="alert alert-dismissible fade show" 
+       [ngStyle]="{'background-color': responseColor, 'color': 'white', 'margin-bottom': '20px'}"
+       role="alert">
+    {{ responseMessage }}
+    <button type="button" class="btn-close btn-close-white" (click)="responseMessage = ''" aria-label="Close"></button>
+  </div>
+
+  <div class="row">
+    <!-- Profile Settings -->
+    <div class="col-md-6 mb-4">
+      <div class="card">
+        <div class="card-header" style="background-color: #467de4; color: white;">
+          <h5 class="mb-0">
+            <i class="bi bi-person-circle" style="margin-right: 8px;"></i>
+            Profile Settings
+          </h5>
+        </div>
+        <div class="card-body">
+          <form #profileForm="ngForm" (ngSubmit)="updateProfile(profileForm)">
+            <div class="mb-3">
+              <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="username" 
+                name="username"
+                [(ngModel)]="profileData.username"
+                required>
+            </div>
+
+            <div class="mb-3">
+              <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+              <input 
+                type="email" 
+                class="form-control" 
+                id="email" 
+                name="email"
+                [(ngModel)]="profileData.email"
+                required>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="firstName" class="form-label">First Name</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="firstName" 
+                  name="firstName"
+                  [(ngModel)]="profileData.firstName">
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label for="lastName" class="form-label">Last Name</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="lastName" 
+                  name="lastName"
+                  [(ngModel)]="profileData.lastName">
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="phone" class="form-label">Phone</label>
+                <input 
+                  type="tel" 
+                  class="form-control" 
+                  id="phone" 
+                  name="phone"
+                  [(ngModel)]="profileData.phone"
+                  placeholder="Starts with 256"
+                  maxlength="12"
+                  pattern="256[0-9]{9}"
+                  inputmode="numeric">
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label for="title" class="form-label">Title</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="title" 
+                  name="title"
+                  [(ngModel)]="profileData.title"
+                  placeholder="e.g., Dr., Mr., Mrs.">
+              </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div *ngIf="showDivUpdatedLoader" class="text-center mb-3">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Updating...</span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" [disabled]="showDivUpdatedLoader || !profileForm.valid">
+              <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
+              Update Profile
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Password Change -->
+    <div class="col-md-6 mb-4">
+      <div class="card">
+        <div class="card-header" style="background-color: #467de4; color: white;">
+          <h5 class="mb-0">
+            <i class="bi bi-shield-lock" style="margin-right: 8px;"></i>
+            Change Password
+          </h5>
+        </div>
+        <div class="card-body">
+          <form #passwordForm="ngForm" (ngSubmit)="changePassword(passwordForm)">
+            <div class="mb-3">
+              <label for="currentPassword" class="form-label">Current Password <span class="text-danger">*</span></label>
+              <input 
+                type="password" 
+                class="form-control" 
+                id="currentPassword" 
+                name="currentPassword"
+                [(ngModel)]="passwordData.currentPassword"
+                required>
+            </div>
+
+            <div class="mb-3">
+              <label for="newPassword" class="form-label">New Password <span class="text-danger">*</span></label>
+              <input 
+                type="password" 
+                class="form-control" 
+                id="newPassword" 
+                name="newPassword"
+                [(ngModel)]="passwordData.newPassword"
+                required
+                minlength="6">
+              <small class="form-text text-muted">Password must be at least 6 characters long</small>
+            </div>
+
+            <div class="mb-3">
+              <label for="confirmPassword" class="form-label">Confirm New Password <span class="text-danger">*</span></label>
+              <input 
+                type="password" 
+                class="form-control" 
+                id="confirmPassword" 
+                name="confirmPassword"
+                [(ngModel)]="passwordData.confirmPassword"
+                required>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div *ngIf="showDivUpdatedLoader" class="text-center mb-3">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Updating...</span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" [disabled]="showDivUpdatedLoader || !passwordForm.valid">
+              <i class="bi bi-key" style="margin-right: 5px;"></i>
+              Change Password
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Privacy Settings -->
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header" style="background-color: #467de4; color: white;">
+          <h5 class="mb-0">
+            <i class="bi bi-eye" style="margin-right: 8px;"></i>
+            Privacy Settings
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="profileVisibility" class="form-label">Profile Visibility</label>
+            <select 
+              class="form-select" 
+              id="profileVisibility" 
+              [(ngModel)]="privacySettings.profileVisibility">
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+              <option value="friends">Friends Only</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input 
+                class="form-check-input" 
+                type="checkbox" 
+                id="emailNotifications"
+                [(ngModel)]="privacySettings.emailNotifications">
+              <label class="form-check-label" for="emailNotifications">
+                Email Notifications
+              </label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input 
+                class="form-check-input" 
+                type="checkbox" 
+                id="smsNotifications"
+                [(ngModel)]="privacySettings.smsNotifications">
+              <label class="form-check-label" for="smsNotifications">
+                SMS Notifications
+              </label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input 
+                class="form-check-input" 
+                type="checkbox" 
+                id="dataSharing"
+                [(ngModel)]="privacySettings.dataSharing">
+              <label class="form-check-label" for="dataSharing">
+                Allow Data Sharing for Analytics
+              </label>
+            </div>
+          </div>
+
+          <!-- Loading Indicator -->
+          <div *ngIf="showDivUpdatedLoader" class="text-center mb-3">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Updating...</span>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-primary" (click)="updatePrivacySettings()" [disabled]="showDivUpdatedLoader">
+            <i class="bi bi-save" style="margin-right: 5px;"></i>
+            Save Privacy Settings
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+

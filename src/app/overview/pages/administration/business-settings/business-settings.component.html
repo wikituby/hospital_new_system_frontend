@@ -1,0 +1,268 @@
+<div class="subscription-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-building-gear"></i>
+        Business Settings
+      </h1>
+      <p class="page-subtitle">
+        Facility name and contact details used on printed reports, invoices, and statements.
+        Bank account numbers are optional — leave blank to omit them from invoice footers.
+      </p>
+    </div>
+  </div>
+
+  <div *ngIf="responseMessage" class="feedback-banner" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading business settings...</p>
+  </div>
+
+  <form class="subscription-layout business-settings-form" *ngIf="!isLoading" (ngSubmit)="save()">
+    <section class="status-card">
+      <h2>Registered facility</h2>
+
+      <div class="facility-logo-section">
+        <h3 class="facility-logo-heading">Facility logo</h3>
+        <p class="hint">Shown on printed reports, invoices, and statements. Recommended: square image, at least 256×256 px, under 5 MB.</p>
+        <div class="facility-logo-row">
+          <div class="facility-logo-preview-wrap">
+            <img
+              class="facility-logo-preview"
+              [src]="logoPreviewUrl"
+              alt="Facility logo preview"
+              (error)="onLogoPreviewError()" />
+          </div>
+          <div class="facility-logo-actions">
+            <input
+              type="file"
+              #facilityLogoInput
+              accept="image/*"
+              class="facility-logo-file-input"
+              (change)="onFacilityLogoSelected($event)"
+              [disabled]="logoUploading" />
+            <button
+              type="button"
+              class="btn-secondary btn-sm"
+              (click)="facilityLogoInput.click()"
+              [disabled]="logoUploading">
+              <i class="bi bi-image"></i>
+              {{ logoUploading ? 'Uploading…' : 'Change logo' }}
+            </button>
+            <button
+              type="button"
+              class="btn-secondary btn-sm"
+              *ngIf="form.facilityLogoUrl"
+              (click)="removeFacilityLogo()"
+              [disabled]="logoUploading || isSaving">
+              <i class="bi bi-trash"></i>
+              Remove logo
+            </button>
+            <p class="logo-upload-message success" *ngIf="logoUploadMessage">{{ logoUploadMessage }}</p>
+            <p class="logo-upload-message error" *ngIf="logoUploadError">{{ logoUploadError }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Facility name <span class="req">*</span>
+          <input type="text" name="facilityName" [(ngModel)]="form.facilityName" required />
+        </label>
+        <label>
+          Address
+          <input type="text" name="facilityAddress" [(ngModel)]="form.facilityAddress" />
+        </label>
+        <label class="span-2">
+          Subsidiary / legal line (e.g. A subsidiary of Your HealthCare Group)
+          <input type="text" name="subsidiaryLabel" [(ngModel)]="form.subsidiaryLabel" placeholder="(A subsidiary of …)" />
+        </label>
+        <label>
+          Phone 1
+          <input type="tel" name="phonePrimary" [(ngModel)]="form.phonePrimary" placeholder="Starts with 256" maxlength="12" pattern="256[0-9]{9}" inputmode="numeric" />
+        </label>
+        <label>
+          Phone 2
+          <input type="tel" name="phoneSecondary" [(ngModel)]="form.phoneSecondary" placeholder="Starts with 256" maxlength="12" pattern="256[0-9]{9}" inputmode="numeric" />
+        </label>
+        <label class="span-2">
+          Email
+          <input type="email" name="email" [(ngModel)]="form.email" />
+        </label>
+      </div>
+    </section>
+
+    <section class="status-card">
+      <h2>Report department labels</h2>
+      <div class="form-grid">
+        <label>
+          Finance department
+          <input type="text" name="financeDepartmentName" [(ngModel)]="form.financeDepartmentName" />
+        </label>
+        <label>
+          Medical records department
+          <input type="text" name="medicalRecordsDepartmentName" [(ngModel)]="form.medicalRecordsDepartmentName" />
+        </label>
+        <label class="span-2">
+          Diagnostics department
+          <input type="text" name="diagnosticsDepartmentName" [(ngModel)]="form.diagnosticsDepartmentName" />
+        </label>
+      </div>
+    </section>
+
+    <section class="status-card">
+      <h2>Invoice footer (optional)</h2>
+      <p class="hint">Leave bank fields empty to hide account numbers on printed invoices.</p>
+      <div class="form-grid">
+        <label>
+          Bank name
+          <input type="text" name="bankName" [(ngModel)]="form.bankName" />
+        </label>
+        <label>
+          UGX account number
+          <input type="text" name="ugxAccountNumber" [(ngModel)]="form.ugxAccountNumber" />
+        </label>
+        <label>
+          USD account number
+          <input type="text" name="usdAccountNumber" [(ngModel)]="form.usdAccountNumber" />
+        </label>
+        <label class="span-2">
+          Custom footer contact line (optional override)
+          <input type="text" name="invoiceFooterContactLine" [(ngModel)]="form.invoiceFooterContactLine" />
+        </label>
+        <label class="span-2">
+          Thank-you message
+          <input type="text" name="thankYouMessage" [(ngModel)]="form.thankYouMessage" placeholder="Thank you for choosing …" />
+        </label>
+      </div>
+    </section>
+
+    <section class="status-card">
+      <h2>HMIS reporting (033b / 105 headers)</h2>
+      <p class="hint">Used on weekly HMIS exports. Facility code and location fields print on the official forms.</p>
+      <div class="form-grid">
+        <label>
+          HMIS facility code
+          <input type="text" name="hmisFacilityCode" [(ngModel)]="form.hmisFacilityCode" />
+        </label>
+        <label>
+          Facility level
+          <input type="text" name="hmisFacilityLevel" [(ngModel)]="form.hmisFacilityLevel" placeholder="e.g. HCIII" />
+        </label>
+        <label>
+          District
+          <input type="text" name="hmisDistrict" [(ngModel)]="form.hmisDistrict" />
+        </label>
+        <label>
+          Health sub-district (HSD)
+          <input type="text" name="hmisHsd" [(ngModel)]="form.hmisHsd" />
+        </label>
+        <label>
+          Sub-county
+          <input type="text" name="hmisSubCounty" [(ngModel)]="form.hmisSubCounty" />
+        </label>
+        <label>
+          Parish
+          <input type="text" name="hmisParish" [(ngModel)]="form.hmisParish" />
+        </label>
+      </div>
+    </section>
+
+    <section class="status-card">
+      <h2>HMIS tracer medicines</h2>
+      <p class="hint">
+        Map official HMIS tracer lines (ACT, RDT, ORS, etc.) to your pharmacy stock or shop items under
+        <strong>Inventory → Stock Management → HMIS Tracer Mapping</strong>.
+        That page searches inventory by name and feeds HMIS stock balances and prescribed treatment counts into weekly/monthly forms.
+      </p>
+      <button type="button" class="btn-secondary btn-sm" (click)="router.navigate(['/overview/hmis-tracer-mapping'])">
+        <i class="bi bi-box-arrow-up-right"></i> Open HMIS tracer mapping
+      </button>
+    </section>
+
+    <section class="status-card">
+      <h2>Inventory — stock tracking mode</h2>
+      <p class="hint">
+        Controls whether pharmacy, dispensing, adjustments, stock initializer, and related inventory screens use
+        <strong>stock batch IDs</strong> (per store/expiry batches) or <strong>shop item IDs</strong> (single item record).
+        Change this during initial setup; switching later may require re-mapping inventory.
+      </p>
+      <div class="inventory-mode-options">
+        <label class="inventory-mode-option" [class.active]="form.pharmacyUseStockBatch !== false">
+          <input
+            type="radio"
+            name="pharmacyUseStockBatch"
+            [checked]="form.pharmacyUseStockBatch !== false"
+            (change)="form.pharmacyUseStockBatch = true" />
+          <span class="inventory-mode-card">
+            <strong>Stock batches</strong>
+            <small>Use <code>stockBatchId</code> — batches per store/expiry; stock receive, transfer, verification, initializer.</small>
+          </span>
+        </label>
+        <label class="inventory-mode-option" [class.active]="form.pharmacyUseStockBatch === false">
+          <input
+            type="radio"
+            name="pharmacyUseStockBatch"
+            [checked]="form.pharmacyUseStockBatch === false"
+            (change)="form.pharmacyUseStockBatch = false" />
+          <span class="inventory-mode-card">
+            <strong>Shop items</strong>
+            <small>Use <code>itemId</code> — one stock record per product; shop item receive and item-level quantities.</small>
+          </span>
+        </label>
+      </div>
+      <p class="hint inventory-mode-current">
+        Current mode:
+        <strong>{{ form.pharmacyUseStockBatch !== false ? 'Stock batches (stockBatchId)' : 'Shop items (itemId)' }}</strong>
+      </p>
+    </section>
+
+    <section class="status-card">
+      <h2>Pharmacy — OTC counter sale</h2>
+      <p class="hint">
+        Default for the OTC dispensary screen. Staff can still toggle prescription fields on that page for the current session.
+      </p>
+      <label class="otc-prescribing-default-switch form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          role="switch"
+          name="otcIncludePrescribing"
+          [(ngModel)]="form.otcIncludePrescribing" />
+        <span class="form-check-label">Prescription fields (dosage, frequency, duration)</span>
+      </label>
+    </section>
+
+    <section class="status-card">
+      <h2>Sidebar layout</h2>
+      <p class="hint">Controls how the overview navigation appears for all users at this facility.</p>
+      <label class="sidebar-stack-toggle">
+        <input type="checkbox" name="sidebarStacked" [(ngModel)]="form.sidebarStacked" />
+        <span class="sidebar-stack-toggle-ui" aria-hidden="true"></span>
+        <span class="sidebar-stack-toggle-text">
+          <strong>Stack sidebar with main content</strong>
+          <small>On (default): sidebar stays visible and shares space with the page. Off: sidebar is hidden until you open it from the menu button (overlay).</small>
+        </span>
+      </label>
+    </section>
+
+    <section class="status-card preview-card" *ngIf="preview.financeHeaderLine">
+      <h2>Preview (after save)</h2>
+      <p><strong>Finance header:</strong> {{ preview.financeHeaderLine }}</p>
+      <p><strong>Medical records:</strong> {{ preview.medicalRecordsHeaderLine }}</p>
+      <p><strong>Contact:</strong> {{ preview.contactInquiryLine }}</p>
+      <p><strong>Invoice footer:</strong> {{ preview.invoiceFooterMainLine }}</p>
+      <p><strong>Thank you:</strong> {{ preview.thankYouLine }}</p>
+    </section>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary" [disabled]="isSaving || !form.facilityName?.trim()">
+        <i class="bi bi-save"></i>
+        {{ isSaving ? 'Saving…' : 'Save settings' }}
+      </button>
+    </div>
+  </form>
+</div>

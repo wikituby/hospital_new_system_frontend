@@ -1,0 +1,344 @@
+<!-- Delete Confirmation Modal -->
+<div class="delete-confirm-modal-overlay" *ngIf="showDeleteConfirmModal" (click)="closeDeleteConfirmModal()">
+  <div class="delete-confirm-modal-container" (click)="$event.stopPropagation()">
+    <div class="delete-confirm-modal">
+      <div class="delete-confirm-modal-header">
+        <div class="delete-confirm-icon">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <h2 class="delete-confirm-title">Delete Manufacturer</h2>
+        <button type="button" class="delete-confirm-close" (click)="closeDeleteConfirmModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="delete-confirm-modal-body">
+        <p class="delete-confirm-message">
+          Are you sure you want to delete <strong>"{{ getManufacturerField(manufacturerToDelete, 'name') || manufacturerToDelete?.manufacturerName || manufacturerToDelete?.name || 'this manufacturer' }}"</strong>?
+        </p>
+        <p class="delete-confirm-warning">
+          <i class="bi bi-info-circle"></i>
+          This action cannot be undone. All data associated with this manufacturer will be permanently deleted.
+        </p>
+      </div>
+
+      <div class="delete-confirm-modal-actions">
+        <button type="button" 
+                class="delete-confirm-btn-cancel" 
+                (click)="closeDeleteConfirmModal()"
+                [disabled]="isButtonDisabled">
+          Cancel
+        </button>
+        <button type="button" 
+                class="delete-confirm-btn-delete" 
+                (click)="confirmDelete()"
+                [disabled]="isButtonDisabled">
+          <i class="bi bi-trash"></i>
+          Delete Manufacturer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Manufacturer Modal -->
+<div class="manufacturer-modal-overlay" id="manufacturerModal" *ngIf="!isCollapsedNewManufacturer">
+  <div class="manufacturer-modal-container">
+    <div class="manufacturer-modal">
+      <div class="manufacturer-modal-header">
+        <h2 class="manufacturer-modal-title">
+          <i class="bi" [ngClass]="isEditingManufacturer ? 'bi-pencil-square' : 'bi-building'"></i>
+          {{ saveButtonStatus }}
+        </h2>
+        <button type="button" class="manufacturer-modal-close" (click)="closeManufacturerModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="manufacturer-modal-body">
+        <form #manufacturerForm="ngForm" (ngSubmit)="saveManufacturer(manufacturerForm.value)">
+          <div class="manufacturer-form-grid">
+            <div class="manufacturer-form-field full-width">
+              <label for="name" class="manufacturer-form-label">
+                Manufacturer Name <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     [(ngModel)]="currentManufacturer.name" 
+                     name="name" 
+                     class="manufacturer-form-input" 
+                     id="name" 
+                     placeholder="Enter manufacturer name" 
+                     required>
+            </div>
+
+            <div class="manufacturer-form-field full-width">
+              <label for="address" class="manufacturer-form-label">Street Address</label>
+              <input type="text" 
+                     [(ngModel)]="currentManufacturer.address" 
+                     name="address" 
+                     class="manufacturer-form-input" 
+                     id="address" 
+                     placeholder="Enter street address">
+            </div>
+
+            <div class="manufacturer-form-field">
+              <label for="countryOfOrigin" class="manufacturer-form-label">Country of Origin</label>
+              <input type="text" 
+                     [(ngModel)]="currentManufacturer.countryOfOrigin" 
+                     name="countryOfOrigin" 
+                     class="manufacturer-form-input" 
+                     id="countryOfOrigin" 
+                     placeholder="Enter country of origin">
+            </div>
+
+            <div class="manufacturer-form-field">
+              <label for="phone" class="manufacturer-form-label">Phone</label>
+              <input type="tel" 
+                     [(ngModel)]="currentManufacturer.phone" 
+                     name="phone" 
+                     class="manufacturer-form-input" 
+                     id="phone" 
+                     placeholder="Starts with 256" maxlength="12" pattern="256[0-9]{9}" inputmode="numeric">
+            </div>
+
+            <div class="manufacturer-form-field">
+              <label for="email" class="manufacturer-form-label">Email</label>
+              <input type="email" 
+                     [(ngModel)]="currentManufacturer.email" 
+                     name="email" 
+                     class="manufacturer-form-input" 
+                     id="email" 
+                     placeholder="manufacturer@example.com">
+            </div>
+
+            <div class="manufacturer-form-field">
+              <label for="website" class="manufacturer-form-label">Website</label>
+              <input type="url" 
+                     [(ngModel)]="currentManufacturer.website" 
+                     name="website" 
+                     class="manufacturer-form-input" 
+                     id="website" 
+                     placeholder="https://www.example.com">
+            </div>
+
+            <div class="manufacturer-form-field">
+              <label for="contactPerson" class="manufacturer-form-label">Contact Person</label>
+              <input type="text" 
+                     [(ngModel)]="currentManufacturer.contactPerson" 
+                     name="contactPerson" 
+                     class="manufacturer-form-input" 
+                     id="contactPerson" 
+                     placeholder="Enter contact person name">
+            </div>
+
+            <div class="manufacturer-form-field full-width">
+              <label for="description" class="manufacturer-form-label">Description</label>
+              <textarea [(ngModel)]="currentManufacturer.description" 
+                        name="description" 
+                        class="manufacturer-form-textarea" 
+                        id="description" 
+                        placeholder="Additional notes or description about the manufacturer"
+                        rows="3"></textarea>
+            </div>
+          </div>
+
+          <div *ngIf="showDivAddToDataBaseNewManufacturer" class="manufacturer-form-message" [ngClass]="{'success': responseColor === 'rgb(11, 155, 112)', 'error': responseColor === 'rgb(238, 16, 16)'}">
+            <i class="bi" [ngClass]="responseColor === 'rgb(11, 155, 112)' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>
+            {{ responseMessage }}
+          </div>
+
+          <div *ngIf="showDivUpdatedLoaderNewManufacturer" class="manufacturer-form-loading">
+            <div class="manufacturer-loader"></div>
+            <p>{{ isEditingManufacturer ? 'Updating manufacturer...' : 'Saving manufacturer...' }}</p>
+          </div>
+
+          <div class="manufacturer-modal-actions">
+            <button type="button" 
+                    class="manufacturer-btn-secondary" 
+                    (click)="closeManufacturerModal()"
+                    [disabled]="isButtonDisabled">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="manufacturer-btn-primary" 
+                    [disabled]="isButtonDisabled">
+              <span *ngIf="!showDivUpdatedLoaderNewManufacturer">
+                <i class="bi bi-save"></i>
+                {{ saveButtonStatus }}
+              </span>
+              <span *ngIf="showDivUpdatedLoaderNewManufacturer" class="button-loading">
+                <span class="spinner-small"></span>
+                {{ isEditingManufacturer ? 'Updating...' : 'Saving...' }}
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="manufacturer-management-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-building"></i>
+        Stock Manufacturers
+      </h2>
+      <p class="page-subtitle">Manage your stock manufacturers</p>
+    </div>
+    
+    <div class="header-right">
+      <button class="add-manufacturer-btn" 
+              type="button"
+              (click)="openManufacturerModal()">
+        <i class="bi bi-plus-circle-fill"></i>
+        Add New Manufacturer
+      </button>
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" 
+               [(ngModel)]="searchQuery" 
+               placeholder="Search manufacturers...">
+      </div>
+      
+      <select class="filter-select" [(ngModel)]="selectedColumn">
+        <option value="all">All Fields</option>
+        <option value="name">Manufacturer Name</option>
+        <option value="address">Address</option>
+        <option value="countryOfOrigin">Country of Origin</option>
+        <option value="phone">Phone</option>
+        <option value="email">Email</option>
+        <option value="contactPerson">Contact Person</option>
+        <option value="description">Description</option>
+      </select>
+
+      <div class="dropdown">
+        <button class="action-btn" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-download"></i>
+          Export
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li (click)="exportToExcel()" class="dropdown-item">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+          </li>
+          <li (click)="downloadPdf()" class="dropdown-item">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="bi bi-building"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ manufacturerList.length }}</div>
+        <div class="stat-label">Total Manufacturers</div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isLoadingService" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading manufacturers data...</p>
+  </div>
+
+  <div *ngIf="showDivUpdatedOut" class="alert" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div class="table-container" *ngIf="!isLoadingService">
+    <div class="table-wrapper" #htmlData>
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>SN</th>
+            <th>Manufacturer Name</th>
+            <th>Address</th>
+            <th>Country of Origin</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Contact Person</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let manufacturer of filteredManufacturerList | paginate: { itemsPerPage: itemsPerPage, currentPage: page }; let i = index">
+            <td>
+              <span class="shelf-number">{{ i + 1 }}</span>
+            </td>
+            <td>
+              <div class="item-details">
+                <div class="item-title">{{ getManufacturerField(manufacturer, 'name') || manufacturer.manufacturerName || manufacturer.name || 'N/A' }}</div>
+                <div class="description-text" *ngIf="getManufacturerField(manufacturer, 'description') || manufacturer.description" style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                  {{ getManufacturerField(manufacturer, 'description') || manufacturer.description }}
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="location-text">{{ getManufacturerField(manufacturer, 'address') || manufacturer.address || manufacturer.physicalAddress || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="country-text">{{ getManufacturerField(manufacturer, 'countryOfOrigin') || manufacturer.countryOfOrigin || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="location-text" *ngIf="getManufacturerField(manufacturer, 'phone') || manufacturer.phone || manufacturer.contact">
+                <i class="bi bi-telephone" style="margin-right: 4px;"></i>
+                {{ getManufacturerField(manufacturer, 'phone') || manufacturer.phone || manufacturer.contact }}
+              </span>
+              <span class="location-text" *ngIf="!getManufacturerField(manufacturer, 'phone') && !manufacturer.phone && !manufacturer.contact">N/A</span>
+            </td>
+            <td>
+              <span class="location-text" *ngIf="getManufacturerField(manufacturer, 'email') || manufacturer.email || manufacturer.emailAddress">
+                <i class="bi bi-envelope" style="margin-right: 4px;"></i>
+                {{ getManufacturerField(manufacturer, 'email') || manufacturer.email || manufacturer.emailAddress }}
+              </span>
+              <span class="location-text" *ngIf="!getManufacturerField(manufacturer, 'email') && !manufacturer.email && !manufacturer.emailAddress">N/A</span>
+            </td>
+            <td>
+              <span class="location-text">{{ getManufacturerField(manufacturer, 'contactPerson') || manufacturer.contactPerson || 'N/A' }}</span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon edit" title="Edit Manufacturer" (click)="editManufacturer(manufacturer)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn-icon delete" title="Delete Manufacturer" (click)="deleteManufacturer(manufacturer)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredManufacturerList.length === 0">
+            <td colspan="8" class="no-data">
+              <i class="bi bi-inbox"></i>
+              <p>No manufacturers found</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-wrapper">
+      <div class="pagination-info">
+        Showing {{ (page - 1) * itemsPerPage + 1 }} - {{ page * itemsPerPage > filteredManufacturerList.length ? filteredManufacturerList.length : page * itemsPerPage }} of {{ filteredManufacturerList.length }} manufacturers
+      </div>
+      <pagination-controls (pageChange)="page = $event"></pagination-controls>
+      <div class="pagination-size">
+        <select [(ngModel)]="itemsPerPage" class="page-size-select">
+          <option [ngValue]="10">10 per page</option>
+          <option [ngValue]="15">15 per page</option>
+          <option [ngValue]="25">25 per page</option>
+          <option [ngValue]="50">50 per page</option>
+          <option [ngValue]="100">100 per page</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+

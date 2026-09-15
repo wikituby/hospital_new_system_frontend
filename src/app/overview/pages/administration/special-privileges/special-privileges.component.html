@@ -1,0 +1,76 @@
+<div class="subscription-page" [class.dark]="isDarkMode">
+  <header class="page-header">
+    <div class="header-left">
+      <h1 class="page-title"><i class="bi bi-shield-lock"></i> Special Privileges</h1>
+      <p class="page-subtitle">
+        MD-only. Controls multi-visit debt groups, who may assign patients to those groups, and who may re-open closed visits.
+        Settings are stored in the database and checked on every restricted action.
+      </p>
+    </div>
+  </header>
+
+  <p class="hint" *ngIf="!canEdit" style="color:#b91c1c">Only the MD can change these settings.</p>
+  <p class="hint" *ngIf="isLoading">Loading…</p>
+  <p *ngIf="responseMessage" [style.color]="responseColor">{{ responseMessage }}</p>
+
+  <form class="subscription-layout" *ngIf="!isLoading" (ngSubmit)="save()">
+    <section class="status-card special-privileges-card">
+      <h2>Debt-permitted patient groups</h2>
+      <p class="hint">
+        Members of selected groups may receive new services or prescriptions on a new visit even when an older closed visit still has unpaid balance.
+      </p>
+      <p class="hint" *ngIf="patientGroupsLoading">Loading groups…</p>
+      <div class="privilege-column privilege-column--wide" *ngIf="!patientGroupsLoading">
+        <label class="privilege-user" *ngFor="let g of patientGroups">
+          <input
+            type="checkbox"
+            [disabled]="!canEdit"
+            [checked]="isChecked(privilegeCreditAllowedGroupIds, g.id)"
+            (change)="toggleId(privilegeCreditAllowedGroupIds, g.id, $any($event.target).checked)" />
+          <span>{{ g.groupName }}</span>
+        </label>
+        <p class="hint" *ngIf="!patientGroups.length">No patient groups found.</p>
+      </div>
+    </section>
+
+    <section class="status-card special-privileges-card">
+      <h2>User privileges</h2>
+      <p class="hint">Admin and MD always keep these rights. Grant extra users below.</p>
+      <p class="hint" *ngIf="privilegeUsersLoading">Loading users…</p>
+      <div class="privilege-grid" *ngIf="!privilegeUsersLoading">
+        <div class="privilege-column">
+          <h3>Open closed visits</h3>
+          <p class="privilege-desc">Re-open a closed patient visit.</p>
+          <label class="privilege-user" *ngFor="let u of privilegeUsers">
+            <input
+              type="checkbox"
+              [disabled]="!canEdit"
+              [checked]="isChecked(privilegeOpenVisitIds, u.id)"
+              (change)="toggleId(privilegeOpenVisitIds, u.id, $any($event.target).checked)" />
+            <span>{{ u.username }} <small *ngIf="u.role">({{ u.role }})</small></span>
+          </label>
+        </div>
+        <div class="privilege-column">
+          <h3>Add patients to debt-permitted groups</h3>
+          <p class="privilege-desc">
+            Assign patients to groups selected above (and legacy Veneranda Hospital).
+          </p>
+          <label class="privilege-user" *ngFor="let u of privilegeUsers">
+            <input
+              type="checkbox"
+              [disabled]="!canEdit"
+              [checked]="isChecked(privilegeDebtGroupAssignIds, u.id)"
+              (change)="toggleId(privilegeDebtGroupAssignIds, u.id, $any($event.target).checked)" />
+            <span>{{ u.username }} <small *ngIf="u.role">({{ u.role }})</small></span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" [disabled]="!canEdit || isSaving">
+        {{ isSaving ? 'Saving…' : 'Save privileges' }}
+      </button>
+    </div>
+  </form>
+</div>

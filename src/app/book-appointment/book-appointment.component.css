@@ -1,0 +1,175 @@
+.book-page {
+  min-height: 100vh;
+  background: #f8fafc;
+  padding-top: 88px;
+}
+
+.book-hero {
+  background: linear-gradient(135deg, #074a56 0%, #0b6e7a 55%, #0f8a8a 100%);
+  color: #fff;
+}
+
+.book-hero-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 3rem 2rem 3.25rem;
+}
+
+.book-eyebrow {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.book-hero h1 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.book-hero p {
+  margin: 0;
+  max-width: 40rem;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.6;
+  font-size: 1.05rem;
+}
+
+.book-body {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.25rem 2rem 4rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.book-form {
+  padding: 1.5rem 1.6rem 1.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.book-form h2 {
+  margin: 0 0 0.35rem;
+  color: #0f172a;
+  font-size: 1.35rem;
+}
+
+.book-form-lead {
+  margin: 0 0 1.25rem;
+  color: #64748b;
+}
+
+.book-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.book-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: #334155;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.book-form input,
+.book-form select,
+.book-form textarea {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  font: inherit;
+  font-weight: 400;
+  color: #0f172a;
+  background: #fff;
+}
+
+.book-form input:focus,
+.book-form select:focus,
+.book-form textarea:focus {
+  outline: 2px solid rgba(11, 110, 122, 0.25);
+  border-color: #0b6e7a;
+}
+
+.book-notes {
+  margin-top: 1rem;
+}
+
+.book-actions {
+  margin-top: 1.25rem;
+}
+
+.book-submit {
+  border: none;
+  border-radius: 999px;
+  padding: 0.8rem 1.35rem;
+  background: #0b6e7a;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.book-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.book-submit:not(:disabled):hover {
+  background: #074a56;
+}
+
+.book-hint {
+  margin: 0.85rem 0 0;
+  color: #0b6e7a;
+  font-size: 0.9rem;
+}
+
+.book-aside {
+  padding: 1.25rem 1.3rem;
+  border-radius: 18px;
+  background: #074a56;
+  color: #fff;
+}
+
+.book-aside h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1.1rem;
+}
+
+.book-aside p {
+  margin: 0 0 1rem;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+
+.book-call,
+.book-mail {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.book-mail {
+  margin-top: 0.75rem;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+@media (max-width: 900px) {
+  .book-body,
+  .book-grid {
+    grid-template-columns: 1fr;
+  }
+}

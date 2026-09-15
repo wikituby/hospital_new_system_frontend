@@ -1,0 +1,20 @@
+<footer class="app-footer">
+  <div class="footer-container">
+    <div class="footer-row">
+      <div class="footer-brand">
+        <span class="footer-logo">V<strong><i>MD</i></strong></span>
+        <p class="footer-tagline">Veneranda Hospital — Healthcare management</p>
+      </div>
+      <div class="footer-links">
+        <a [routerLink]="['/overview']">Dashboard</a>
+        <a [routerLink]="['/patient']">Patients</a>
+        <a [routerLink]="['/services-offered']">Services</a>
+        <a [routerLink]="['/near-expiry']">Near Expiry</a>
+        <a [routerLink]="['/expired-drugs']">Expired Drugs</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; {{ currentYear }} Veneranda Hospital. All rights reserved.</span>
+    </div>
+  </div>
+</footer>

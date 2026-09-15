@@ -1,0 +1,105 @@
+<button
+  type="button"
+  class="pv-btn pv-btn-outline"
+  [disabled]="disabled"
+  (click)="openModal()">
+  <i class="bi bi-prescription2"></i> Standard Dosages
+</button>
+
+<div #modalOverlay class="pv-standard-dose-overlay" *ngIf="showModal">
+  <div class="pv-standard-dose-modal">
+    <div class="pv-standard-dose-header">
+      <div>
+        <h5>Standard Dosages</h5>
+        <p>{{ drugLabel || 'Selected drug' }}</p>
+      </div>
+      <button type="button" class="pv-standard-dose-close" (click)="closeModal()">&times;</button>
+    </div>
+
+    <div class="pv-standard-dose-patient">
+      <span>Patient match</span>
+      <div class="pv-standard-dose-patient-row">
+        <strong>{{ patientSummary() }}</strong>
+        <button
+          *ngIf="showRecordWeightButton()"
+          type="button"
+          class="pv-btn pv-btn-outline pv-btn-record-weight"
+          (click)="openRecordWeightDialog()">
+          Record weight
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="message" class="pv-standard-dose-empty">{{ message }}</div>
+
+    <div class="pv-standard-dose-list" *ngIf="options.length">
+      <div class="pv-standard-dose-card" *ngFor="let option of options">
+        <div class="pv-standard-dose-card-head">
+          <div>
+            <h6>{{ option.title }}</h6>
+            <span>{{ option.matchLabel }}</span>
+          </div>
+          <button type="button" class="pv-btn pv-btn-primary" (click)="applyOption(option)">
+            Use This
+          </button>
+        </div>
+        <div class="pv-standard-dose-grid">
+          <div>
+            <span>Rule</span>
+            <strong>{{ option.ruleLabel }}</strong>
+          </div>
+          <div>
+            <span>Calculated Dose</span>
+            <strong>{{ option.calculatedDoseLabel }}</strong>
+          </div>
+          <div>
+            <span>Frequency</span>
+            <strong>{{ option.frequencyValue }} per {{ formatPeriodUnit(option.frequencyUnit) }}</strong>
+          </div>
+          <div>
+            <span>Duration</span>
+            <strong>{{ option.durationValue }} {{ formatPeriodUnit(option.durationUnit) }}</strong>
+          </div>
+          <div>
+            <span>Route</span>
+            <strong>{{ option.route }}</strong>
+          </div>
+          <div>
+            <span>Total Qty</span>
+            <strong>{{ option.quantity }}</strong>
+          </div>
+        </div>
+        <p class="pv-standard-dose-instructions">{{ option.instructions }}</p>
+        <p *ngIf="option.warning" class="pv-standard-dose-warning">{{ option.warning }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="pv-record-weight-overlay" *ngIf="showRecordWeightModal">
+    <div class="pv-record-weight-dialog" (click)="$event.stopPropagation()">
+      <div class="pv-record-weight-head">
+        <h6>Record patient weight</h6>
+        <button type="button" class="pv-standard-dose-close" (click)="closeRecordWeightDialog()">&times;</button>
+      </div>
+      <p class="pv-record-weight-help">Weight is saved to vitals and used for mg/kg dosing.</p>
+      <label class="pv-record-weight-label" for="recordWeightKgInput">Weight (kg)</label>
+      <input
+        id="recordWeightKgInput"
+        type="number"
+        class="pv-record-weight-input"
+        min="0.1"
+        step="0.1"
+        [(ngModel)]="recordWeightValue"
+        [disabled]="recordWeightSaving" />
+      <p *ngIf="recordWeightError" class="pv-record-weight-error">{{ recordWeightError }}</p>
+      <div class="pv-record-weight-actions">
+        <button type="button" class="pv-btn pv-btn-outline" (click)="closeRecordWeightDialog()" [disabled]="recordWeightSaving">
+          Cancel
+        </button>
+        <button type="button" class="pv-btn pv-btn-primary" (click)="saveRecordedWeight()" [disabled]="recordWeightSaving">
+          {{ recordWeightSaving ? 'Saving…' : 'Save weight' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,223 @@
+<div class="shop-item-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-box-arrow-in-down"></i>
+        Stock receive
+      </h2>
+      <p class="page-subtitle">
+        Receive new stock for shop items — same fields and flow as the classic stock receive form.
+      </p>
+    </div>
+    <div class="header-right">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Search items…" />
+      </div>
+      <button type="button" class="action-btn" (click)="refresh()" title="Refresh">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="showFeedback" class="alert" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <form class="receive-card" #receiveForm="ngForm" (ngSubmit)="receiveStock(receiveForm)">
+    <button
+      type="button"
+      class="receive-card-toggle"
+      (click)="toggleReceiveFields()"
+      [attr.aria-expanded]="receiveFieldsExpanded">
+      <span class="receive-card-toggle-left">
+        <i class="bi bi-bag-plus-fill"></i>
+        Receive new stock
+      </span>
+      <i class="bi" [ngClass]="receiveFieldsExpanded ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+    </button>
+
+    <div class="receive-card-body" *ngIf="receiveFieldsExpanded">
+      <div class="form-grid">
+        <div class="legacy-item-pricing-row">
+          <div class="form-field form-field--item">
+            <label>
+              Item received
+              <span class="previous-pricing" *ngIf="form.itemId">· {{ itemMetaLabel }}</span>
+            </label>
+            <app-searchable-select
+              placeholder="Select item"
+              [options]="itemOptionsList"
+              [value]="form.itemId"
+              [allowAdd]="false"
+              [preserveOptionOrder]="true"
+              [focusSearchOnOpen]="true"
+              [emptyLabel]="itemsLoading ? 'Loading items…' : 'No items found'"
+              (valueChange)="onItemSelected($event)">
+            </app-searchable-select>
+          </div>
+          <div class="form-field">
+            <label>Quantity</label>
+            <input
+              type="number"
+              name="quantityReceived"
+              [ngModel]="form.quantityReceived"
+              (ngModelChange)="onQuantityChange($event)"
+              min="1"
+              required
+              placeholder="Qty" />
+          </div>
+          <div class="form-field">
+            <label>Total cost</label>
+            <input
+              type="number"
+              name="totalCostPrice"
+              [ngModel]="form.totalCostPrice"
+              (ngModelChange)="onTotalCostChange($event)"
+              min="0"
+              required
+              placeholder="Cost" />
+          </div>
+          <div class="form-field">
+            <label>Unit cost</label>
+            <input
+              type="number"
+              name="unitCostPrice"
+              [ngModel]="form.unitCostPrice"
+              (ngModelChange)="onUnitCostChange($event)"
+              min="0"
+              required
+              placeholder="00" />
+          </div>
+          <div class="form-field">
+            <label>Unit sell</label>
+            <input
+              type="number"
+              name="unitSellingPrice"
+              [(ngModel)]="form.unitSellingPrice"
+              min="0"
+              required
+              placeholder="Unit sell" />
+          </div>
+        </div>
+
+        <div class="legacy-store-dates-row receive-store-dates-row">
+          <div class="form-field form-field--store">
+            <app-searchable-select
+              label="Store"
+              placeholder="Select store"
+              [options]="storeOptions"
+              [value]="form.store"
+              [allowAdd]="false"
+              (valueChange)="onStoreSelected($event)">
+            </app-searchable-select>
+          </div>
+          <div class="form-field form-field--date">
+            <label>Receive date</label>
+            <input type="date" name="receiveDate" [(ngModel)]="form.receiveDate" />
+          </div>
+          <div class="form-field form-field--date">
+            <label>Expiry date</label>
+            <input type="date" name="expiryDate" [(ngModel)]="form.expiryDate" />
+          </div>
+          <div class="form-field form-field--actions">
+            <label class="actions-spacer">&nbsp;</label>
+            <div class="inline-actions">
+              <button type="button" class="btn-secondary" (click)="clearForm()" [disabled]="isSaving">
+                Clear fields
+              </button>
+              <button type="submit" class="btn-primary" [disabled]="isSaving">
+                {{ isSaving ? 'Saving…' : 'Receive stock' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading stock receives…</p>
+  </div>
+
+  <div id="shop-item-receives-table" class="table-container" *ngIf="!isLoading">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th class="no-sort">Title</th>
+          <th class="no-sort">Brand</th>
+          <th class="no-sort">Qty recvd</th>
+          <th class="no-sort">New qty</th>
+          <th class="no-sort">Qty avail</th>
+          <th class="no-sort">Total cost</th>
+          <th class="no-sort">Unit cost</th>
+          <th class="no-sort">Unit sell</th>
+          <th class="no-sort">Expiry date</th>
+          <th class="no-sort">Date recvd</th>
+          <th class="no-sort">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="
+            let row of filteredReceives | paginate: { itemsPerPage: itemsPerPage, currentPage: page }
+          "
+          [class.row-just-received]="row?._justReceived">
+          <td class="cell-item">{{ itemTitle(row) | uppercase }}</td>
+          <td>{{ (row.brand || '—') | uppercase }}</td>
+          <td>{{ row.quantityReceived ?? '—' }}</td>
+          <td>{{ row.newQuantity ?? '—' }}</td>
+          <td>{{ row.quantityAvailable ?? '—' }}</td>
+          <td>{{ row.totalCostPrice != null ? 'UGX:' + row.totalCostPrice : '—' }}</td>
+          <td>{{ row.unitCostPrice != null ? 'UGX:' + row.unitCostPrice : '—' }}</td>
+          <td>{{ row.unitSellingPrice != null ? 'UGX:' + row.unitSellingPrice : '—' }}</td>
+          <td>{{ row.expiryDate || '—' }}</td>
+          <td>{{ row.receiveDate || '—' }}</td>
+          <td class="td-actions">
+            <button type="button" class="btn-row btn-row--danger" (click)="confirmDelete(row)" title="Delete">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredReceives.length === 0">
+          <td colspan="11" class="no-data">
+            <i class="bi bi-inbox"></i>
+            <p>No stock receives found.</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pagination-wrapper" *ngIf="filteredReceives.length > 0">
+      <pagination-controls
+        (pageChange)="page = $event"
+        [directionLinks]="false"
+        [autoHide]="true">
+      </pagination-controls>
+    </div>
+  </div>
+
+</div>
+
+<div class="shop-item-modal-overlay" *ngIf="receiveToDelete" [class.dark]="isDarkMode" (click)="cancelDelete()">
+  <div class="shop-item-modal shop-item-modal--sm" (click)="$event.stopPropagation()">
+    <div class="shop-item-modal-header">
+      <h3>Delete stock receive</h3>
+      <button type="button" class="modal-close" (click)="cancelDelete()" aria-label="Close">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="shop-item-modal-body">
+      <p>
+        Delete the receive for <strong>{{ itemTitle(receiveToDelete) }}</strong>
+        (qty {{ receiveToDelete?.quantityReceived }})?
+      </p>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="cancelDelete()" [disabled]="isDeleting">Cancel</button>
+        <button type="button" class="btn-danger" (click)="deleteReceive()" [disabled]="isDeleting">
+          {{ isDeleting ? 'Deleting…' : 'Delete' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

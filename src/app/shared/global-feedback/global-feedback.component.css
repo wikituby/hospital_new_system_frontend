@@ -1,0 +1,82 @@
+.global-feedback-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.global-feedback-card {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  min-width: 320px;
+  max-width: 520px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border: 1px solid transparent;
+  pointer-events: auto;
+}
+
+.global-feedback-card.success {
+  background: #ecfdf3;
+  border-color: #86efac;
+  color: #14532d;
+}
+
+.global-feedback-card.error {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #7f1d1d;
+}
+
+.global-feedback-card.info {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e3a8a;
+}
+
+.global-feedback-card.warning {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+.feedback-icon i {
+  font-size: 1.2rem;
+}
+
+.feedback-content {
+  flex: 1;
+}
+
+.feedback-content h4 {
+  margin: 0 0 4px 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.feedback-content p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  opacity: 0.75;
+  cursor: pointer;
+  padding: 0;
+}
+
+.close-btn:hover {
+  opacity: 1;
+}

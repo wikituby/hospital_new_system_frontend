@@ -1,0 +1,114 @@
+<app-site-nav></app-site-nav>
+
+<section class="contact-page">
+  <div class="contact-hero">
+    <div class="contact-hero-inner">
+      <span class="contact-eyebrow">Contact Us</span>
+      <h1>Get in touch with Veneranda Hospital</h1>
+      <p>
+        Call, email, or send a message. We are here for appointments, emergencies, and general enquiries
+        in Bugogo Town Council, Kyegegwa District.
+      </p>
+    </div>
+  </div>
+
+  <div class="contact-body">
+    <form class="contact-form" (ngSubmit)="submitContact()">
+      <h2>Send us a message</h2>
+      <p class="contact-form-lead">
+        Fill in the form and we will follow up. Required fields are marked with *.
+      </p>
+
+      <div class="contact-grid">
+        <label>
+          Full name *
+          <input name="fullName" [(ngModel)]="form.fullName" required placeholder="Your full name" />
+        </label>
+        <label>
+          Phone *
+          <input name="phone" [(ngModel)]="form.phone" required placeholder="+256 ..." />
+        </label>
+        <label>
+          Email
+          <input name="email" type="email" [(ngModel)]="form.email" placeholder="you@example.com" />
+        </label>
+        <label>
+          Subject *
+          <select name="subject" [(ngModel)]="form.subject" required>
+            <option *ngFor="let item of subjects" [value]="item">{{ item }}</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="contact-message">
+        Message *
+        <textarea
+          name="message"
+          rows="6"
+          [(ngModel)]="form.message"
+          required
+          placeholder="How can we help you?"></textarea>
+      </label>
+
+      <div class="contact-actions">
+        <button
+          type="submit"
+          class="contact-submit"
+          [disabled]="!form.fullName.trim() || !form.phone.trim() || !form.message.trim()">
+          Send message
+        </button>
+        <p class="contact-hint" *ngIf="submitted">
+          Your email app should open with the message ready to send. You can also call us using the numbers on the right.
+        </p>
+      </div>
+    </form>
+
+    <aside class="contact-aside">
+      <h3>Contact details</h3>
+      <div class="contact-detail">
+        <span>Phone</span>
+        <a [href]="contact.phoneLinks[0]">{{ contact.phones[0] }}</a>
+        <a [href]="contact.phoneLinks[1]">{{ contact.phones[1] }}</a>
+      </div>
+      <div class="contact-detail">
+        <span>Email</span>
+        <a [href]="'mailto:' + contact.email">{{ contact.email }}</a>
+      </div>
+      <div class="contact-detail">
+        <span>Location</span>
+        <strong>{{ contact.location }}</strong>
+      </div>
+      <div class="contact-detail">
+        <span>Hours</span>
+        <p *ngFor="let row of contact.hours">
+          <strong>{{ row.day }}</strong><br />
+          {{ row.note }}
+        </p>
+      </div>
+      <a class="contact-book-btn" routerLink="/book-appointment">Book an appointment</a>
+    </aside>
+  </div>
+
+  <section class="contact-map-section" aria-label="Veneranda Hospital map">
+    <div class="contact-map-header">
+      <h2>Find us on the map</h2>
+      <p>Veneranda Hospital — {{ contact.location }}</p>
+      <a
+        class="contact-map-link"
+        href="https://www.google.com/maps/search/?api=1&query=Veneranda%20Hospital%2C%20Bugogo%20Town%20Council%2C%20Kyegegwa%20District%2C%20Uganda"
+        target="_blank"
+        rel="noopener noreferrer">
+        Open in Google Maps
+        <i class="bi bi-box-arrow-up-right"></i>
+      </a>
+    </div>
+    <div class="contact-map-frame">
+      <iframe
+        [src]="mapUrl"
+        title="Veneranda Hospital on Google Maps"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        allowfullscreen></iframe>
+    </div>
+  </section>
+</section>

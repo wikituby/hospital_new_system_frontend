@@ -1,0 +1,43 @@
+
+<div class="row" style="padding-left: 125px;padding-top: 20px;color: rgb(19, 137, 98);">
+    <p><strong style="color: rgb(15, 129, 68);">Category: <span class="badge badge-success" style="margin-left:5px;font-size: 15px;">products</span></strong></p>
+</div>
+
+
+
+
+<div class="container">
+    <div class="row">
+        <ng-container *ngFor="let item of productList | paginate: { itemsPerPage: 6, currentPage: page }">
+        <div class="card col-md-3">
+            <img (click)="addtoDetails(item)" src="{{item.image}}" alt="" style="width: 180px;height: 70px;">
+            <h5 class="itemdata" >{{item.title}}</h5>
+            
+            <p class="itemdata">{{item.description}}</p>
+        
+            <p><strong style="font-size: 18px;">Price: UGX: {{item.price}}</strong></p>
+            <p>Category: {{item.category}}</p>
+     
+            <button type="button" class="btn btn-outline-success"  (click)="addtoCart(item)">
+                Add to cart<span class="badge badge-danger" style="margin-left:5px;">New</span>
+
+            </button>
+            <button  (click)="addtoDetails(item)"  type="button" class="btn btn-outline-link">
+                View Product Details
+
+            </button>
+
+        
+        </div>
+    </ng-container>
+
+    <div class="has-text-centered">
+        <pagination-controls (pageChange)="page = $event"></pagination-controls>
+    </div>
+    </div>
+</div>
+
+
+
+
+

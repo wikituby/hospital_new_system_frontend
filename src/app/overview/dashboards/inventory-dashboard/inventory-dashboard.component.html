@@ -1,0 +1,164 @@
+<div class="inventory-dashboard-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <h1 class="page-title">
+      <i class="bi bi-box-seam"></i>
+      Inventory Dashboard
+    </h1>
+    <nav class="breadcrumbs">
+      <a [routerLink]="['/']">Home</a>
+      <span class="sep">/</span>
+      <a [routerLink]="['/overview']">Dashboard</a>
+      <span class="sep">/</span>
+      <span class="current">Inventory Dashboard</span>
+    </nav>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="metrics-grid">
+    <div class="metric-card metric-total">
+      <div class="metric-icon">
+        <i class="bi bi-box"></i>
+      </div>
+      <div class="metric-content">
+        <div class="metric-value">{{totalItems}}</div>
+        <div class="metric-label">Total Items</div>
+        <div class="metric-change positive">
+          <i class="bi bi-arrow-up"></i>
+          +12% from last month
+        </div>
+      </div>
+    </div>
+    <div class="metric-card metric-low-stock">
+      <div class="metric-icon">
+        <i class="bi bi-exclamation-triangle"></i>
+      </div>
+      <div class="metric-content">
+        <div class="metric-value">{{lowStockItems}}</div>
+        <div class="metric-label">Low Stock Items</div>
+        <div class="metric-change warning">
+          <i class="bi bi-arrow-down"></i>
+          Requires attention
+        </div>
+      </div>
+    </div>
+    <div class="metric-card metric-value">
+      <div class="metric-icon">
+        <i class="bi bi-currency-dollar"></i>
+      </div>
+      <div class="metric-content">
+        <div class="metric-value">${{totalValue | number:'1.0-0'}}</div>
+        <div class="metric-label">Total Inventory Value</div>
+        <div class="metric-change positive">
+          <i class="bi bi-arrow-up"></i>
+          +8% from last month
+        </div>
+      </div>
+    </div>
+    <div class="metric-card metric-expiring">
+      <div class="metric-icon">
+        <i class="bi bi-calendar-x"></i>
+      </div>
+      <div class="metric-content">
+        <div class="metric-value">{{expiringSoon}}</div>
+        <div class="metric-label">Expiring Soon</div>
+        <div class="metric-change warning">
+          <i class="bi bi-clock"></i>
+          Next 30 days
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts and Analytics -->
+  <div class="analytics-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">
+          <i class="bi bi-graph-up"></i>
+          Stock Levels Trend
+        </h3>
+        <select class="chart-filter">
+          <option>Last 7 Days</option>
+          <option>Last 30 Days</option>
+          <option>Last 3 Months</option>
+        </select>
+      </div>
+      <div class="chart-placeholder">
+        <i class="bi bi-bar-chart" style="font-size: 48px; color: #94a3b8;"></i>
+        <p>Stock levels chart will be displayed here</p>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">
+          <i class="bi bi-pie-chart"></i>
+          Category Distribution
+        </h3>
+      </div>
+      <div class="chart-placeholder">
+        <i class="bi bi-pie-chart-fill" style="font-size: 48px; color: #94a3b8;"></i>
+        <p>Category distribution chart will be displayed here</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions-section">
+    <h2 class="section-title">
+      <i class="bi bi-lightning"></i>
+      Quick Actions
+    </h2>
+    <div class="actions-grid">
+      <button class="action-card" [routerLink]="['/item-management']">
+        <i class="bi bi-box-seam"></i>
+        <span>Manage Items</span>
+      </button>
+      <button class="action-card" [routerLink]="['/overview/stock-management']">
+        <i class="bi bi-archive"></i>
+        <span>Stock Management</span>
+      </button>
+      <button class="action-card" [routerLink]="['/overview/stock-receive']">
+        <i class="bi bi-box-arrow-in-down"></i>
+        <span>Receive Stock</span>
+      </button>
+      <button class="action-card" [routerLink]="['/overview/stock-transfer']">
+        <i class="bi bi-arrow-left-right"></i>
+        <span>Transfer Stock</span>
+      </button>
+      <button class="action-card" [routerLink]="['/overview/reorder-levels']">
+        <i class="bi bi-exclamation-triangle"></i>
+        <span>Reorder Levels</span>
+      </button>
+      <button class="action-card" [routerLink]="['/overview/suppliers']">
+        <i class="bi bi-truck"></i>
+        <span>Suppliers</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="recent-activity-section">
+    <div class="activity-header">
+      <h2 class="section-title">
+        <i class="bi bi-clock-history"></i>
+        Recent Activity
+      </h2>
+      <button class="btn-sm btn-secondary">View All</button>
+    </div>
+    <div class="activity-list">
+      <div class="activity-item" *ngFor="let activity of recentActivities">
+        <div class="activity-icon" [class]="'icon-' + activity.type">
+          <i [class]="activity.icon"></i>
+        </div>
+        <div class="activity-content">
+          <div class="activity-title">{{activity.title}}</div>
+          <div class="activity-meta">{{activity.time}} • {{activity.user}}</div>
+        </div>
+        <div class="activity-badge" [class]="'badge-' + activity.type">
+          {{activity.type | titlecase}}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

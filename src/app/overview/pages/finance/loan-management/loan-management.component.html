@@ -1,0 +1,220 @@
+<div class="expense-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div>
+      <h1><i class="bi bi-cash-coin"></i> Loan Management</h1>
+      <p class="subtitle">Track staff and patient loans, repayments, and outstanding balances.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="loadLoans()" [disabled]="isLoading">
+        <i class="bi bi-arrow-repeat"></i> Refresh
+      </button>
+      <button class="btn-primary" (click)="openCreateModal()">
+        <i class="bi bi-plus-lg"></i> New Loan
+      </button>
+    </div>
+  </div>
+
+  <div class="breadcrumb-row">
+    <span class="current"><i class="bi bi-cash-stack"></i> Financial Management</span>
+    <span class="sep">/</span>
+    <span class="current"><i class="bi bi-cash-coin"></i> Loans</span>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card accent-blue">
+      <i class="bi bi-list-check"></i>
+      <div>
+        <div class="stat-value">{{ loans.length }}</div>
+        <div class="stat-label">Total Loans</div>
+      </div>
+    </div>
+    <div class="stat-card accent-green">
+      <i class="bi bi-hourglass-split"></i>
+      <div>
+        <div class="stat-value">{{ activeCount }}</div>
+        <div class="stat-label">Active</div>
+      </div>
+    </div>
+    <div class="stat-card accent-warn">
+      <i class="bi bi-exclamation-triangle"></i>
+      <div>
+        <div class="stat-value">{{ overdueCount }}</div>
+        <div class="stat-label">Overdue</div>
+      </div>
+    </div>
+    <div class="stat-card accent-purple">
+      <i class="bi bi-wallet2"></i>
+      <div>
+        <div class="stat-value">{{ formatAmount(totalOutstanding) }}</div>
+        <div class="stat-label">Outstanding</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="alert success" *ngIf="responseMessage">{{ responseMessage }}</p>
+  <p class="alert error" *ngIf="responseError">{{ responseError }}</p>
+
+  <div class="surface">
+    <div class="surface-head">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Search borrower, reference, or notes..." />
+      </div>
+      <select class="form-control filter-select" [(ngModel)]="statusFilter">
+        <option value="">All statuses</option>
+        <option value="ACTIVE">Active</option>
+        <option value="OVERDUE">Overdue</option>
+        <option value="PAID">Paid</option>
+      </select>
+      <div class="count-pill">{{ filteredLoans.length }} found</div>
+    </div>
+
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading loans...</p>
+    </div>
+
+    <div *ngIf="!isLoading" class="table-wrap">
+      <table class="data-table" *ngIf="filteredLoans.length; else emptyState">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Borrower</th>
+            <th>Type</th>
+            <th>Principal</th>
+            <th>Repaid</th>
+            <th>Balance</th>
+            <th>Loan Date</th>
+            <th>Due</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of filteredLoans">
+            <td class="mono">{{ item.id }}</td>
+            <td>
+              <div class="cell-name">{{ item.borrowerName }}</div>
+              <div class="cell-desc">{{ item.borrowerContact || item.referenceNumber || '—' }}</div>
+            </td>
+            <td><span class="category-badge">{{ item.borrowerType }}</span></td>
+            <td class="cell-amount">{{ formatAmount(item.principalAmount) }}</td>
+            <td class="cell-amount">{{ formatAmount(item.amountRepaid) }}</td>
+            <td class="cell-amount">{{ formatAmount(item.balanceOutstanding) }}</td>
+            <td>{{ formatDate(item.loanDate) }}</td>
+            <td>{{ formatDate(item.dueDate) }}</td>
+            <td><span [class]="statusClass(item.status)">{{ item.status }}</span></td>
+            <td class="actions-cell">
+              <button type="button" class="btn-icon edit" title="Edit" (click)="openEditModal(item)">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button type="button" class="btn-icon" title="Record repayment" (click)="openRepaymentModal(item)" [disabled]="(item.status || '').toUpperCase() === 'PAID'">
+                <i class="bi bi-cash"></i>
+              </button>
+              <button type="button" class="btn-icon danger" title="Delete" (click)="confirmDelete(item)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #emptyState>
+        <div class="empty-state">
+          <i class="bi bi-cash-coin"></i>
+          <p>No loans recorded yet.</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showLoanModal" (click)="closeModals()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3><i class="bi bi-cash-coin"></i> {{ editingLoan ? 'Edit Loan' : 'New Loan' }}</h3>
+      <button type="button" class="modal-close" (click)="closeModals()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="form-grid">
+      <div class="form-field">
+        <label>Borrower name</label>
+        <input class="form-control" [(ngModel)]="loanForm.borrowerName" placeholder="Full name" />
+      </div>
+      <div class="form-field">
+        <label>Contact</label>
+        <input class="form-control" [(ngModel)]="loanForm.borrowerContact" placeholder="Phone or email" />
+      </div>
+      <div class="form-field">
+        <label>Borrower type</label>
+        <select class="form-control" [(ngModel)]="loanForm.borrowerType">
+          <option *ngFor="let t of borrowerTypes" [value]="t">{{ t }}</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Principal amount</label>
+        <input class="form-control" type="number" min="0" [(ngModel)]="loanForm.principalAmount" />
+      </div>
+      <div class="form-field">
+        <label>Loan date</label>
+        <input class="form-control" type="date" [(ngModel)]="loanForm.loanDate" />
+      </div>
+      <div class="form-field">
+        <label>Due date</label>
+        <input class="form-control" type="date" [(ngModel)]="loanForm.dueDate" />
+      </div>
+      <div class="form-field" style="grid-column: 1 / -1;">
+        <label>Description / notes</label>
+        <textarea class="form-control" [(ngModel)]="loanForm.description" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closeModals()" [disabled]="isSaving">Cancel</button>
+      <button type="button" class="btn-primary" (click)="saveLoan()" [disabled]="isSaving">
+        {{ isSaving ? 'Saving…' : (editingLoan ? 'Update Loan' : 'Record Loan') }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showRepaymentModal" (click)="closeModals()">
+  <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3><i class="bi bi-cash"></i> Record Repayment</h3>
+      <button type="button" class="modal-close" (click)="closeModals()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <p class="delete-desc" *ngIf="repaymentTarget">
+      {{ repaymentTarget.borrowerName }} — balance {{ formatAmount(repaymentTarget.balanceOutstanding) }}
+    </p>
+    <div class="form-field">
+      <label>Repayment amount</label>
+      <input class="form-control" type="number" min="0" [(ngModel)]="repaymentForm.repaymentAmount" />
+    </div>
+    <div class="form-field">
+      <label>Note (optional)</label>
+      <textarea class="form-control" [(ngModel)]="repaymentForm.note" rows="2"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closeModals()" [disabled]="isSaving">Cancel</button>
+      <button type="button" class="btn-primary" (click)="saveRepayment()" [disabled]="isSaving">
+        {{ isSaving ? 'Saving…' : 'Record Repayment' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showDeleteConfirm" (click)="closeModals()">
+  <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3><i class="bi bi-trash"></i> Delete Loan</h3>
+      <button type="button" class="modal-close" (click)="closeModals()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <p class="delete-desc" *ngIf="deleteTarget">
+      Delete loan #{{ deleteTarget.id }} for {{ deleteTarget.borrowerName }}? This cannot be undone.
+    </p>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closeModals()" [disabled]="isSaving">Cancel</button>
+      <button type="button" class="btn-danger" (click)="deleteLoan()" [disabled]="isSaving">
+        {{ isSaving ? 'Deleting…' : 'Delete' }}
+      </button>
+    </div>
+  </div>
+</div>

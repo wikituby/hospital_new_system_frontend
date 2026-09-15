@@ -1,0 +1,88 @@
+<app-site-nav></app-site-nav>
+
+<section class="about-page">
+  <div class="about-page-hero">
+    <div class="about-page-hero-inner">
+      <span class="about-eyebrow">About Us</span>
+      <h1>
+        Healthcare for our community<br />
+        <span>Veneranda Hospital</span>
+      </h1>
+      <p>
+        Veneranda Hospital offers services ranging from maternity and paediatrics to ultrasound and other scan types,
+        general doctor consultation, pharmacy, full laboratory services, and dental care. A full-time doctor and a
+        full-time dentist are available for appointments. We are growing — theatre and surgical services, blood bank,
+        and ambulance support are on the way.
+      </p>
+    </div>
+  </div>
+
+  <div class="about-page-body">
+    <div class="about-stats">
+      <div class="about-stat">
+        <div class="about-stat-label">Doctor for appointments</div>
+        <div class="about-stat-value">Full time</div>
+      </div>
+      <div class="about-stat">
+        <div class="about-stat-label">Dentist available</div>
+        <div class="about-stat-value">Full time</div>
+      </div>
+      <div class="about-stat">
+        <div class="about-stat-label">Location</div>
+        <div class="about-stat-value">Bugogo Town Council, Kyegegwa</div>
+      </div>
+    </div>
+
+    <div class="about-founder">
+      <div class="about-founder-photo">
+        <img [src]="defaultPersonImage" alt="Dr. Kabugo Nicholas" />
+      </div>
+      <div class="about-founder-copy">
+        <h2>Medical leadership</h2>
+        <h3>Dr. Kabugo Nicholas</h3>
+        <p class="about-founder-role">Medical Director &amp; Supervising Doctor</p>
+        <p>
+          Dr. Kabugo Nicholas leads clinical care and oversees medical standards at Veneranda Hospital, guiding teams
+          that serve families across our community every day.
+        </p>
+      </div>
+    </div>
+
+    <section class="about-people">
+      <h2>Our leadership</h2>
+      <div class="about-people-grid">
+        <article class="about-person-card" *ngFor="let person of leadership">
+          <div class="about-person-photo">
+            <img
+              [src]="personImage(person)"
+              [alt]="person.name"
+              (error)="$any($event.target).src = defaultPersonImage" />
+          </div>
+          <div class="about-person-body">
+            <h3>{{ person.name }}</h3>
+            <p class="about-person-role">{{ person.role }}</p>
+            <p *ngIf="person.description">{{ person.description }}</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="about-people">
+      <h2>Board of Advisors</h2>
+      <div class="about-people-grid about-people-grid--advisors">
+        <article class="about-person-card" *ngFor="let advisor of boardOfAdvisors">
+          <div class="about-person-photo">
+            <img
+              [src]="personImage(advisor)"
+              [alt]="advisor.name"
+              (error)="$any($event.target).src = defaultPersonImage" />
+          </div>
+          <div class="about-person-body">
+            <h3>{{ advisor.name }}</h3>
+            <p class="about-person-role">{{ advisor.role }}</p>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+</section>

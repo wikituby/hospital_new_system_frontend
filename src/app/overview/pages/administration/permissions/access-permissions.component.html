@@ -1,0 +1,429 @@
+<div class="access-control-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-shield-lock"></i>
+        Access Control Panel
+        <span class="title-info-wrap">
+          <button type="button" class="title-info-btn" aria-label="How to give access to a page">
+            <i class="bi bi-info-circle"></i>
+          </button>
+          <div class="title-info-popover" role="tooltip">
+            <p class="title-info-popover-heading">How to give access to a page</p>
+            <ol class="how-steps">
+              <li><strong>User access</strong> — select a user, choose Custom, then click a page to grant access and configure visible components.</li>
+              <li>Each page can have <strong>full access</strong> or hide specific buttons, sections, tables, and fields.</li>
+              <li>To allow re-opening a closed visit, tick <strong>Open Closed Visit</strong> under Patient Management (Custom access).</li>
+              <li><strong>Role access</strong> — select a role and tick API actions that role may perform (e.g. stock transfer).</li>
+              <li>Click <strong>Save</strong>. Users must <strong>log in again</strong> for changes to apply.</li>
+            </ol>
+            <p class="how-note">
+              Roles without endpoint access cannot call protected APIs even if they reach a page. Admin and MD always have full access.
+            </p>
+          </div>
+        </span>
+      </h1>
+      <p class="page-subtitle">Assign overview pages per user, hide page components, and control API endpoints per role</p>
+    </div>
+    <div class="header-right">
+      <button class="btn-secondary" (click)="loadUsers()" [disabled]="isLoading">
+        <i class="bi bi-arrow-clockwise"></i>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="responseMessage" class="feedback-banner" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div class="access-panel-tabs">
+    <button
+      type="button"
+      class="access-panel-tab"
+      [class.active]="panelMode === 'user'"
+      (click)="setPanelMode('user')">
+      <i class="bi bi-person"></i> User access
+    </button>
+    <button
+      type="button"
+      class="access-panel-tab"
+      [class.active]="panelMode === 'role'"
+      (click)="setPanelMode('role')">
+      <i class="bi bi-shield-check"></i> Role access
+    </button>
+  </div>
+
+  <div class="access-layout" *ngIf="panelMode === 'user'">
+    <section class="users-panel">
+      <div class="panel-head panel-head-stack">
+        <h3>Select user</h3>
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Search users..." [(ngModel)]="searchQuery">
+        </div>
+      </div>
+
+      <div *ngIf="isLoading" class="loading-state">Loading users…</div>
+
+      <ul class="user-list" *ngIf="!isLoading">
+        <li
+          *ngFor="let user of filteredUsers"
+          class="user-list-item"
+          [class.selected]="selectedUser?.id === user.id"
+          (click)="selectUser(user)">
+          <div class="user-list-main">
+            <strong>{{ getUserDisplayName(user) }}</strong>
+            <span class="user-role">{{ user.role || 'N/A' }}</span>
+          </div>
+          <span class="restriction-badge" [class.active]="hasRestrictions(user)">
+            {{ hasRestrictions(user) ? 'Custom' : 'Full' }}
+          </span>
+        </li>
+        <li *ngIf="filteredUsers.length === 0" class="empty-row">No users found</li>
+      </ul>
+    </section>
+
+    <section class="permissions-panel">
+      <div class="panel-head panel-head-toolbar" *ngIf="!selectedUser">
+        <div class="panel-col panel-col-title">
+          <h3>Set page access</h3>
+          <p class="panel-sub muted">Select a user first, then configure access below.</p>
+        </div>
+      </div>
+
+      <div class="panel-head panel-head-toolbar" *ngIf="selectedUser" [class.panel-head-two-col]="!isCustomAccessMode">
+        <div class="panel-col panel-col-title">
+          <span class="col-label">Page access</span>
+          <h3>Set page access</h3>
+          <p class="panel-sub">
+            {{ getUserDisplayName(selectedUser) }}
+            <span class="access-mode-pill" [class.custom]="isCustomAccessMode">{{ accessModeLabel }}</span>
+          </p>
+        </div>
+
+        <div class="panel-col panel-col-grant" *ngIf="isCustomAccessMode">
+          <span class="col-label">Grant access</span>
+          <p class="col-hint">Click a page to grant access and configure components</p>
+          <div class="page-search-box page-search-inline">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Find a page…" [(ngModel)]="pageSearchQuery">
+          </div>
+          <div class="col-link-actions">
+            <button type="button" class="btn-link-sm" (click)="selectAllPages()">Grant all</button>
+            <button type="button" class="btn-link-sm" (click)="clearAllPages()">Clear</button>
+            <span class="col-action-sep">|</span>
+            <button type="button" class="btn-link-sm" (click)="expandAllGroups()">Expand all</button>
+            <button type="button" class="btn-link-sm" (click)="collapseAllGroups()">Collapse all</button>
+          </div>
+        </div>
+
+        <div class="panel-col panel-col-access">
+          <span class="col-label">Access type</span>
+          <div class="access-mode-toggle">
+            <label class="access-mode-pill-btn" [class.selected]="!isCustomAccessMode">
+              <input
+                type="radio"
+                name="accessMode"
+                [checked]="!isCustomAccessMode"
+                (change)="setAccessMode('full')" />
+              Full
+            </label>
+            <label class="access-mode-pill-btn" [class.selected]="isCustomAccessMode">
+              <input
+                type="radio"
+                name="accessMode"
+                [checked]="isCustomAccessMode"
+                (change)="setAccessMode('custom')" />
+              Custom
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="permissions-empty" *ngIf="!selectedUser">
+        <i class="bi bi-person-check"></i>
+        <p>Select a user on the left to start assigning page access.</p>
+      </div>
+
+      <ng-container *ngIf="selectedUser">
+        <div class="granted-preview-bar" *ngIf="isCustomAccessMode && grantedPagesPreview.length">
+          <span class="granted-preview-label">Granting:</span>
+          <span class="granted-chip" *ngFor="let p of grantedPagesPreview">{{ p.label }}</span>
+        </div>
+
+        <div class="custom-access-panel" *ngIf="isCustomAccessMode">
+          <div class="permission-groups">
+            <div class="permission-group" *ngFor="let group of filteredPageGroups">
+              <button
+                type="button"
+                class="group-head"
+                (click)="togglePermissionGroup(group.group)"
+                [attr.aria-expanded]="isGroupExpanded(group.group)">
+                <span class="group-head-left">
+                  <i class="bi group-chevron" [ngClass]="isGroupExpanded(group.group) ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
+                  <span class="group-title-wrap">
+                    <span class="group-title">{{ group.group }}</span>
+                    <span class="group-meta">{{ grantedCountInGroup(group.pages) }}/{{ group.pages.length }} granted</span>
+                  </span>
+                </span>
+                <span class="group-actions" (click)="$event.stopPropagation()">
+                  <button type="button" class="btn-link-sm" (click)="selectAllInGroup(group.pages)">Grant all</button>
+                  <button type="button" class="btn-link-sm" (click)="clearGroup(group.pages)">Remove all</button>
+                </span>
+              </button>
+              <div class="page-grid" *ngIf="isGroupExpanded(group.group)">
+                <div
+                  class="page-card page-card-clickable"
+                  *ngFor="let page of group.pages"
+                  [class.granted]="isPageSelected(page.key)"
+                  [class.denied]="!isPageSelected(page.key)"
+                  (click)="openPageConfig(page, $event)">
+                  <span class="page-card-body">
+                    <span class="page-card-name">{{ page.label }}</span>
+                    <span class="page-card-route">{{ page.key }}</span>
+                    <span class="page-access-status" [class.granted]="isPageSelected(page.key)">
+                      <i class="bi" [ngClass]="isPageSelected(page.key) ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
+                      {{ pageAccessSummary(page) }}
+                    </span>
+                  </span>
+                  <span class="page-card-action" aria-hidden="true">
+                    <i class="bi bi-sliders"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p *ngIf="filteredPageGroups.length === 0" class="empty-row">No pages match your search.</p>
+          </div>
+        </div>
+
+        <p class="full-access-inline" *ngIf="!isCustomAccessMode">
+          <i class="bi bi-unlock"></i> Full access — all overview pages are allowed for this user.
+        </p>
+      </ng-container>
+
+      <div class="permissions-footer" *ngIf="selectedUser">
+        <p class="save-reminder"><i class="bi bi-info-circle"></i> User must log in again after saving.</p>
+        <div class="footer-actions">
+          <button type="button" class="btn-secondary" (click)="clearSelection()">Cancel</button>
+          <button type="button" class="btn-primary" [disabled]="isSaving" (click)="saveAccess()">
+            {{ isSaving ? 'Saving…' : 'Save access' }}
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="access-layout" *ngIf="panelMode === 'role'">
+    <section class="users-panel roles-panel">
+      <div class="panel-head panel-head-stack">
+        <h3>Select role</h3>
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Search roles…" [(ngModel)]="searchQuery">
+        </div>
+      </div>
+
+      <ul class="user-list role-list">
+        <li
+          *ngFor="let role of filteredRoles"
+          class="user-list-item"
+          [class.selected]="selectedRole === role"
+          (click)="selectRole(role)">
+          <div class="user-list-main">
+            <strong>{{ role }}</strong>
+            <span class="user-role">Role</span>
+          </div>
+        </li>
+        <li *ngIf="filteredRoles.length === 0" class="empty-row">No roles found</li>
+      </ul>
+    </section>
+
+    <section class="permissions-panel">
+      <div class="panel-head panel-head-toolbar" *ngIf="!selectedRole">
+        <div class="panel-col panel-col-title">
+          <h3>Allow API endpoints</h3>
+          <p class="panel-sub muted">Select a role, then tick which backend actions it may perform.</p>
+        </div>
+      </div>
+
+      <div class="panel-head panel-head-toolbar" *ngIf="selectedRole">
+        <div class="panel-col panel-col-title">
+          <span class="col-label">Role</span>
+          <h3>Allow API endpoints</h3>
+          <p class="panel-sub">
+            <strong>{{ selectedRole }}</strong>
+            <span class="access-mode-pill custom">{{ selectedEndpointCount }} endpoint(s) allowed</span>
+          </p>
+        </div>
+        <div class="panel-col panel-col-grant">
+          <span class="col-label">Grant access</span>
+          <div class="page-search-box page-search-inline">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Find endpoint…" [(ngModel)]="endpointSearchQuery">
+          </div>
+          <div class="col-link-actions">
+            <button type="button" class="btn-link-sm" (click)="selectAllEndpoints()">Grant all</button>
+            <button type="button" class="btn-link-sm" (click)="clearAllEndpoints()">Clear</button>
+            <span class="col-action-sep">|</span>
+            <button type="button" class="btn-link-sm" (click)="expandAllEndpointGroups()">Expand all</button>
+            <button type="button" class="btn-link-sm" (click)="collapseAllEndpointGroups()">Collapse all</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="permissions-empty" *ngIf="!selectedRole">
+        <i class="bi bi-shield-lock"></i>
+        <p>Select a role on the left to assign API endpoint access (e.g. stock transfer).</p>
+      </div>
+
+      <p *ngIf="roleAccessLoading" class="header-modal-loading">Loading role access…</p>
+
+      <ng-container *ngIf="selectedRole && !roleAccessLoading">
+        <div class="granted-preview-bar" *ngIf="grantedEndpointsPreview.length">
+          <span class="granted-preview-label">Allowed:</span>
+          <span class="granted-chip" *ngFor="let e of grantedEndpointsPreview">{{ e.label }}</span>
+        </div>
+
+        <div class="custom-access-panel">
+          <p class="role-access-hint">
+            <i class="bi bi-info-circle"></i>
+            Users with custom page access also receive linked endpoints (e.g. Stock Transfer page → transfer APIs).
+          </p>
+          <div class="permission-groups">
+            <div class="permission-group" *ngFor="let group of filteredEndpointGroups">
+              <button
+                type="button"
+                class="group-head"
+                (click)="toggleEndpointGroup(group.group)"
+                [attr.aria-expanded]="isEndpointGroupExpanded(group.group)">
+                <span class="group-head-left">
+                  <i class="bi group-chevron" [ngClass]="isEndpointGroupExpanded(group.group) ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
+                  <span class="group-title-wrap">
+                    <span class="group-title">{{ group.group }}</span>
+                    <span class="group-meta">{{ grantedEndpointsInGroup(group.endpoints) }}/{{ group.endpoints.length }} allowed</span>
+                  </span>
+                </span>
+                <span class="group-actions" (click)="$event.stopPropagation()">
+                  <button type="button" class="btn-link-sm" (click)="selectAllEndpointsInGroup(group.endpoints)">Grant all</button>
+                  <button type="button" class="btn-link-sm" (click)="clearEndpointsInGroup(group.endpoints)">Remove all</button>
+                </span>
+              </button>
+              <div class="page-grid" *ngIf="isEndpointGroupExpanded(group.group)">
+                <label
+                  class="page-card"
+                  *ngFor="let ep of group.endpoints"
+                  [class.granted]="isEndpointSelected(ep.key)"
+                  [class.denied]="!isEndpointSelected(ep.key)">
+                  <input
+                    type="checkbox"
+                    [checked]="isEndpointSelected(ep.key)"
+                    (change)="toggleEndpoint(ep.key, $any($event.target).checked)" />
+                  <span class="page-card-body">
+                    <span class="page-card-name">{{ ep.label }}</span>
+                    <span class="page-card-route">{{ ep.httpMethod }} {{ ep.pathContains }}</span>
+                    <span class="page-access-status" [class.granted]="isEndpointSelected(ep.key)">
+                      <i class="bi" [ngClass]="isEndpointSelected(ep.key) ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
+                      {{ isEndpointSelected(ep.key) ? 'Allowed' : 'Blocked' }}
+                    </span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <div class="permissions-footer" *ngIf="selectedRole">
+        <p class="save-reminder"><i class="bi bi-info-circle"></i> Users must log in again after saving.</p>
+        <div class="footer-actions">
+          <button type="button" class="btn-secondary" (click)="clearSelection()">Cancel</button>
+          <button type="button" class="btn-primary" [disabled]="isSaving" (click)="saveRoleAccess()">
+            {{ isSaving ? 'Saving…' : 'Save role access' }}
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div
+    class="page-config-overlay"
+    *ngIf="showPageConfigModal && pageConfigTarget"
+    role="dialog"
+    aria-labelledby="page-config-title"
+    (click)="closePageConfigModal()">
+    <div class="page-config-modal" role="document" (click)="$event.stopPropagation()">
+      <div class="page-config-header">
+        <div>
+          <h3 id="page-config-title">{{ pageConfigTarget.label }}</h3>
+          <p class="page-config-sub">{{ pageConfigTarget.key }}</p>
+        </div>
+        <button type="button" class="page-config-close" aria-label="Close" (click)="closePageConfigModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="page-config-body">
+        <label class="page-config-toggle-row">
+          <input type="checkbox" [(ngModel)]="pageConfigGrantPage" />
+          <span>
+            <strong>Grant page access</strong>
+            <small>User can open this page in the sidebar</small>
+          </span>
+        </label>
+
+        <ng-container *ngIf="pageConfigGrantPage && pageConfigHasComponents">
+          <div class="page-config-section">
+            <p class="page-config-section-title">Page components</p>
+            <p class="page-config-section-hint">
+              Choose full page access or hide specific sections, buttons, tables, and fields on this page.
+            </p>
+
+            <div class="page-config-mode-toggle">
+              <label class="access-mode-pill-btn" [class.selected]="pageConfigFullComponents">
+                <input
+                  type="radio"
+                  name="pageComponentMode"
+                  [checked]="pageConfigFullComponents"
+                  (change)="setPageConfigFullComponents(true)" />
+                Full page access
+              </label>
+              <label class="access-mode-pill-btn" [class.selected]="!pageConfigFullComponents">
+                <input
+                  type="radio"
+                  name="pageComponentMode"
+                  [checked]="!pageConfigFullComponents"
+                  (change)="setPageConfigFullComponents(false)" />
+                Hide some components
+              </label>
+            </div>
+
+            <ul class="component-access-list" *ngIf="!pageConfigFullComponents">
+              <li *ngFor="let component of pageConfigComponents" class="component-access-item">
+                <label>
+                  <input
+                    type="checkbox"
+                    [checked]="pageConfigComponentVisible.get(component.key) !== false"
+                    (change)="togglePageConfigComponent(component.key, $any($event.target).checked)" />
+                  <span class="component-access-text">
+                    <strong>{{ component.label }}</strong>
+                    <small>{{ component.description }}</small>
+                  </span>
+                </label>
+              </li>
+            </ul>
+          </div>
+        </ng-container>
+
+        <p class="page-config-note" *ngIf="pageConfigGrantPage && !pageConfigHasComponents">
+          This page has no configurable sub-components yet. Granting access allows the full page.
+        </p>
+      </div>
+
+      <div class="page-config-footer">
+        <button type="button" class="btn-secondary" (click)="closePageConfigModal()">Cancel</button>
+        <button type="button" class="btn-primary" (click)="applyPageConfig()">Apply</button>
+      </div>
+    </div>
+  </div>
+</div>

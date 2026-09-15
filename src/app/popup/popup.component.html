@@ -1,0 +1,119 @@
+
+<div class="modal" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog" role="document" style="min-width: 800px;" >
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: rgb(25, 136, 90);">
+                <h5 class="modal-title" id="myModalLabel" style="color: white;font-size: 25px;"><i class="bi bi-arrow-up-circle" style="font-size: 25px;margin-right: 7px;"></i>{{editModal ? 'Update Item' : 'Add New Item'}}</h5>
+                <button (click)="closeModal()" type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+                <form #usersForm="ngForm" (ngSubmit)="getUserFormData(usersForm.value)">
+
+                    <div class="mb-3">
+
+
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="exampleFormControlInput1" class="form-label">Product Number</label>
+                                <input type="text" ngModel name="number" class="form-control form-control-sm"
+                                    id="exampleFormControlInput1" placeholder="Enter product number">
+                            </div>
+                            <div class="form-group col-md-6">
+
+                                <label for="exampleFormControlInput1"
+                                    class="form-label">Product Title</label>
+                                <input type="text" ngModel name="title" class="form-control form-control-sm"
+                                    id="exampleFormControlInput1" placeholder="Enter product title">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+
+                        <label for="exampleFormControlInput1" class="form-label">Product
+                            Price</label>
+                        <input type="number" ngModel name="price" 
+                            class="form-control form-control-sm" id="exampleFormControlInput1"
+                            placeholder="Enter product price">
+                        </div>
+   
+                        <div class="form-group col-md-6">
+
+                        <label for="exampleFormControlInput1"
+                            class="form-label">Category</label>
+                        <input type="text" ngModel name="category" 
+                            class="form-control form-control-sm" id="exampleFormControlInput1"
+                            placeholder="Enter product Category">
+                        </div>
+                    </div>
+
+                    <label  for="exampleFormControlInput1" class="form-label">Product Image
+                        Url</label>
+                    <input type="text" ngModel name="image" 
+                        class="form-control form-control-sm" id="exampleFormControlInput1"
+                        placeholder="Enter product Image Url">
+
+
+
+                        <label for="exampleFormControlTextarea1" style="margin-top: 10px;"
+                            class="form-label">Product Description</label>
+                        <textarea class="form-control form-control-sm" ngModel name="description"
+                            id="exampleFormControlTextarea1" placeholder="Enter product description" rows="3"></textarea>
+
+      
+
+
+
+
+                    </div>
+
+
+                    <!-- <input type="text" ngModel name="number" placeholder="Enter number">
+                    <br><br>
+                    <input type="text" ngModel name="title" placeholder="Enter title">
+                    <br><br>
+                    <input type="text" ngModel name="category" placeholder="Enter category">
+                    <br><br>
+                    <input type="text" ngModel name="description" placeholder="Enter description">
+                    <br><br>
+                    <input type="text" ngModel name="price" placeholder="Enter price in USD">
+                    <br><br>
+                    <input type="text" ngModel name="image" placeholder="Enter image url">
+                    <br><br>
+
+                    <button type="submit" value="">{{editModal ? 'Update Item' : 'Add Item'}}</button>-->
+                    <button type="submit" class="btn btn-success btn-sm" [disabled]="isButtonDisabled"><i class="bi bi-arrow-up-circle" style="margin-right: 5px;"></i>{{editModal ? 'Update Item' : 'Add New Item'}}</button>
+
+
+                    <br><br>
+                    <div *ngIf="showDivAddToDataBase"
+                        style="font-size: 15px;background-color: rgb(11, 155, 112);padding: 30px;border-radius: 12px;">
+                        <h5 style="color: white;font-size: 20px;">Item Saved successfully</h5>
+                        <h5 style="color: white;font-size: 20px;">click save changes below to update</h5>
+
+                        <!-- Content of the div you want to show -->
+                    </div>
+
+                    <div *ngIf="showDivUpdated"
+                        style="background-color: rgb(10, 152, 100);padding-top: 10px;border-radius: 8px; padding-bottom: 1px;padding-right: 10px;padding-left: 10px">
+                        <h4 style="color: white;font-size: 20px;">Item Updated successfully, click save changes below to update</h4>
+
+                        <!-- Content of the div you want to show -->
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button (click)="closeModalForAdd()" *ngIf="closeModalAdd" type="button" class="btn btn-danger btn-sm"
+                    data-dismiss="modal"><i class="bi bi-x-circle" style="margin-right: 5px;"></i>Close</button>
+                <button (click)="closeModalForUpdate()" *ngIf="closeModalUpdate" type="button"
+                    class="btn btn-danger btn-sm" data-dismiss="modal"><i class="bi bi-x-circle" style="margin-right: 5px;"></i>Close</button>
+                <button (click)="reopen()" type="button" class="btn btn-outline-success btn-sm"><i class="bi bi-arrow-clockwise" style="margin-right: 5px;"></i>Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>

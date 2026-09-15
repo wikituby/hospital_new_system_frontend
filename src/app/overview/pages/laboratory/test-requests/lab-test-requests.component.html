@@ -1,0 +1,198 @@
+<div class="lab-test-requests-page" [class.dark]="isDarkMode">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-flask"></i>
+        Laboratory Test Requests
+      </h1>
+      <p class="page-subtitle">Request and manage laboratory investigations</p>
+    </div>
+    <div class="header-right">
+      <button class="btn-primary" (click)="createNewRequest()">
+        <i class="bi bi-plus-circle"></i>
+        New Test Request
+      </button>
+      <button class="btn-secondary">
+        <i class="bi bi-download"></i>
+        Export
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card stat-pending">
+      <div class="stat-icon">
+        <i class="bi bi-clock-history"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{pendingTests}}</div>
+        <div class="stat-label">Pending Tests</div>
+      </div>
+    </div>
+    <div class="stat-card stat-in-progress">
+      <div class="stat-icon">
+        <i class="bi bi-hourglass-split"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{inProgressTests}}</div>
+        <div class="stat-label">In Progress</div>
+      </div>
+    </div>
+    <div class="stat-card stat-completed">
+      <div class="stat-icon">
+        <i class="bi bi-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{completedTests}}</div>
+        <div class="stat-label">Completed Today</div>
+      </div>
+    </div>
+    <div class="stat-card stat-critical">
+      <div class="stat-icon">
+        <i class="bi bi-exclamation-triangle"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{criticalResults}}</div>
+        <div class="stat-label">Critical Results</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" placeholder="Search by patient name, test name, or request ID..." [(ngModel)]="searchQuery">
+    </div>
+    <div class="filter-group">
+      <select class="filter-select" [(ngModel)]="statusFilter">
+        <option value="">All Status</option>
+        <option value="pending">Pending</option>
+        <option value="in-progress">In Progress</option>
+        <option value="completed">Completed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="testTypeFilter">
+        <option value="">All Test Types</option>
+        <option value="hematology">Hematology</option>
+        <option value="biochemistry">Biochemistry</option>
+        <option value="microbiology">Microbiology</option>
+        <option value="immunology">Immunology</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="priorityFilter">
+        <option value="">All Priorities</option>
+        <option value="routine">Routine</option>
+        <option value="urgent">Urgent</option>
+        <option value="stat">STAT</option>
+      </select>
+      <input type="date" class="filter-select" [(ngModel)]="dateFilter">
+    </div>
+  </div>
+
+  <!-- Test Requests Table -->
+  <div class="table-section">
+    <div class="table-header">
+      <h3 class="table-title">Test Requests</h3>
+      <div class="table-actions">
+        <button class="btn-sm btn-secondary">
+          <i class="bi bi-funnel"></i>
+          More Filters
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Request ID</th>
+            <th>Patient</th>
+            <th>Test Name</th>
+            <th>Test Type</th>
+            <th>Requested By</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Request Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let request of filteredRequests" [class.critical]="request.priority === 'stat'">
+            <td>
+              <div class="request-id">{{request.requestId}}</div>
+            </td>
+            <td>
+              <div class="patient-cell">
+                <div class="patient-avatar-small">{{request.patient.initials}}</div>
+                <div>
+                  <div class="patient-name-cell">{{request.patient.name}}</div>
+                  <div class="patient-meta-cell">File: {{request.patient.fileNo}}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="test-name">{{request.testName}}</div>
+              <div class="test-code">{{request.testCode}}</div>
+            </td>
+            <td>
+              <span class="test-type-badge" [class]="'type-' + request.testType">
+                {{request.testType | titlecase}}
+              </span>
+            </td>
+            <td>
+              <div class="doctor-cell">
+                <div class="doctor-name">{{request.requestedBy}}</div>
+                <div class="doctor-dept">{{request.department}}</div>
+              </div>
+            </td>
+            <td>
+              <span class="priority-badge" [class]="'priority-' + request.priority">
+                {{request.priority | uppercase}}
+              </span>
+            </td>
+            <td>
+              <span class="status-badge" [class]="'status-' + request.status">
+                {{request.status | titlecase}}
+              </span>
+            </td>
+            <td>
+              <div class="date-cell">
+                <div>{{request.requestDate}}</div>
+                <div class="time-cell">{{request.requestTime}}</div>
+              </div>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon" (click)="viewDetails(request)" title="View Details">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn-icon" *ngIf="request.status === 'pending'" (click)="processRequest(request)" title="Process">
+                  <i class="bi bi-play-circle"></i>
+                </button>
+                <button class="btn-icon" *ngIf="request.status === 'completed'" (click)="viewResults(request)" title="View Results">
+                  <i class="bi bi-file-earmark-medical"></i>
+                </button>
+                <button class="btn-icon" (click)="printRequest(request)" title="Print">
+                  <i class="bi bi-printer"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <button class="page-btn" [disabled]="currentPage === 1">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <span class="page-info">Page {{currentPage}} of {{totalPages}}</span>
+      <button class="page-btn" [disabled]="currentPage === totalPages">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>

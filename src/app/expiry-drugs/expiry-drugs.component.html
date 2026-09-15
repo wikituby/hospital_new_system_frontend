@@ -1,0 +1,118 @@
+<div class="expiry-drugs standalone-modern" [class.dark]="isDarkMode">
+  <h2 class="sm-title">Drugs by Expiry</h2>
+
+  <ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab === 'near'" (click)="setTab('near')">
+        Near expiry
+      </button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab === 'expired'" (click)="setTab('expired')">
+        Expired drugs
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+    <div class="tab-pane" [class.active]="activeTab === 'near'" role="tabpanel">
+      <p class="filter-hint">Items expiring soon. Set date range and item name to filter.</p>
+      <div class="filters">
+        <div class="filter-group">
+          <label>From date</label>
+          <input type="date" [(ngModel)]="filterFromNear" />
+        </div>
+        <div class="filter-group">
+          <label>To date</label>
+          <input type="date" [(ngModel)]="filterToNear" />
+        </div>
+        <div class="filter-group">
+          <label>Item name</label>
+          <input type="text" [(ngModel)]="filterItemNear" placeholder="Filter by item name" />
+        </div>
+        <div class="filter-group filter-actions">
+          <label>&nbsp;</label>
+          <div class="filter-buttons">
+            <button type="button" class="apply-btn" (click)="applyFilterNear()">Apply</button>
+            <button type="button" class="clear-btn" (click)="clearFilterNear()">Clear</button>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="loadingNear" class="loading">Loading...</div>
+      <div *ngIf="errorNear" class="error">{{ errorNear }}</div>
+      <div *ngIf="!loadingNear && !errorNear" class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Item name</th>
+              <th>Batch</th>
+              <th>Expiry date</th>
+              <th>Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of filteredNearList">
+              <td>{{ row.itemName || row.name || '–' }}</td>
+              <td>{{ row.batch || '–' }}</td>
+              <td>{{ row.expiryDate || '–' }}</td>
+              <td>{{ row.quantity != null ? row.quantity : '–' }}</td>
+            </tr>
+            <tr *ngIf="filteredNearList.length === 0">
+              <td colspan="4">No near-expiry items match the filters.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-pane" [class.active]="activeTab === 'expired'" role="tabpanel">
+      <p class="filter-hint">Expired items. Set date range and item name to filter.</p>
+      <div class="filters">
+        <div class="filter-group">
+          <label>From date</label>
+          <input type="date" [(ngModel)]="filterFromExpired" />
+        </div>
+        <div class="filter-group">
+          <label>To date</label>
+          <input type="date" [(ngModel)]="filterToExpired" />
+        </div>
+        <div class="filter-group">
+          <label>Item name</label>
+          <input type="text" [(ngModel)]="filterItemExpired" placeholder="Filter by item name" />
+        </div>
+        <div class="filter-group filter-actions">
+          <label>&nbsp;</label>
+          <div class="filter-buttons">
+            <button type="button" class="apply-btn" (click)="applyFilterExpired()">Apply</button>
+            <button type="button" class="clear-btn" (click)="clearFilterExpired()">Clear</button>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="loadingExpired" class="loading">Loading...</div>
+      <div *ngIf="errorExpired" class="error">{{ errorExpired }}</div>
+      <div *ngIf="!loadingExpired && !errorExpired" class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Item name</th>
+              <th>Batch</th>
+              <th>Expiry date</th>
+              <th>Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of filteredExpiredList">
+              <td>{{ row.itemName || row.name || '–' }}</td>
+              <td>{{ row.batch || row.batchNumber || '–' }}</td>
+              <td>{{ formatExpiryDate(row.expiryDate) || '–' }}</td>
+              <td>{{ row.quantity != null ? row.quantity : '–' }}</td>
+            </tr>
+            <tr *ngIf="filteredExpiredList.length === 0">
+              <td colspan="4">No expired items match the filters.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

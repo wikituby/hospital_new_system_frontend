@@ -1,0 +1,226 @@
+.service-detail {
+  min-height: 100vh;
+  background: #f8fafc;
+  padding-top: 88px; /* fixed site nav */
+}
+
+.service-detail-hero {
+  position: relative;
+  min-height: min(78vh, 760px);
+  height: min(78vh, 760px);
+  background-size: cover;
+  background-position: 45% 18%;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: flex-end;
+}
+
+.service-detail-hero-wash {
+  position: absolute;
+  inset: 0;
+  /* Lighter wash so the photo stays clearly visible */
+  background: linear-gradient(
+    90deg,
+    rgba(7, 74, 86, 0.55) 0%,
+    rgba(11, 110, 122, 0.32) 42%,
+    rgba(15, 138, 138, 0.12) 72%,
+    rgba(15, 138, 138, 0.04) 100%
+  );
+}
+
+.service-detail-hero-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 3rem 2rem 3.25rem;
+  color: #fff;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.35);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.service-badge {
+  display: inline-block;
+  margin-bottom: 0.85rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.service-badge.is-upcoming {
+  background: rgba(251, 191, 36, 0.28);
+}
+
+.service-detail-hero h1 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.15;
+}
+
+.service-lead {
+  margin: 0;
+  max-width: 40rem;
+  font-size: 1.1rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.service-detail-body {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem 4rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 2rem;
+}
+
+.service-detail-main {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.75rem 1.85rem 2rem;
+}
+
+.service-detail-main h2 {
+  margin: 0 0 0.85rem;
+  color: #0f172a;
+  font-size: 1.35rem;
+}
+
+.service-detail-main h2 + p,
+.service-detail-main p + p {
+  margin-top: 0;
+}
+
+.service-detail-main p {
+  color: #475569;
+  line-height: 1.65;
+  margin: 0 0 1rem;
+}
+
+.service-detail-main h2:not(:first-child) {
+  margin-top: 1.75rem;
+}
+
+.highlight-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  color: #334155;
+  line-height: 1.7;
+}
+
+.highlight-list li + li {
+  margin-top: 0.35rem;
+}
+
+.contact-cta {
+  margin-top: 2rem;
+  padding: 1.25rem 1.35rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #074a56 0%, #0b6e7a 100%);
+  color: #fff;
+}
+
+.contact-cta h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+}
+
+.contact-cta p {
+  margin: 0 0 1rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #074a56;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cta-btn--ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  color: #fff;
+}
+
+.service-detail-aside h3 {
+  margin: 0 0 1rem;
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.related-card {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 0.85rem;
+  padding: 0.85rem;
+  margin-bottom: 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.related-card:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.related-photo {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: 45% 20%;
+}
+
+.related-card strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.related-card span {
+  display: block;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .service-detail-body {
+    grid-template-columns: 1fr;
+  }
+}

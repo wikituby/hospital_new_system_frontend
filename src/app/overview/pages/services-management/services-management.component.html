@@ -1,0 +1,616 @@
+<!-- Delete Confirmation Modal -->
+<div class="delete-confirm-modal-overlay" *ngIf="showDeleteConfirmModal" (click)="closeDeleteConfirmModal()">
+  <div class="delete-confirm-modal-container" (click)="$event.stopPropagation()">
+    <div class="delete-confirm-modal">
+      <div class="delete-confirm-modal-header">
+        <div class="delete-confirm-icon">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <h2 class="delete-confirm-title">Delete Service</h2>
+        <button type="button" class="delete-confirm-close" (click)="closeDeleteConfirmModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="delete-confirm-modal-body">
+        <p class="delete-confirm-message">
+          Are you sure you want to delete <strong>"{{ serviceToDelete?.procedureName || 'this service' }}"</strong>?
+        </p>
+        <p class="delete-confirm-warning">
+          <i class="bi bi-info-circle"></i>
+          This action cannot be undone. All data associated with this service will be permanently deleted.
+        </p>
+      </div>
+
+      <div class="delete-confirm-modal-actions">
+        <button type="button" 
+                class="delete-confirm-btn-cancel" 
+                (click)="closeDeleteConfirmModal()"
+                [disabled]="isButtonDisabled">
+          Cancel
+        </button>
+        <button type="button" 
+                class="delete-confirm-btn-delete" 
+                (click)="confirmDelete()"
+                [disabled]="isButtonDisabled">
+          <i class="bi bi-trash"></i>
+          Delete Service
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Unit Sell Models Modal -->
+<div
+  class="unit-sell-models-modal-overlay"
+  #unitSellModelsModalOverlay
+  *ngIf="openUnitSellMenuServiceId != null"
+  (click)="closeUnitSellModelsMenu()">
+  <div class="unit-sell-models-modal-container" (click)="$event.stopPropagation()">
+    <div class="unit-sell-models-modal">
+      <div class="unit-sell-models-modal-header">
+        <div class="unit-sell-models-modal-heading">
+          <h2 class="unit-sell-models-modal-service-name">{{ openUnitSellMenuService?.procedureName || 'Service' }}</h2>
+          <p class="unit-sell-models-modal-subtitle">Unit sell models</p>
+        </div>
+        <button type="button" class="unit-sell-models-modal-close" (click)="closeUnitSellModelsMenu()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="unit-sell-models-modal-body custom-scrollbar">
+        <div class="unit-sell-models-toolbar">
+          <input
+            type="text"
+            class="unit-sell-models-search"
+            placeholder="Search models…"
+            [(ngModel)]="unitSellModelsSearchQuery" />
+          <button type="button" class="unit-sell-models-add-btn" (click)="openAddUnitSellModelEditor()">
+            <i class="bi bi-plus-lg"></i>
+            Add new
+          </button>
+        </div>
+
+        <div *ngIf="unitSellModelsLoading" class="unit-sell-models-modal-loading">Loading models…</div>
+        <ul *ngIf="!unitSellModelsLoading && filteredUnitSellModelsList.length" class="unit-sell-models-list">
+          <li
+            *ngFor="let model of filteredUnitSellModelsList"
+            class="unit-sell-models-list-item"
+            [class.unit-sell-models-list-item--active]="isActiveUnitSellModel(model)">
+            <div class="unit-sell-model-row">
+              <span class="unit-sell-model-name">{{ model.name | uppercase }}</span>
+              <span class="unit-sell-model-badges">
+                <span class="unit-sell-model-badge" *ngIf="model.isDefault">Default</span>
+                <span class="unit-sell-model-badge unit-sell-model-badge--selected" *ngIf="isActiveUnitSellModel(model)">Selected</span>
+              </span>
+              <span class="unit-sell-model-actions">
+                <button type="button" class="unit-sell-model-action-btn" title="Edit model" (click)="editUnitSellModelFromModal(model, $event)">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+                <button type="button" class="unit-sell-model-action-btn unit-sell-model-action-btn--danger" title="Delete model" (click)="deleteUnitSellModelFromModal(model, $event)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </span>
+            </div>
+            <span class="unit-sell-model-summary">{{ formatUnitSellModelSummary(model) }}</span>
+          </li>
+        </ul>
+        <p *ngIf="!unitSellModelsLoading && unitSellModelsList.length && !filteredUnitSellModelsList.length" class="unit-sell-models-modal-empty">
+          No models match your search.
+        </p>
+        <p *ngIf="!unitSellModelsLoading && !unitSellModelsList.length" class="unit-sell-models-modal-empty">
+          No unit sell models for this service.
+        </p>
+      </div>
+
+      <app-unit-selling-model-picker
+        #unitSellModelsPicker
+        class="unit-sell-models-picker-host"
+        [procedureId]="openUnitSellMenuServiceId"
+        [stockItemId]="null"
+        [unitCostPrice]="getOpenServiceUnitCost()"
+        (modelsChanged)="onUnitSellModelsSaved()">
+      </app-unit-selling-model-picker>
+
+      <div class="unit-sell-models-modal-actions">
+        <button type="button" class="unit-sell-models-modal-btn-close" (click)="closeUnitSellModelsMenu()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Service Modal -->
+<div class="service-modal-overlay" id="serviceModal" #serviceModalOverlay *ngIf="!isCollapsedNewService">
+  <div class="service-modal-container service-modal-container-lg">
+    <div class="service-modal service-modal-lg">
+      <div class="service-modal-header">
+        <h2 class="service-modal-title">
+          <i class="bi" [ngClass]="isEditingService ? 'bi-pencil-square' : 'bi-grid'"></i>
+          {{ saveButtonStatus }}
+        </h2>
+        <button type="button" class="service-modal-close" (click)="closeServiceModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="service-modal-body">
+        <form #serviceForm="ngForm" (ngSubmit)="saveService(serviceForm)">
+          <div class="service-form-grid">
+            <div class="service-form-field full-width">
+              <label for="category" class="service-form-label">
+                Category <span class="required">*</span>
+                <span *ngIf="isCategoryDropdownOpen && isCategoriesLoading" class="text-muted small ms-2">(loading categories…)</span>
+              </label>
+              <div class="category-dropdown-wrapper">
+                <div class="category-dropdown-input" (click)="toggleCategoryDropdown()">
+                  <span class="category-selected-text" [class.placeholder]="!currentCategoryName || currentCategoryName === 'Select category'">
+                    {{ currentCategoryName || 'Select category' }}
+                  </span>
+                  <i class="bi bi-chevron-down" [class.rotated]="isCategoryDropdownOpen"></i>
+                </div>
+                <div class="category-dropdown-menu" *ngIf="isCategoryDropdownOpen">
+                  <div class="category-search-container">
+                    <i class="bi bi-search"></i>
+                    <input type="text" 
+                           [(ngModel)]="categorySearchQuery" 
+                           (ngModelChange)="filterCategories()"
+                           class="category-search-input" 
+                           placeholder="Search categories...">
+                    <button type="button" class="category-add-button" (click)="openNewCategoryFromServiceForm()">
+                      <i class="bi bi-plus-circle"></i>
+                      Add New
+                    </button>
+                  </div>
+                  <div class="category-list-container">
+                    <div class="category-picker-hint">Select a subcategory without children.</div>
+                    <div *ngFor="let row of visibleCategoryTreeRows"
+                         class="category-item"
+                         [class.category-item-parent]="categoryHasChildren(row.node)"
+                         [class.category-item-leaf]="!categoryHasChildren(row.node)"
+                         (click)="onCategoryRowClick(row.node, $event)"
+                         style="display:flex; align-items:center; justify-content:space-between;">
+                      <div class="category-name" style="display:flex; align-items:center; gap:6px;">
+                        <span [style.padding-left.px]="row.level * 16" style="display:inline-flex; align-items:center;">
+                          <button type="button"
+                                  *ngIf="categoryHasChildren(row.node)"
+                                  (click)="toggleCategoryNode(row.node, $event)"
+                                  class="btn btn-link p-0"
+                                  style="border:none; background:none; color:#64748b; width:14px; margin-right:6px;"
+                                  [title]="isCategoryExpanded(row.node) ? 'Collapse' : 'Expand'">
+                            <i class="bi" [ngClass]="isCategoryExpanded(row.node) ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
+                          </button>
+                          <span *ngIf="!categoryHasChildren(row.node)" style="display:inline-block; width:14px; margin-right:6px;"></span>
+                          {{ row.node.name || row.node.procedureCategory || row.node.category || 'Unknown' }}
+                        </span>
+                      </div>
+                      <div style="display:flex; align-items:center; gap:10px; margin-left:8px;">
+                        <button type="button" class="btn btn-link p-0"
+                                (click)="openEditCategoryFromDropdown(row.node, $event)"
+                                title="Edit category"
+                                style="border:none; background:none; color:#cbd5e1; font-size:12px;">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button" class="btn btn-link p-0"
+                                (click)="openDeleteCategoryFromDropdown(row.node, $event)"
+                                title="Delete category"
+                                style="border:none; background:none; color:#cbd5e1; font-size:12px;">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                        <button type="button" class="btn btn-link p-0"
+                                (click)="openAddChildCategoryFromDropdown(row.node, $event)"
+                                title="Add subcategory"
+                                style="border:none; background:none; color:#cbd5e1; font-size:12px;">
+                          <i class="bi bi-plus-lg"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <div *ngIf="isCategoriesLoading" class="category-no-results">
+                      Loading categories...
+                    </div>
+                    <div *ngIf="!isCategoriesLoading && visibleCategoryTreeRows.length === 0" class="category-no-results">
+                      No categories found
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="service-form-field full-width">
+              <label for="procedureName" class="service-form-label">
+                Service Name <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     [(ngModel)]="currentService.procedureName" 
+                     name="procedureName" 
+                     class="service-form-input" 
+                     id="procedureName" 
+                     placeholder="Enter service name" 
+                     required>
+            </div>
+
+            <div class="service-form-pricing-row">
+              <div class="service-form-field">
+                <label for="unitCostPrice" class="service-form-label">
+                  Unit Cost Price
+                </label>
+                <input type="number" 
+                       [(ngModel)]="currentService.unitCostPrice" 
+                       name="unitCostPrice" 
+                       class="service-form-input" 
+                       id="unitCostPrice" 
+                       placeholder="0.00" 
+                       step="0.01"
+                       min="0">
+              </div>
+
+              <div class="service-form-field">
+                <app-unit-selling-model-picker
+                  [stockItemId]="null"
+                  [procedureId]="isEditingService && editingServiceId ? editingServiceId : null"
+                  [unitCostPrice]="currentService.unitCostPrice"
+                  [allowDraft]="!isEditingService"
+                  [(selectedModelId)]="selectedUnitSellingModelId"
+                  (selectedModelChange)="onServiceUnitSellingModelSelected($event)"
+                  (unitSellingPriceChange)="onServiceUnitSellChange($event)">
+                </app-unit-selling-model-picker>
+              </div>
+            </div>
+
+            <div class="service-form-field full-width">
+              <label for="description" class="service-form-label">Description</label>
+              <textarea [(ngModel)]="currentService.description" 
+                        name="description" 
+                        class="service-form-textarea" 
+                        id="description" 
+                        placeholder="Additional notes or description about the service"
+                        rows="3"></textarea>
+            </div>
+          </div>
+
+          <div *ngIf="showDivAddToDataBaseNewService" class="service-form-message" [ngClass]="{'success': responseColor === 'rgb(11, 155, 112)', 'error': responseColor === 'rgb(238, 16, 16)'}">
+            <i class="bi" [ngClass]="responseColor === 'rgb(11, 155, 112)' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>
+            {{ responseMessage }}
+          </div>
+
+          <div *ngIf="showDivUpdatedLoaderNewService" class="service-form-loading">
+            <div class="service-loader"></div>
+            <p>{{ isEditingService ? 'Updating service...' : 'Saving service...' }}</p>
+          </div>
+
+          <div class="service-modal-actions">
+            <button type="button" 
+                    class="service-btn-secondary" 
+                    (click)="closeServiceModal()"
+                    [disabled]="isButtonDisabled">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="service-btn-primary" 
+                    [disabled]="isButtonDisabled">
+              <span *ngIf="!showDivUpdatedLoaderNewService">
+                <i class="bi bi-save"></i>
+                {{ saveButtonStatus }}
+              </span>
+              <span *ngIf="showDivUpdatedLoaderNewService" class="button-loading">
+                <span class="spinner-small"></span>
+                {{ isEditingService ? 'Updating...' : 'Saving...' }}
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Category quick action modal (edit/add child) -->
+<div class="service-modal-overlay" #categoryActionModalOverlay *ngIf="showCategoryActionModal" (click)="closeCategoryActionModal()">
+  <div class="service-modal-container" (click)="$event.stopPropagation()">
+    <div class="service-modal">
+      <div class="service-modal-header">
+        <h2 class="service-modal-title">
+          <i class="bi" [ngClass]="categoryActionMode === 'edit' ? 'bi-pencil-square' : 'bi-plus-square'"></i>
+          {{ getCategoryActionModalTitle() }}
+        </h2>
+        <button type="button" class="service-modal-close" (click)="closeCategoryActionModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="service-modal-body">
+        <div class="service-form-grid">
+          <div class="service-form-field full-width">
+            <label class="service-form-label">Parent Category</label>
+            <div class="category-dropdown-wrapper">
+              <div class="category-dropdown-input" (click)="toggleCategoryActionParentDropdown()">
+                <span class="category-selected-text" [class.placeholder]="!categoryActionParentName || categoryActionParentName === 'Select parent category'">
+                  {{ categoryActionParentName || 'Select parent category' }}
+                </span>
+                <i class="bi bi-chevron-down" [class.rotated]="isCategoryActionParentDropdownOpen"></i>
+              </div>
+              <div class="category-dropdown-menu" *ngIf="isCategoryActionParentDropdownOpen">
+                <div class="category-search-container">
+                  <i class="bi bi-search"></i>
+                  <input type="text"
+                         [(ngModel)]="categoryActionParentSearchQuery"
+                         (ngModelChange)="onCategoryActionParentSearchChange()"
+                         class="category-search-input"
+                         placeholder="Search categories...">
+                </div>
+                <div class="category-list-container">
+                  <div class="category-item"
+                       (click)="selectTopLevelCategoryActionParent()"
+                       style="display:flex; align-items:center; justify-content:space-between;">
+                    <div class="category-name">Top Level (No Parent)</div>
+                  </div>
+                  <div *ngIf="isCategoriesLoading" class="category-no-results">
+                    Loading categories...
+                  </div>
+                  <div *ngFor="let row of visibleCategoryActionParentRows"
+                       class="category-item"
+                       (click)="onCategoryActionParentRowClick(row.node, $event)"
+                       style="display:flex; align-items:center; justify-content:space-between;">
+                    <div class="category-name" style="display:flex; align-items:center; gap:6px;">
+                      <span [style.padding-left.px]="row.level * 16" style="display:inline-flex; align-items:center;">
+                        <button type="button"
+                                *ngIf="categoryActionParentHasChildren(row.node)"
+                                (click)="toggleCategoryActionParentNode(row.node, $event)"
+                                class="btn btn-link p-0"
+                                style="border:none; background:none; color:#64748b; width:14px; margin-right:6px;"
+                                [title]="isCategoryActionParentExpanded(row.node) ? 'Collapse' : 'Expand'">
+                          <i class="bi" [ngClass]="isCategoryActionParentExpanded(row.node) ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
+                        </button>
+                        <span *ngIf="!categoryActionParentHasChildren(row.node)" style="display:inline-block; width:14px; margin-right:6px;"></span>
+                        {{ row.node.name || row.node.procedureCategory || row.node.category || 'Unknown' }}
+                      </span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; margin-left:8px;">
+                      <button type="button" class="btn btn-link p-0"
+                              (click)="openEditCategoryFromDropdown(row.node, $event)"
+                              title="Edit category"
+                              style="border:none; background:none; color:#cbd5e1; font-size:12px;">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button type="button" class="btn btn-link p-0"
+                              (click)="openDeleteCategoryFromDropdown(row.node, $event)"
+                              title="Delete category"
+                              style="border:none; background:none; color:#cbd5e1; font-size:12px;">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                      <button type="button" class="btn btn-link p-0"
+                              (click)="openAddChildCategoryFromDropdown(row.node, $event)"
+                              title="Add subcategory"
+                              style="border:none; background:none; color:#cbd5e1; font-size:12px;">
+                        <i class="bi bi-plus-lg"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div *ngIf="!isCategoriesLoading && visibleCategoryActionParentRows.length === 0" class="category-no-results">
+                    No categories found
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="service-form-field full-width">
+            <label class="service-form-label">Category Name <span class="required">*</span></label>
+            <input type="text" class="service-form-input" [(ngModel)]="categoryActionForm.name" placeholder="Enter category name">
+          </div>
+          <div class="service-form-field full-width">
+            <label class="service-form-label">Description</label>
+            <textarea class="service-form-textarea" rows="3" [(ngModel)]="categoryActionForm.description" placeholder="Enter category description"></textarea>
+          </div>
+        </div>
+        <div class="service-modal-actions">
+          <button type="button" class="service-btn-secondary" (click)="closeCategoryActionModal()">Cancel</button>
+          <button type="button" class="service-btn-primary" (click)="saveCategoryAction()" [disabled]="isSavingCategoryAction">
+            <i class="bi bi-save"></i>
+            {{ isSavingCategoryAction ? 'Saving...' : getCategoryActionSaveLabel() }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Category delete confirmation -->
+<div class="delete-confirm-modal-overlay" *ngIf="showCategoryDeleteConfirm" (click)="closeDeleteCategoryConfirm()">
+  <div class="delete-confirm-modal-container" (click)="$event.stopPropagation()">
+    <div class="delete-confirm-modal">
+      <div class="delete-confirm-modal-header">
+        <div class="delete-confirm-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <h2 class="delete-confirm-title">Delete Category</h2>
+        <button type="button" class="delete-confirm-close" (click)="closeDeleteCategoryConfirm()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="delete-confirm-modal-body">
+        <p class="delete-confirm-message">
+          Delete <strong>"{{ categoryToDelete?.procedureCategory || categoryToDelete?.category || categoryToDelete?.name || 'this category' }}"</strong>?
+        </p>
+      </div>
+      <div class="delete-confirm-modal-actions">
+        <button type="button" class="delete-confirm-btn-cancel" (click)="closeDeleteCategoryConfirm()">Cancel</button>
+        <button type="button" class="delete-confirm-btn-delete" (click)="confirmDeleteCategory()">
+          <i class="bi bi-trash"></i>
+          Delete Category
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="service-management-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-grid"></i>
+        Services Management
+      </h2>
+      <p class="page-subtitle">Manage your services and procedures</p>
+    </div>
+    
+    <div class="header-right">
+      <button class="add-service-btn" 
+              type="button"
+              (click)="openServiceModal()">
+        <i class="bi bi-plus-circle-fill"></i>
+        Add New Service
+      </button>
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" 
+               [ngModel]="searchQuery" 
+               (ngModelChange)="onSearchQueryChange($event)"
+               placeholder="Search services...">
+      </div>
+      
+      <select class="filter-select" [ngModel]="selectedColumn" (ngModelChange)="onSelectedColumnChange($event)">
+        <option value="all">All Fields</option>
+        <option value="procedureName">Service Name</option>
+        <option value="category">Category</option>
+        <option value="description">Description</option>
+      </select>
+
+      <div class="dropdown">
+        <button class="action-btn" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-download"></i>
+          Export
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li (click)="exportToExcel()" class="dropdown-item">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+          </li>
+          <li (click)="downloadPdf()" class="dropdown-item">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="bi bi-grid"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ totalItemsCount }}</div>
+        <div class="stat-label">Total Services</div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isLoadingService" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading services data...</p>
+  </div>
+
+  <div *ngIf="showDivUpdatedOut" class="alert" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div class="table-container" *ngIf="!isLoadingService">
+    <div class="table-wrapper" #htmlData>
+      <table class="modern-table">
+        <colgroup>
+          <col class="col-sn" />
+          <col class="col-service-name" />
+          <col class="col-category" />
+          <col class="col-parent-category" />
+          <col class="col-unit-sell" />
+          <col class="col-unit-cost" />
+          <col class="col-description" />
+          <col class="col-actions" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>SN</th>
+            <th>Service Name</th>
+            <th>Category</th>
+            <th>Parent Category</th>
+            <th>Unit Sell</th>
+            <th>Unit Cost</th>
+            <th>Description</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let service of filteredServiceList | paginate: { itemsPerPage: itemsPerPage, currentPage: page }; let i = index">
+            <td>
+              <span class="shelf-number">{{ (page - 1) * itemsPerPage + i + 1 }}</span>
+            </td>
+            <td class="cell-ellipsis">
+              <div class="service-name-cell">
+                <div class="service-avatar" [style.background-color]="getServiceAvatarColor(service)">
+                  {{ getServiceInitials(service) }}
+                </div>
+                <div class="item-title text-ellipsis" [title]="service.procedureName">{{ service.procedureName || 'N/A' }}</div>
+              </div>
+            </td>
+            <td class="cell-ellipsis">
+              <span class="category-text text-ellipsis" [title]="getServiceCategoryName(service)">{{ getServiceCategoryName(service) }}</span>
+            </td>
+            <td class="cell-ellipsis">
+              <span class="parent-category-text text-ellipsis" [title]="getServiceParentCategoryName(service)">{{ getServiceParentCategoryName(service) }}</span>
+            </td>
+            <td class="unit-sell-cell">
+              <button
+                type="button"
+                class="unit-sell-menu-btn"
+                [class.unit-sell-menu-btn--active]="openUnitSellMenuServiceId === service.id"
+                (click)="toggleUnitSellModelsMenu(service, $event)"
+                title="View unit sell models"
+                aria-label="View unit sell models">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+            </td>
+            <td>
+              <span class="price-text">{{ service.unitCostPrice || 'N/A' }}</span>
+            </td>
+            <td class="cell-ellipsis">
+              <span class="description-text text-ellipsis" [title]="service.description || ''">{{ service.description || 'N/A' }}</span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon edit" title="Edit Service" (click)="editService(service)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn-icon delete" title="Delete Service" (click)="deleteService(service)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredServiceList.length === 0">
+            <td colspan="8" class="no-data">
+              <i class="bi bi-inbox"></i>
+              <p>No services found</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-wrapper">
+      <div class="pagination-info">
+        Showing {{ (page - 1) * itemsPerPage + 1 }} - {{ page * itemsPerPage > filteredServiceList.length ? filteredServiceList.length : page * itemsPerPage }} of {{ filteredServiceList.length }} services
+      </div>
+      <pagination-controls (pageChange)="onPageChange($event)"></pagination-controls>
+      <div class="pagination-size">
+        <select [ngModel]="itemsPerPage" (ngModelChange)="onItemsPerPageChange($event)" class="page-size-select">
+          <option [ngValue]="10">10 per page</option>
+          <option [ngValue]="15">15 per page</option>
+          <option [ngValue]="25">25 per page</option>
+          <option [ngValue]="50">50 per page</option>
+          <option [ngValue]="100">100 per page</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+

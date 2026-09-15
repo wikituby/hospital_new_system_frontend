@@ -1,0 +1,62 @@
+.pd-dsp-adm {
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.pd-dsp-adm label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pd-dsp-adm input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid #64748b;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.pd-dsp-adm label:nth-child(1) input {
+  color: #16a34a;
+}
+
+.pd-dsp-adm label:nth-child(2) input {
+  color: #2563eb;
+}
+
+.pd-dsp-adm label:nth-child(3) input {
+  color: #0f766e;
+}
+
+.pd-dsp-adm input:checked {
+  border-color: currentColor;
+  background: radial-gradient(circle at center, currentColor 0 4px, #fff 5px);
+}
+
+.pd-dsp-adm--dispensed-only {
+  justify-content: center;
+}
+
+.pd-dsp-adm--dispensed-only label:nth-child(1) input,
+.pd-dsp-adm--dispensed-only label input {
+  color: #2563eb;
+}

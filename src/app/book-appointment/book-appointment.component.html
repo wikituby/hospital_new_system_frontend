@@ -1,0 +1,95 @@
+<app-site-nav></app-site-nav>
+
+<section class="book-page">
+  <div class="book-hero">
+    <div class="book-hero-inner">
+      <span class="book-eyebrow">Appointments</span>
+      <h1>Book an appointment</h1>
+      <p>
+        Request a visit with our full-time doctor, dentist, or another available service.
+        We will confirm your preferred time by phone or email.
+      </p>
+    </div>
+  </div>
+
+  <div class="book-body">
+    <form class="book-form" (ngSubmit)="submitRequest()" #apptForm="ngForm">
+      <h2>Appointment request</h2>
+      <p class="book-form-lead">
+        Fill in your details below. Required fields are marked with *.
+      </p>
+
+      <div class="book-grid">
+        <label>
+          Full name *
+          <input
+            name="fullName"
+            [(ngModel)]="form.fullName"
+            required
+            placeholder="Your full name" />
+        </label>
+
+        <label>
+          Phone *
+          <input
+            name="phone"
+            [(ngModel)]="form.phone"
+            required
+            placeholder="+256 ..." />
+        </label>
+
+        <label>
+          Email
+          <input
+            name="email"
+            type="email"
+            [(ngModel)]="form.email"
+            placeholder="you@example.com" />
+        </label>
+
+        <label>
+          Service *
+          <select name="serviceType" [(ngModel)]="form.serviceType" required>
+            <option *ngFor="let option of serviceOptions" [value]="option">{{ option }}</option>
+          </select>
+        </label>
+
+        <label>
+          Preferred date
+          <input name="preferredDate" type="date" [(ngModel)]="form.preferredDate" />
+        </label>
+
+        <label>
+          Preferred time
+          <input name="preferredTime" type="time" [(ngModel)]="form.preferredTime" />
+        </label>
+      </div>
+
+      <label class="book-notes">
+        Notes for the clinic
+        <textarea
+          name="notes"
+          rows="4"
+          [(ngModel)]="form.notes"
+          placeholder="Symptoms, preferred clinician, or anything we should know"></textarea>
+      </label>
+
+      <div class="book-actions">
+        <button type="submit" class="book-submit" [disabled]="!form.fullName.trim() || !form.phone.trim()">
+          Submit appointment request
+        </button>
+        <p class="book-hint" *ngIf="submitted">
+          Your email app should open with the request ready to send. You can also call us directly.
+        </p>
+      </div>
+    </form>
+
+    <aside class="book-aside">
+      <h3>Prefer to call?</h3>
+      <p>Speak with the hospital team to book or confirm your visit.</p>
+      <a class="book-call" [href]="contact.phoneLinks[0]">{{ contact.phones[0] }}</a>
+      <a class="book-call" [href]="contact.phoneLinks[1]">{{ contact.phones[1] }}</a>
+      <a class="book-mail" [href]="'mailto:' + contact.email">{{ contact.email }}</a>
+    </aside>
+  </div>
+</section>

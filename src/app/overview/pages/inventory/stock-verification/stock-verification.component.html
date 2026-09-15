@@ -1,0 +1,239 @@
+<div class="sv-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div>
+      <h1><i class="bi bi-clipboard2-check"></i> Stock Verification</h1>
+      <p class="subtitle">Trust layer over stock tracking — physical counts, movement snapshots, variance, and confidence.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" type="button" (click)="loadDashboard()" [disabled]="isLoading">
+        <i class="bi bi-arrow-repeat" [class.spin]="isLoading"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="breadcrumb-row">
+    <span class="current"><i class="bi bi-box-seam"></i> Inventory</span>
+    <span class="sep">/</span>
+    <span class="current"><i class="bi bi-clipboard2-check"></i> Stock Verification</span>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card accent-blue">
+      <i class="bi bi-boxes"></i>
+      <div>
+        <div class="stat-value">{{ totalBatches }}</div>
+        <div class="stat-label">{{ useStockBatch ? 'Batches tracked' : 'Items tracked' }}</div>
+      </div>
+    </div>
+    <div class="stat-card accent-green">
+      <i class="bi bi-check-circle"></i>
+      <div>
+        <div class="stat-value">{{ tallyingCount }}</div>
+        <div class="stat-label">Last count tallying</div>
+      </div>
+    </div>
+    <div class="stat-card accent-warn">
+      <i class="bi bi-exclamation-triangle"></i>
+      <div>
+        <div class="stat-value">{{ attentionCount }}</div>
+        <div class="stat-label">Needs attention</div>
+      </div>
+    </div>
+    <div class="stat-card accent-purple">
+      <i class="bi bi-shield-check"></i>
+      <div>
+        <div class="stat-value">{{ lowConfidenceCount }}</div>
+        <div class="stat-label">Low confidence</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="alert success" *ngIf="responseMessage">{{ responseMessage }}</p>
+  <p class="alert error" *ngIf="responseError">{{ responseError }}</p>
+
+  <div class="surface">
+    <div class="surface-head">
+      <div class="filter-group" *ngIf="modeResolved && useStockBatch">
+        <label class="filter-label">Store</label>
+        <select class="form-control store-select" [(ngModel)]="selectedStoreId" (change)="loadDashboard()">
+          <option [ngValue]="null">All stores</option>
+          <option *ngFor="let s of stores" [ngValue]="s.id">{{ s.name || s.storeName }}</option>
+        </select>
+      </div>
+      <div
+        class="mode-pill"
+        *ngIf="modeResolved"
+        [title]="useStockBatch ? 'Facility setting: stock batches' : 'Facility setting: shop items'">
+        <i class="bi" [ngClass]="useStockBatch ? 'bi-layers' : 'bi-box'"></i>
+        {{ useStockBatch ? 'Stock batch mode' : 'Item mode' }}
+      </div>
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          [placeholder]="useStockBatch ? 'Search item, store, or batch...' : 'Search item...'" />
+      </div>
+      <div class="count-pill">
+        {{ filteredRows.length }} {{ filteredRows.length === 1 ? unitLabel : unitLabelPlural }}
+      </div>
+    </div>
+
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading verification dashboard...</p>
+    </div>
+
+    <div class="cards-grid" *ngIf="!isLoading && filteredRows.length">
+      <article class="verify-card" *ngFor="let row of filteredRows">
+        <div class="verify-card-top">
+          <div class="item-meta">
+            <h3>{{ row.stockItemName }}</h3>
+            <p>
+              <ng-container *ngIf="useStockBatch">
+                <i class="bi bi-shop"></i> {{ row.storeName || '—' }}
+                <span class="dot">·</span>
+                <i class="bi bi-upc-scan"></i> Batch {{ row.batchNumber || 'N/A' }}
+              </ng-container>
+              <ng-container *ngIf="!useStockBatch">
+                <i class="bi bi-box"></i> Item #{{ row.itemId || row.stockItemId || '—' }}
+                <span class="dot" *ngIf="row.batchNumber">·</span>
+                <span *ngIf="row.batchNumber"><i class="bi bi-upc-scan"></i> {{ row.batchNumber }}</span>
+              </ng-container>
+            </p>
+          </div>
+          <button class="btn-primary btn-sm" type="button" (click)="openVerify(row)">
+            <i class="bi bi-clipboard-check"></i> Verify
+          </button>
+        </div>
+
+        <div class="qty-hero">
+          <div class="qty-block primary">
+            <span class="qty-label">Stock at hand</span>
+            <span class="qty-value">{{ formatQty(row.stockAtHand) }}</span>
+          </div>
+          <div class="qty-divider"></div>
+          <div class="qty-block">
+            <span class="qty-label">Expected</span>
+            <span class="qty-value muted">{{ formatQty(row.currentPreview?.expectedQuantity) }}</span>
+          </div>
+        </div>
+
+        <div class="movement-panel">
+          <div class="movement-title">Since last verification</div>
+          <div class="movement-grid">
+            <div class="movement-item in">
+              <span class="movement-label"><i class="bi bi-arrow-down-circle"></i> Adding</span>
+              <span class="movement-value">+{{ formatQty(row.currentPreview?.addingQuantity) }}</span>
+              <span class="movement-sub">{{ row.currentPreview?.addingTransactionCount || 0 }} tx</span>
+            </div>
+            <div class="movement-item out">
+              <span class="movement-label"><i class="bi bi-arrow-up-circle"></i> Deducting</span>
+              <span class="movement-value">−{{ formatQty(row.currentPreview?.deductingQuantity) }}</span>
+              <span class="movement-sub">{{ row.currentPreview?.deductingTransactionCount || 0 }} tx</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="verify-card-foot">
+          <div class="foot-row">
+            <span class="foot-label">Last verified</span>
+            <span class="foot-value">{{ formatDateTime(row.lastVerification?.verificationDateTime) }}</span>
+          </div>
+          <div class="foot-row">
+            <span class="foot-label">Last physical count</span>
+            <span class="foot-value">{{ formatQty(row.lastVerification?.physicalQuantity) }}</span>
+          </div>
+          <div class="badge-row">
+            <span [class]="statusClass(row.lastVerification?.verificationStatusCode)">
+              <i class="bi" [ngClass]="statusIcon(row.lastVerification?.verificationStatusCode)"></i>
+              {{ row.lastVerification?.verificationStatusName || 'Not verified yet' }}
+            </span>
+            <span [class]="confidenceClass(row.currentPreview?.confidenceLevelCode)">
+              <i class="bi bi-shield-check"></i>
+              {{ row.currentPreview?.confidenceLevelName || 'N/A' }}
+              <span class="score" *ngIf="row.currentPreview?.confidenceScore != null">{{ row.currentPreview.confidenceScore }}/100</span>
+            </span>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="empty-state" *ngIf="!isLoading && modeResolved && !filteredRows.length">
+      <i class="bi bi-clipboard2-check"></i>
+      <p *ngIf="useStockBatch">No stock batches found for this filter.</p>
+      <p *ngIf="!useStockBatch">No shop items found for verification.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showVerifyModal" (click)="closeModal()">
+  <div class="modal-card modal-wide" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h3><i class="bi bi-clipboard-check"></i> Record verification</h3>
+        <p class="modal-sub" *ngIf="useStockBatch">{{ activeRow?.stockItemName }} · {{ activeRow?.storeName || '—' }}</p>
+        <p class="modal-sub" *ngIf="!useStockBatch">{{ activeRow?.stockItemName }} · Item #{{ activeRow?.itemId || activeRow?.stockItemId || '—' }}</p>
+      </div>
+      <button type="button" class="modal-close" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <div class="preview-panel" *ngIf="preview">
+      <div class="preview-grid">
+        <div class="preview-stat">
+          <span class="preview-label">Expected stock</span>
+          <strong>{{ formatQty(preview.expectedQuantity) }}</strong>
+        </div>
+        <div class="preview-stat">
+          <span class="preview-label">Adding</span>
+          <strong class="pos">+{{ formatQty(preview.addingQuantity) }}</strong>
+        </div>
+        <div class="preview-stat">
+          <span class="preview-label">Deducting</span>
+          <strong class="neg">−{{ formatQty(preview.deductingQuantity) }}</strong>
+        </div>
+        <div class="preview-stat">
+          <span class="preview-label">Projected variance</span>
+          <strong [class.pos]="projectedVariance > 0" [class.neg]="projectedVariance < 0">{{ formatVariance(projectedVariance) }}</strong>
+        </div>
+      </div>
+      <p class="preview-note">
+        {{ preview.addingTransactionCount || 0 }} adding and {{ preview.deductingTransactionCount || 0 }} deducting
+        transactions since last verification.
+      </p>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-field">
+        <label>Physical quantity</label>
+        <input class="form-control" type="number" min="0" step="any" [(ngModel)]="verifyForm.physicalQuantity" />
+      </div>
+      <div class="form-field">
+        <label>Verification status</label>
+        <select class="form-control" [(ngModel)]="verifyForm.verificationStatusId">
+          <option [ngValue]="null">Auto-detect from variance</option>
+          <option *ngFor="let s of catalog.statuses" [ngValue]="s.id">{{ s.name }}</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Reason (if not tallying)</label>
+        <select class="form-control" [(ngModel)]="verifyForm.verificationReasonId">
+          <option [ngValue]="null">None</option>
+          <option *ngFor="let r of catalog.reasons" [ngValue]="r.id">{{ r.name }}</option>
+        </select>
+      </div>
+      <div class="form-field span-full">
+        <label>Description</label>
+        <textarea class="form-control" rows="3" [(ngModel)]="verifyForm.description" placeholder="Explain variance, damage, or recount notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closeModal()" [disabled]="isSaving">Cancel</button>
+      <button type="button" class="btn-primary" (click)="saveVerification()" [disabled]="isSaving">
+        <i class="bi bi-check2-circle"></i>
+        {{ isSaving ? 'Saving…' : 'Save verification' }}
+      </button>
+    </div>
+  </div>
+</div>

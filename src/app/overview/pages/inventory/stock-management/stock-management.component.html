@@ -1,0 +1,178 @@
+<div class="stock-management-page" [class.dark]="isDarkMode">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-archive"></i>
+        Stock Management
+      </h1>
+      <p class="page-subtitle">Track stock levels, movements, and inventory transactions</p>
+    </div>
+    <div class="header-right">
+      <button class="btn-primary" (click)="receiveStock()">
+        <i class="bi bi-box-arrow-in-down"></i>
+        Receive Stock
+      </button>
+      <button class="btn-secondary" (click)="transferStock()">
+        <i class="bi bi-arrow-left-right"></i>
+        Transfer Stock
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card stat-total">
+      <div class="stat-icon"><i class="bi bi-box"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{totalStockItems}}</div>
+        <div class="stat-label">Total Stock Items</div>
+      </div>
+    </div>
+    <div class="stat-card stat-value">
+      <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">${{totalStockValue | number:'1.0-0'}}</div>
+        <div class="stat-label">Total Stock Value</div>
+      </div>
+    </div>
+    <div class="stat-card stat-low">
+      <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{lowStockItems}}</div>
+        <div class="stat-label">Low Stock Alerts</div>
+      </div>
+    </div>
+    <div class="stat-card stat-movements">
+      <div class="stat-icon"><i class="bi bi-arrow-repeat"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{todayMovements}}</div>
+        <div class="stat-label">Today's Movements</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" placeholder="Search by item name, code, or location..." [(ngModel)]="searchQuery">
+    </div>
+    <div class="filter-group">
+      <select class="filter-select" [(ngModel)]="locationFilter">
+        <option value="">All Locations</option>
+        <option value="main-store">Main Store</option>
+        <option value="pharmacy">Pharmacy</option>
+        <option value="ward-a">Ward A</option>
+        <option value="ward-b">Ward B</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="statusFilter">
+        <option value="">All Status</option>
+        <option value="in-stock">In Stock</option>
+        <option value="low-stock">Low Stock</option>
+        <option value="out-of-stock">Out of Stock</option>
+      </select>
+      <input type="date" class="filter-select" [(ngModel)]="dateFilter">
+    </div>
+  </div>
+
+  <!-- Stock Table -->
+  <div class="table-section">
+    <div class="table-header">
+      <h3 class="table-title">Stock Inventory</h3>
+      <div class="table-actions">
+        <button class="btn-sm btn-secondary">
+          <i class="bi bi-download"></i>
+          Export
+        </button>
+        <button class="btn-sm btn-secondary">
+          <i class="bi bi-printer"></i>
+          Print
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Item Code</th>
+            <th>Item Name</th>
+            <th>Location</th>
+            <th>Current Stock</th>
+            <th>Reorder Level</th>
+            <th>Max Stock</th>
+            <th>Unit Price</th>
+            <th>Total Value</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let stock of filteredStock">
+            <td>
+              <div class="item-code">{{stock.itemCode}}</div>
+            </td>
+            <td>
+              <div class="item-name-cell">
+                <div class="item-name">{{stock.itemName}}</div>
+              </div>
+            </td>
+            <td>
+              <div class="location-cell">
+                <i class="bi bi-geo-alt"></i>
+                {{stock.location}}
+              </div>
+            </td>
+            <td>
+              <div class="stock-level-cell">
+                <div class="stock-value">{{stock.currentStock}}</div>
+                <div class="stock-unit">{{stock.unit}}</div>
+              </div>
+            </td>
+            <td>
+              <div class="reorder-cell">{{stock.reorderLevel}}</div>
+            </td>
+            <td>
+              <div class="max-stock-cell">{{stock.maxStock}}</div>
+            </td>
+            <td>
+              <div class="price-cell">${{stock.unitPrice | number:'1.2-2'}}</div>
+            </td>
+            <td>
+              <div class="total-value-cell">${{stock.totalValue | number:'1.2-2'}}</div>
+            </td>
+            <td>
+              <span class="status-badge" [class]="getStockStatusClass(stock.currentStock, stock.reorderLevel)">
+                {{getStockStatus(stock.currentStock, stock.reorderLevel)}}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon" (click)="viewStock(stock)" title="View Details">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn-icon" (click)="adjustStock(stock)" title="Adjust Stock">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn-icon" (click)="viewHistory(stock)" title="View History">
+                  <i class="bi bi-clock-history"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <button class="page-btn" [disabled]="currentPage === 1">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <span class="page-info">Page {{currentPage}} of {{totalPages}}</span>
+      <button class="page-btn" [disabled]="currentPage === totalPages">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>

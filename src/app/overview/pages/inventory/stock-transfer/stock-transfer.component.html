@@ -1,0 +1,314 @@
+<!-- Transfer Stock Modal -->
+<div class="transfer-modal-overlay" *ngIf="!isCollapsedNewTransfer">
+  <div class="transfer-modal-container">
+    <div class="transfer-modal">
+      <div class="transfer-modal-header">
+        <h2 class="transfer-modal-title">
+          <i class="bi bi-arrow-left-right"></i>
+          Transfer Stock
+        </h2>
+        <button type="button" class="transfer-modal-close" (click)="closeTransferModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="transfer-modal-body">
+        <form #transferForm="ngForm" (ngSubmit)="transferStock(transferForm)">
+          <div class="transfer-form-grid">
+            <div class="transfer-form-field batch-picker-field">
+              <label for="stockBatchTrigger" class="transfer-form-label">
+                Stock Batch <span class="required">*</span>
+              </label>
+              <input type="hidden" name="stockBatchId" [(ngModel)]="currentTransfer.stockBatchId">
+              <button type="button"
+                      id="stockBatchTrigger"
+                      class="batch-picker-trigger transfer-form-input"
+                      (click)="openBatchPicker()">
+                <span class="batch-picker-trigger-label" [class.placeholder]="!selectedStockBatchSummary">
+                  {{ selectedStockBatchSummary || 'Choose stock batch…' }}
+                </span>
+                <span class="batch-picker-trigger-icons">
+                  <i class="bi bi-search" aria-hidden="true"></i>
+                  <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                </span>
+              </button>
+            </div>
+
+            <div class="transfer-form-field">
+              <label for="fromStoreId" class="transfer-form-label">
+                From Store <span class="required">*</span>
+              </label>
+              <select [(ngModel)]="currentTransfer.fromStoreId" 
+                      name="fromStoreId" 
+                      class="transfer-form-input" 
+                      id="fromStoreId" 
+                      (ngModelChange)="onFromStoreChange()"
+                      required>
+                <option [ngValue]="null" disabled>Select from store</option>
+                <option *ngFor="let store of storeList" [ngValue]="store.id">
+                  {{ store.name || 'Store ' + store.id }}
+                </option>
+              </select>
+            </div>
+
+            <div class="transfer-form-field">
+              <label for="toStoreId" class="transfer-form-label">
+                To Store <span class="required">*</span>
+              </label>
+              <select [(ngModel)]="currentTransfer.toStoreId" 
+                      name="toStoreId" 
+                      class="transfer-form-input" 
+                      id="toStoreId" 
+                      required>
+                <option [ngValue]="null" disabled>Select to store</option>
+                <option *ngFor="let store of storeList" [ngValue]="store.id">
+                  {{ store.name || 'Store ' + store.id }}
+                </option>
+              </select>
+            </div>
+
+            <div class="transfer-form-field">
+              <label for="qty" class="transfer-form-label">
+                Quantity <span class="required">*</span>
+              </label>
+              <input type="number" 
+                     step="0.01"
+                     [(ngModel)]="currentTransfer.qty" 
+                     name="qty" 
+                     class="transfer-form-input" 
+                     id="qty" 
+                     placeholder="Quantity" 
+                     required>
+            </div>
+
+            <div class="transfer-form-field full-width">
+              <label for="transferredBy" class="transfer-form-label">Transferred By</label>
+              <input type="text" 
+                     [(ngModel)]="currentTransfer.transferredBy" 
+                     name="transferredBy" 
+                     class="transfer-form-input" 
+                     id="transferredBy" 
+                     placeholder="Person name">
+            </div>
+          </div>
+
+          <div *ngIf="showDivAddToDataBase" class="transfer-form-message" [ngClass]="{'success': responseColor === 'rgb(11, 155, 112)', 'error': responseColor === 'rgb(238, 16, 16)'}">
+            <i class="bi" [ngClass]="responseColor === 'rgb(11, 155, 112)' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>
+            {{ responseMessage }}
+          </div>
+
+          <div *ngIf="showDivUpdatedLoader" class="transfer-form-loading">
+            <div class="transfer-loader"></div>
+            <p>Transferring stock...</p>
+          </div>
+
+          <div class="transfer-modal-actions">
+            <button type="button" 
+                    class="transfer-btn-secondary" 
+                    (click)="closeTransferModal()"
+                    [disabled]="isButtonDisabled">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="transfer-btn-primary" 
+                    [disabled]="isButtonDisabled">
+              <span *ngIf="!showDivUpdatedLoader">
+                <i class="bi bi-arrow-left-right"></i>
+                Transfer Stock
+              </span>
+              <span *ngIf="showDivUpdatedLoader" class="button-loading">
+                <span class="spinner-small"></span>
+                Transferring...
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Searchable stock batch picker (above transfer modal content) -->
+  <div class="batch-picker-overlay"
+       *ngIf="showBatchPicker"
+       (click)="onBatchPickerBackdrop($event)"
+       role="presentation">
+    <div class="batch-picker-dialog"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="batchPickerTitle"
+         (click)="$event.stopPropagation()">
+      <div class="batch-picker-header">
+        <h3 id="batchPickerTitle" class="batch-picker-title">
+          <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+          Select stock batch for transfer
+        </h3>
+        <button type="button" class="batch-picker-close" (click)="closeBatchPicker()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="batch-picker-search">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="text"
+               [(ngModel)]="batchPickerSearch"
+               [ngModelOptions]="{standalone: true}"
+               placeholder="Search item, batch #, store, expiry, id…"
+               autocomplete="off"
+               class="batch-picker-search-input" />
+      </div>
+      <div class="batch-picker-list" role="listbox">
+        <button type="button"
+                class="batch-picker-row"
+                *ngFor="let batch of filteredStockBatchesForPicker; trackBy: trackBatchById"
+                (click)="selectStockBatch(batch)">
+          <span class="batch-picker-row-text">{{ getStockBatchOptionLabel(batch) }}</span>
+        </button>
+        <div class="batch-picker-empty" *ngIf="filteredStockBatchesForPicker.length === 0">
+          <i class="bi bi-inbox"></i>
+          <p *ngIf="stockBatchList.length === 0">No batches loaded. Pick a From store first or wait for data.</p>
+          <p *ngIf="stockBatchList.length > 0">No batches match your search.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="stock-transfer-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-arrow-left-right"></i>
+        Stock Transfer
+      </h2>
+      <p class="page-subtitle">Transfer stock between stores</p>
+    </div>
+    
+    <div class="header-right">
+      <button class="add-transfer-btn" 
+              type="button"
+              (click)="openTransferModal()">
+        <i class="bi bi-arrow-left-right"></i>
+        Transfer Stock
+      </button>
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" 
+               [(ngModel)]="searchQuery" 
+               (ngModelChange)="onSearchQueryChange($event)"
+               placeholder="Search transfers...">
+      </div>
+      
+      <select class="filter-select" [(ngModel)]="selectedColumn" (ngModelChange)="onSelectedColumnChange($event)">
+        <option value="all">All Fields</option>
+        <option value="fromStore">From Store</option>
+        <option value="toStore">To Store</option>
+        <option value="transferredBy">Transferred By</option>
+      </select>
+
+      <div class="dropdown">
+        <button class="action-btn" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-download"></i>
+          Export
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li (click)="exportToExcel()" class="dropdown-item">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+          </li>
+          <li (click)="downloadPdf()" class="dropdown-item">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="bi bi-arrow-left-right"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ transferList.length }}</div>
+        <div class="stat-label">Total Transfers</div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isLoadingService" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading stock transfers...</p>
+  </div>
+
+  <div *ngIf="showDivUpdatedOut" class="alert" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div class="table-container" *ngIf="!isLoadingService">
+    <div class="table-wrapper" #htmlData>
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>SN</th>
+            <th>Transfer ID</th>
+            <th>Stock Batch ID</th>
+            <th>From Store</th>
+            <th>To Store</th>
+            <th>Quantity</th>
+            <th>Transferred By</th>
+            <th>Transfer Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let transfer of filteredTransferList | paginate: { itemsPerPage: itemsPerPage, currentPage: page }; let i = index">
+            <td>
+              <span class="shelf-number">{{ i + 1 }}</span>
+            </td>
+            <td>
+              <span class="item-title">{{ transfer.id || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="item-title">{{ getStockBatchName(transfer.stockBatchId) }}</span>
+            </td>
+            <td>
+              <span class="location-text">{{ getStoreName(transfer.fromStoreId) }}</span>
+            </td>
+            <td>
+              <span class="location-text">{{ getStoreName(transfer.toStoreId) }}</span>
+            </td>
+            <td>
+              <span class="item-title">{{ getTransferQuantity(transfer) }}</span>
+            </td>
+            <td>
+              <span class="item-title">{{ transfer.transferredBy || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="date-text">{{ transfer.transferDate || transfer.createdAt || 'N/A' }}</span>
+            </td>
+          </tr>
+          <tr *ngIf="filteredTransferList.length === 0">
+            <td colspan="8" class="no-data">
+              <i class="bi bi-inbox"></i>
+              <p>No stock transfers found</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-wrapper">
+      <div class="pagination-info">
+        Showing {{ (page - 1) * itemsPerPage + 1 }} - {{ page * itemsPerPage > filteredTransferList.length ? filteredTransferList.length : page * itemsPerPage }} of {{ filteredTransferList.length }} transfers
+      </div>
+      <pagination-controls (pageChange)="onPageChange($event)"></pagination-controls>
+      <div class="pagination-size">
+        <select [ngModel]="itemsPerPage" (ngModelChange)="onItemsPerPageChange($event)" class="page-size-select">
+          <option [ngValue]="10">10 per page</option>
+          <option [ngValue]="15">15 per page</option>
+          <option [ngValue]="25">25 per page</option>
+          <option [ngValue]="50">50 per page</option>
+          <option [ngValue]="100">100 per page</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>

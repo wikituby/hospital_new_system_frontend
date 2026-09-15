@@ -1,0 +1,175 @@
+<div class="server-connection-overlay" role="dialog" aria-labelledby="server-connection-title">
+  <div class="server-connection-card" role="document">
+    <header class="server-connection-header">
+      <h2 id="server-connection-title">Connect to server</h2>
+      <p class="server-connection-lead">
+        Choose which server to connect to before signing in. Use the cloud API,
+        scan the network, enter a custom IP or https hostname, or use localhost if the API runs on this PC.
+      </p>
+
+      <p *ngIf="checking || autoChecking || (scanning && testingServer)" class="server-connection-status" role="status" aria-live="polite">
+        <span class="server-connection-spinner" aria-hidden="true"></span>
+        <span class="server-connection-status-text">
+          <strong *ngIf="connectingCloud">Waking cloud server…</strong>
+          <strong *ngIf="(checking || autoChecking) && !connectingCloud">Testing server health…</strong>
+          <strong *ngIf="scanning && !checking && !autoChecking">Scanning…</strong>
+          <span *ngIf="testingServer" class="server-connection-testing-url" [title]="testingServer">{{ testingServer }}</span>
+          <span *ngIf="!testingServer && (checking || autoChecking)">Checking /health endpoint…</span>
+        </span>
+      </p>
+    </header>
+
+    <div class="server-connection-body">
+    <section class="server-connection-section server-connection-cloud-block">
+      <h3>Cloud server</h3>
+      <div class="server-connection-cloud-card">
+        <div class="server-connection-cloud-info">
+          <span class="server-connection-cloud-badge">Hosted</span>
+          <strong class="server-connection-cloud-title">Render API</strong>
+          <span class="server-connection-cloud-url">{{ cloudHostLabel }}</span>
+        </div>
+        <button
+          type="button"
+          class="server-connection-connect"
+          [disabled]="checking"
+          (click)="useCloudServer()"
+        >
+          {{ connectingCloud ? 'Connecting…' : 'Connect' }}
+        </button>
+      </div>
+      <p class="server-connection-hint server-connection-cloud-hint">
+        Connects to the hosted backend. The first request may take up to a minute while the server wakes up.
+      </p>
+    </section>
+
+    <section class="server-connection-section server-connection-manual">
+      <h3>Connect manually</h3>
+      <div class="server-connection-manual-actions">
+        <button
+          type="button"
+          class="server-connection-secondary"
+          [disabled]="checking || autoChecking"
+          (click)="openCustomIpEntry()"
+        >
+          Enter custom server / URL
+        </button>
+        <button
+          type="button"
+          class="server-connection-secondary"
+          [disabled]="checking || autoChecking"
+          (click)="useLocalhostAnyway()"
+        >
+          Use localhost ({{ localhostLabel }})
+        </button>
+      </div>
+      <p class="server-connection-hint">
+        Each option is tested at /health and must return OK before login is allowed.
+        Cloud uses {{ cloudLabel }}; localhost uses this PC on port 8080;
+        custom accepts a LAN IP (e.g. 192.168.1.130) or a full URL
+        (e.g. https://api.venerandahospital.org/health_care).
+        <span *ngIf="isDevServer">
+          During local development, localhost connects to the backend on port 8080 through the frontend dev proxy.
+        </span>
+      </p>
+
+      <div *ngIf="showCustomIp || customServer" class="server-connection-custom-block">
+        <label class="server-connection-label" for="customServer">Host, IP, or full URL</label>
+        <input
+          #customServerInput
+          id="customServer"
+          type="text"
+          inputmode="url"
+          autocomplete="url"
+          spellcheck="false"
+          class="server-connection-input"
+          [(ngModel)]="customServer"
+          [disabled]="checking"
+          placeholder="192.168.1.130 or https://api.venerandahospital.org/health_care"
+          (focus)="stopScan()"
+          (keyup.enter)="tryCustom()"
+        />
+        <p class="server-connection-hint">
+          Letters, numbers, and URL characters are allowed.
+          LAN IPs default to port 8080 and path /health_care; https hostnames use 443.
+          Health check: …/health_care/health
+        </p>
+        <button
+          type="button"
+          class="server-connection-primary"
+          [disabled]="checking || autoChecking"
+          (click)="tryCustom()"
+        >
+          {{ checking ? 'Checking…' : 'Test & connect' }}
+        </button>
+      </div>
+    </section>
+
+    <section class="server-connection-section server-connection-discovered">
+      <div class="server-connection-discovered-header">
+        <h3>Discovered servers</h3>
+        <div class="server-connection-scan-actions">
+          <button
+            type="button"
+            class="server-connection-scan"
+            [disabled]="checking || scanning || autoChecking"
+            (click)="scanForServers()"
+          >
+            <span *ngIf="scanning" class="server-connection-spinner" aria-hidden="true"></span>
+            {{ scanning ? 'Scanning…' : 'Scan' }}
+          </button>
+          <button
+            *ngIf="scanning"
+            type="button"
+            class="server-connection-stop"
+            (click)="stopScan()"
+          >
+            Stop scan
+          </button>
+        </div>
+      </div>
+      <p class="server-connection-hint">
+        Saved servers are checked first, then every device IP on your Wi-Fi subnet is tested at /health_care/health.
+        Servers that return OK appear below — click Connect to choose one.
+      </p>
+      <p *ngIf="scanSubnets.length || deviceIp" class="server-connection-scan-meta">
+        <span *ngIf="deviceIp">This device: {{ deviceIp }}</span>
+        <span *ngIf="scanSubnets.length">Scanning: {{ scanSubnets.join(', ') }}</span>
+      </p>
+      <p *ngIf="scanMessage" class="server-connection-scan-status" role="status" aria-live="polite">
+        {{ scanMessage }}
+      </p>
+      <ul *ngIf="discoveredServers.length" class="server-connection-list">
+        <li *ngFor="let server of discoveredServers">
+          <div class="server-connection-discovered-item">
+            <div class="server-connection-discovered-info">
+              <strong>{{ server.ip }}</strong>
+              <span>{{ displayServerUrl(server.baseUrl) }}</span>
+            </div>
+            <button
+              type="button"
+              class="server-connection-connect"
+              [disabled]="checking || scanning"
+              (click)="tryDiscovered(server)"
+            >
+              Connect
+            </button>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section *ngIf="savedServers.length" class="server-connection-section">
+      <h3>Saved servers</h3>
+      <ul class="server-connection-list">
+        <li *ngFor="let url of savedServers">
+          <button type="button" class="server-connection-link" [disabled]="checking" (click)="trySaved(url)">
+            {{ displayServerUrl(url) }}
+          </button>
+        </li>
+      </ul>
+    </section>
+
+    <p *ngIf="errorMessage" class="server-connection-error" role="alert">{{ errorMessage }}</p>
+    </div>
+  </div>
+</div>

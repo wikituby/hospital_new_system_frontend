@@ -1,0 +1,73 @@
+<div class="sim-searchable-select" [class.open]="open" [class.disabled]="disabled">
+  <label *ngIf="label">{{ label }}</label>
+  <button
+    type="button"
+    class="sim-searchable-select__toggle"
+    [disabled]="disabled"
+    [attr.aria-expanded]="open"
+    (click)="toggle($event)">
+    <span class="sim-searchable-select__label">{{ displayLabel() }}</span>
+    <i class="bi bi-chevron-down"></i>
+  </button>
+
+  <div
+    class="sim-searchable-select__menu"
+    *ngIf="open"
+    (mousedown)="$event.stopPropagation()"
+    (click)="$event.stopPropagation()">
+    <div class="sim-searchable-select__search">
+      <input
+        #searchInput
+        type="text"
+        [ngModel]="search"
+        [ngModelOptions]="{ standalone: true }"
+        [placeholder]="searchPlaceholder"
+        (ngModelChange)="onSearchChange($event)"
+        (keydown.enter)="submitAdd($event)" />
+    </div>
+
+    <div class="sim-searchable-select__options custom-scrollbar">
+      <button
+        *ngIf="optional"
+        type="button"
+        class="sim-searchable-select__option"
+        [class.active]="innerValue == null || innerValue === ''"
+        (mousedown)="selectOption(null, $event)">
+        {{ optionalLabel }}
+      </button>
+
+      <button
+        type="button"
+        class="sim-searchable-select__option"
+        *ngFor="let opt of visibleOptions()"
+        [class.active]="valueMatches(opt.value)"
+        (mousedown)="selectOption(opt, $event)">
+        {{ opt.label }}
+      </button>
+
+      <div class="sim-searchable-select__empty" *ngIf="!visibleOptions().length">
+        {{ emptyLabel }}
+      </div>
+    </div>
+
+    <div class="sim-searchable-select__add" *ngIf="allowAdd">
+      <input
+        type="text"
+        class="sim-searchable-select__add-input"
+        [ngModel]="newName"
+        [ngModelOptions]="{ standalone: true }"
+        [placeholder]="'New ' + (addButtonLabel | lowercase)"
+        (ngModelChange)="onNewNameChange($event)"
+        (keydown.enter)="submitAdd($event)"
+        (mousedown)="$event.stopPropagation()" />
+      <button
+        type="button"
+        class="sim-searchable-select__add-btn"
+        [disabled]="!canAdd() || isAdding || disabled"
+        (mousedown)="submitAdd($event)">
+        <i class="bi bi-plus-lg"></i>
+        {{ isAdding ? 'Adding…' : addButtonLabel }}
+      </button>
+    </div>
+  </div>
+</div>

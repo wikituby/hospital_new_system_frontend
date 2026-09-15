@@ -1,0 +1,204 @@
+<div class="admissions-page" [class.dark]="isDarkMode">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-door-open"></i>
+        Patient Admissions
+      </h1>
+      <p class="page-subtitle">Manage patient admissions to inpatient department</p>
+    </div>
+    <div class="header-right">
+      <button class="btn-primary" (click)="admitPatient()">
+        <i class="bi bi-plus-circle"></i>
+        New Admission
+      </button>
+      <button class="btn-secondary">
+        <i class="bi bi-calendar3"></i>
+        Schedule Admission
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card stat-today">
+      <div class="stat-icon">
+        <i class="bi bi-calendar-check"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{todayAdmissions}}</div>
+        <div class="stat-label">Today's Admissions</div>
+      </div>
+    </div>
+    <div class="stat-card stat-active">
+      <div class="stat-icon">
+        <i class="bi bi-people"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{activeAdmissions}}</div>
+        <div class="stat-label">Active Patients</div>
+      </div>
+    </div>
+    <div class="stat-card stat-pending">
+      <div class="stat-icon">
+        <i class="bi bi-clock-history"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{pendingAdmissions}}</div>
+        <div class="stat-label">Pending Admissions</div>
+      </div>
+    </div>
+    <div class="stat-card stat-capacity">
+      <div class="stat-icon">
+        <i class="bi bi-hospital"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{bedOccupancy}}%</div>
+        <div class="stat-label">Bed Occupancy</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <button class="action-card" (click)="admitPatient()">
+      <i class="bi bi-person-plus"></i>
+      <span>Admit Patient</span>
+    </button>
+    <button class="action-card" (click)="viewWards()">
+      <i class="bi bi-hospital"></i>
+      <span>View Wards</span>
+    </button>
+    <button class="action-card" (click)="viewBeds()">
+      <i class="bi bi-bed"></i>
+      <span>Bed Availability</span>
+    </button>
+    <button class="action-card" (click)="emergencyAdmission()">
+      <i class="bi bi-exclamation-triangle"></i>
+      <span>Emergency Admission</span>
+    </button>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" placeholder="Search by patient name, file number, or admission ID..." [(ngModel)]="searchQuery">
+    </div>
+    <div class="filter-group">
+      <select class="filter-select" [(ngModel)]="wardFilter">
+        <option value="">All Wards</option>
+        <option value="general">General Ward</option>
+        <option value="icu">ICU</option>
+        <option value="maternity">Maternity</option>
+        <option value="pediatrics">Pediatrics</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="statusFilter">
+        <option value="">All Status</option>
+        <option value="admitted">Admitted</option>
+        <option value="pending">Pending</option>
+        <option value="discharged">Discharged</option>
+      </select>
+      <input type="date" class="filter-select" [(ngModel)]="dateFilter">
+    </div>
+  </div>
+
+  <!-- Admissions Table -->
+  <div class="table-section">
+    <div class="table-header">
+      <h3 class="table-title">Recent Admissions</h3>
+      <div class="table-actions">
+        <button class="btn-sm btn-secondary">
+          <i class="bi bi-download"></i>
+          Export
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Admission ID</th>
+            <th>Patient</th>
+            <th>Admitting Doctor</th>
+            <th>Ward/Bed</th>
+            <th>Admission Date</th>
+            <th>Diagnosis</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let admission of filteredAdmissions">
+            <td>
+              <div class="admission-id">ADM-{{admission.id}}</div>
+            </td>
+            <td>
+              <div class="patient-cell">
+                <div class="patient-avatar-small">{{admission.patient.initials}}</div>
+                <div>
+                  <div class="patient-name-cell">{{admission.patient.name}}</div>
+                  <div class="patient-meta-cell">File: {{admission.patient.fileNo}} | Age: {{admission.patient.age}}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="doctor-cell">
+                <div class="doctor-name">{{admission.doctor}}</div>
+                <div class="doctor-dept">{{admission.department}}</div>
+              </div>
+            </td>
+            <td>
+              <div class="ward-cell">
+                <div class="ward-name">{{admission.ward}}</div>
+                <div class="bed-number">Bed: {{admission.bed}}</div>
+              </div>
+            </td>
+            <td>
+              <div class="date-cell">
+                <div>{{admission.admissionDate}}</div>
+                <div class="time-cell">{{admission.admissionTime}}</div>
+              </div>
+            </td>
+            <td>
+              <div class="diagnosis-cell">
+                <span class="diagnosis-tag">{{admission.diagnosis}}</span>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [class]="'status-' + admission.status">
+                {{admission.status | titlecase}}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon" (click)="viewDetails(admission)" title="View Details">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn-icon" *ngIf="admission.status === 'admitted'" (click)="transferPatient(admission)" title="Transfer">
+                  <i class="bi bi-arrow-left-right"></i>
+                </button>
+                <button class="btn-icon" *ngIf="admission.status === 'admitted'" (click)="dischargePatient(admission)" title="Discharge">
+                  <i class="bi bi-door-closed"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <button class="page-btn" [disabled]="currentPage === 1">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <span class="page-info">Page {{currentPage}} of {{totalPages}}</span>
+      <button class="page-btn" [disabled]="currentPage === totalPages">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>

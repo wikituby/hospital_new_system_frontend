@@ -1,0 +1,169 @@
+<div class="radiology-scan-requests-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-camera-reels"></i>
+        Radiology Scan Requests
+      </h1>
+      <p class="page-subtitle">Request and manage radiology imaging studies</p>
+    </div>
+    <div class="header-right">
+      <button class="btn-primary" (click)="createRequest()">
+        <i class="bi bi-plus-circle"></i>
+        New Scan Request
+      </button>
+      <button class="btn-secondary">
+        <i class="bi bi-download"></i>
+        Export
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card stat-xray">
+      <div class="stat-icon"><i class="bi bi-camera"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{xrayRequests}}</div>
+        <div class="stat-label">X-Ray Requests</div>
+      </div>
+    </div>
+    <div class="stat-card stat-ct">
+      <div class="stat-icon"><i class="bi bi-cpu"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ctRequests}}</div>
+        <div class="stat-label">CT Scan Requests</div>
+      </div>
+    </div>
+    <div class="stat-card stat-mri">
+      <div class="stat-icon"><i class="bi bi-magnet"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{mriRequests}}</div>
+        <div class="stat-label">MRI Requests</div>
+      </div>
+    </div>
+    <div class="stat-card stat-ultrasound">
+      <div class="stat-icon"><i class="bi bi-soundwave"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ultrasoundRequests}}</div>
+        <div class="stat-label">Ultrasound Requests</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" placeholder="Search by patient name, scan type, or request ID..." [(ngModel)]="searchQuery">
+    </div>
+    <div class="filter-group">
+      <select class="filter-select" [(ngModel)]="scanTypeFilter">
+        <option value="">All Scan Types</option>
+        <option value="xray">X-Ray</option>
+        <option value="ct">CT Scan</option>
+        <option value="mri">MRI</option>
+        <option value="ultrasound">Ultrasound</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="statusFilter">
+        <option value="">All Status</option>
+        <option value="scheduled">Scheduled</option>
+        <option value="in-progress">In Progress</option>
+        <option value="completed">Completed</option>
+        <option value="reported">Reported</option>
+      </select>
+      <input type="date" class="filter-select" [(ngModel)]="dateFilter">
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-header">
+      <h3 class="table-title">Scan Requests</h3>
+      <div class="table-actions">
+        <button class="btn-sm btn-secondary">
+          <i class="bi bi-funnel"></i>
+          More Filters
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Request ID</th>
+            <th>Patient</th>
+            <th>Scan Type</th>
+            <th>Body Part</th>
+            <th>Requested By</th>
+            <th>Schedule Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let request of filteredRequests">
+            <td><div class="request-id">RAD-{{request.id}}</div></td>
+            <td>
+              <div class="patient-cell">
+                <div class="patient-avatar-small">{{request.patient.initials}}</div>
+                <div>
+                  <div class="patient-name-cell">{{request.patient.name}}</div>
+                  <div class="patient-meta-cell">File: {{request.patient.fileNo}}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="scan-type-badge" [class]="'type-' + request.scanType">
+                {{request.scanType | uppercase}}
+              </span>
+            </td>
+            <td>
+              <div class="body-part">{{request.bodyPart}}</div>
+            </td>
+            <td>
+              <div class="doctor-cell">
+                <div class="doctor-name">{{request.doctor}}</div>
+              </div>
+            </td>
+            <td>
+              <div class="date-cell">
+                <div>{{request.scheduleDate}}</div>
+                <div class="time-cell">{{request.scheduleTime}}</div>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [class]="'status-' + request.status">
+                {{request.status | titlecase}}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon" (click)="viewDetails(request)">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn-icon" *ngIf="request.status === 'completed'" (click)="viewImages(request)">
+                  <i class="bi bi-images"></i>
+                </button>
+                <button class="btn-icon" *ngIf="request.status === 'reported'" (click)="viewReport(request)">
+                  <i class="bi bi-file-earmark-medical"></i>
+                </button>
+                <button class="btn-icon" (click)="printRequest(request)">
+                  <i class="bi bi-printer"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <button class="page-btn" [disabled]="currentPage === 1">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <span class="page-info">Page {{currentPage}} of {{totalPages}}</span>
+      <button class="page-btn" [disabled]="currentPage === totalPages">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>

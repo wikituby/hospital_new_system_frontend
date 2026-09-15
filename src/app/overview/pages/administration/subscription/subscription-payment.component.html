@@ -1,0 +1,124 @@
+<div class="subscription-pay-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <button type="button" class="btn-back" (click)="goBack()">
+        <i class="bi bi-arrow-left"></i>
+        Back
+      </button>
+      <h1 class="page-title">
+        <i class="bi bi-phone"></i>
+        Subscription payment
+      </h1>
+      <p class="page-subtitle">
+        Pay with Flutterwave or DGateway. Approve the phone prompt to complete mobile money.
+      </p>
+    </div>
+  </div>
+
+  <div *ngIf="responseMessage" class="feedback-banner" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div class="pay-layout">
+    <section class="pay-card">
+      <h2>Gateway</h2>
+      <div class="provider-grid">
+        <button type="button" class="provider-card" [class.active]="gateway==='flutterwave'" (click)="selectGateway('flutterwave')">
+          <span class="provider-name">Flutterwave</span>
+          <span class="provider-hint">UG MoMo · MTN / Airtel</span>
+        </button>
+        <button type="button" class="provider-card provider-card--airtel" [class.active]="gateway==='dgateway'" (click)="selectGateway('dgateway')">
+          <span class="provider-name">DGateway</span>
+          <span class="provider-hint">MTN / Airtel / Card</span>
+        </button>
+      </div>
+
+      <div class="config-note" *ngIf="configuredHint">
+        {{ configuredHint }}
+        <a routerLink="/overview/subscription/momo-settings">Settings</a>
+      </div>
+
+      <ng-container *ngIf="gateway==='dgateway'">
+        <h2>Method</h2>
+        <div class="provider-grid">
+          <button type="button" class="provider-card" [class.active]="method==='mobile_money'" (click)="selectMethod('mobile_money')">
+            <span class="provider-name">Mobile Money</span>
+            <span class="provider-hint">UGX</span>
+          </button>
+          <button type="button" class="provider-card" [class.active]="method==='card'" (click)="selectMethod('card')">
+            <span class="provider-name">Card</span>
+            <span class="provider-hint">USD</span>
+          </button>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="gateway==='flutterwave'">
+        <h2>Network</h2>
+        <div class="provider-grid">
+          <button type="button" class="provider-card" [class.active]="network==='MTN'" (click)="network='MTN'" [disabled]="isPaying || isPolling">
+            <span class="provider-name">MTN</span>
+          </button>
+          <button type="button" class="provider-card provider-card--airtel" [class.active]="network==='AIRTEL'" (click)="network='AIRTEL'" [disabled]="isPaying || isPolling">
+            <span class="provider-name">Airtel</span>
+          </button>
+        </div>
+      </ng-container>
+
+      <div class="field-row">
+        <div class="field-col" *ngIf="method==='mobile_money' || gateway==='flutterwave'">
+          <label class="field-label" for="mmPhone">Phone number</label>
+          <input id="mmPhone" class="field-input" type="tel" [(ngModel)]="phoneNumber"
+            placeholder="e.g. 0770123456" [disabled]="isPaying || isPolling" />
+        </div>
+        <div class="field-col">
+          <label class="field-label" for="mmAmount">Amount ({{ currency }})</label>
+          <input id="mmAmount" class="field-input" type="number" min="1" step="1" [(ngModel)]="amount"
+            [disabled]="isPaying || isPolling" />
+        </div>
+      </div>
+
+      <label class="field-label" for="mmNote">Note (optional)</label>
+      <input id="mmNote" class="field-input" type="text" [(ngModel)]="note" [disabled]="isPaying || isPolling" />
+
+      <button type="button" class="btn-pay" (click)="pay()" [disabled]="isPaying || isPolling">
+        <i class="bi bi-shield-lock"></i>
+        <span *ngIf="isPaying">Sending request…</span>
+        <span *ngIf="!isPaying && isPolling">Check your phone…</span>
+        <span *ngIf="!isPaying && !isPolling">Pay now</span>
+      </button>
+    </section>
+
+    <section class="status-card" *ngIf="payment">
+      <div class="status-badge" [ngClass]="statusClass">{{ payment.status || 'PENDING' }}</div>
+      <h3>Payment status</h3>
+      <p class="status-message">{{ payment.message }}</p>
+      <dl class="status-meta">
+        <div>
+          <dt>Gateway</dt>
+          <dd>{{ gateway }} · {{ payment.provider || 'auto' }}</dd>
+        </div>
+        <div *ngIf="payment.network">
+          <dt>Network</dt>
+          <dd>{{ payment.network }}</dd>
+        </div>
+        <div *ngIf="payment.phoneNumber">
+          <dt>Phone</dt>
+          <dd>{{ payment.phoneNumber }}</dd>
+        </div>
+        <div>
+          <dt>Amount</dt>
+          <dd>{{ payment.currency || currency }} {{ payment.amount | number }}</dd>
+        </div>
+        <div>
+          <dt>Reference</dt>
+          <dd class="mono">{{ payment.referenceId }}</dd>
+        </div>
+      </dl>
+      <p class="poll-hint" *ngIf="isPolling">
+        <span class="spinner"></span>
+        Check your phone and approve the prompt…
+      </p>
+      <p class="mock-hint" *ngIf="payment.mock">Demo mode — save API keys in settings for live sandbox charges.</p>
+    </section>
+  </div>
+</div>

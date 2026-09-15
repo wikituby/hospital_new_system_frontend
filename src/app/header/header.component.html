@@ -1,0 +1,693 @@
+<header class="app-toolbar" [class.header-dark]="isDarkMode">
+
+  <!-- ═══ LEFT: burger · brand · nav pills ═══ -->
+  <div class="toolbar-left">
+
+    <!-- Burger -->
+    <button type="button" class="burger-btn" (click)="toggleSidebar($event)" aria-label="Toggle sidebar">
+      <span class="burger-line"></span>
+      <span class="burger-line"></span>
+      <span class="burger-line"></span>
+    </button>
+
+    <!-- Brand -->
+    <a [routerLink]="['/overview/all-patients']" class="toolbar-brand-wrap text-decoration-none">
+      <span class="toolbar-brand-mark">V<strong>MD</strong></span>
+    </a>
+
+    <!-- Nav pills -->
+    <nav class="toolbar-nav" aria-label="Main navigation">
+
+      <!-- Dashboard -->
+      <a class="toolbar-nav-pill toolbar-dashboard-pill"
+         routerLink="/overview"
+         routerLinkActive="active"
+         [routerLinkActiveOptions]="{ exact: false }">
+        <i class="bi bi-grid-1x2"></i>
+        <span class="toolbar-label">Dashboard</span>
+      </a>
+
+      <!-- More pill + custom panel -->
+      <div class="toolbar-more-wrap" *ngIf="account && businessSettings">
+        <button type="button"
+                class="toolbar-nav-pill"
+                [class.active]="moreMenuOpen"
+                (click)="toggleMoreMenu($event)">
+          <i class="bi bi-three-dots-vertical"></i>
+          <span class="toolbar-label">More</span>
+          <i class="bi bi-chevron-down toolbar-pill-caret" [class.rotated]="moreMenuOpen"></i>
+        </button>
+
+        <!-- More dropdown panel -->
+        <div class="toolbar-more-panel" *ngIf="moreMenuOpen" (click)="$event.stopPropagation()">
+          <div class="toolbar-more-panel-inner">
+
+            <a class="toolbar-more-item"
+               [routerLink]="['/patient-visits-list']"
+               (click)="onMoreMenuLinkClick($event)"
+               *ngIf="canAccessDepartment('patient-visits-list')">
+              <i class="bi bi-calendar-check"></i>
+              <span>Visits list</span>
+            </a>
+
+            <!-- Departments submenu -->
+            <div class="toolbar-more-submenu-group" *ngIf="hasAnyHeaderDepartmentLink()">
+              <button type="button"
+                      class="toolbar-more-item toolbar-more-submenu-toggle"
+                      (click)="toggleSubmenu('departments', $event)">
+                <i class="bi bi-hospital"></i>
+                <span>Departments</span>
+                <i class="bi ms-auto"
+                   [ngClass]="isSubmenuOpen('departments') ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </button>
+              <div class="toolbar-more-submenu" *ngIf="isSubmenuOpen('departments')">
+                <a class="toolbar-more-item toolbar-more-submenu-item"
+                   *ngFor="let link of visibleHeaderDepartmentLinks()"
+                   [routerLink]="[link.path]"
+                   (click)="onDepartmentLinkClick($event)">
+                  <i class="bi" [ngClass]="link.icon"></i>
+                  <span>{{ link.label }}</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Inventory submenu -->
+            <div class="toolbar-more-submenu-group" *ngIf="hasAnyLegacyInventoryLink()">
+              <button type="button"
+                      class="toolbar-more-item toolbar-more-submenu-toggle"
+                      (click)="toggleSubmenu('inventory', $event)">
+                <i class="bi bi-box-seam"></i>
+                <span>Old Inventory</span>
+                <i class="bi ms-auto"
+                   [ngClass]="isSubmenuOpen('inventory') ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </button>
+              <div class="toolbar-more-submenu" *ngIf="isSubmenuOpen('inventory')">
+                <ng-container *ngFor="let link of legacyInventoryLinks">
+                  <a class="toolbar-more-item toolbar-more-submenu-item"
+                     *ngIf="canAccessDepartment(link.pageKey)"
+                     [routerLink]="[link.route]"
+                     (click)="onLegacyInventoryLinkClick($event)">
+                    <i class="bi" [ngClass]="link.icon"></i>
+                    <span>{{ link.label }}</span>
+                  </a>
+                </ng-container>
+              </div>
+            </div>
+
+            <a class="toolbar-more-item"
+               [routerLink]="['/overview/otc-dispensary']"
+               (click)="onMoreMenuLinkClick($event)"
+               *ngIf="canAccessDepartment('otc-dispensary')">
+              <i class="bi bi-capsule"></i>
+              <span>Pharmacy</span>
+            </a>
+
+            <hr class="toolbar-more-divider" *ngIf="canAccessDepartment('otc-dispensary')">
+
+            <a class="toolbar-more-item" routerLink="/help" (click)="onMoreMenuLinkClick($event)">
+              <i class="bi bi-question-circle"></i>
+              <span>Help &amp; FAQ</span>
+            </a>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Pharmacy -->
+      <a class="toolbar-nav-pill toolbar-otc-pill"
+         routerLink="/overview/otc-dispensary"
+         routerLinkActive="active"
+         [routerLinkActiveOptions]="{ exact: true }"
+         *ngIf="account && businessSettings && canAccessDepartment('otc-dispensary')">
+        <i class="bi bi-capsule toolbar-otc-icon"></i>
+        <span class="toolbar-label">Pharmacy</span>
+      </a>
+
+    </nav>
+  </div>
+
+
+  <!-- ═══ RIGHT: action buttons ═══ -->
+  <div class="toolbar-right">
+
+    <!-- Work context chip -->
+    <button type="button"
+            class="toolbar-work-ctx-btn"
+            [class.has-context]="hasWorkContext"
+            [class.switchable]="canSwitchWorkContext"
+            (click)="onWorkContextButtonClick()"
+            [disabled]="workContextLoading"
+            [title]="canSwitchWorkContext ? ('Switch dept / room — ' + workContextTitle) : workContextTitle"
+            *ngIf="canUseQueueAndWorkContext">
+      <i class="bi bi-door-open"></i>
+      <span class="work-ctx-label">
+        <ng-container *ngIf="workContextLoading">Loading…</ng-container>
+        <ng-container *ngIf="!workContextLoading && hasWorkContext">{{ workContextSummary }}</ng-container>
+        <ng-container *ngIf="!workContextLoading && !hasWorkContext">No dept / room</ng-container>
+      </span>
+      <i *ngIf="canSwitchWorkContext" class="bi bi-chevron-down work-ctx-caret"></i>
+    </button>
+
+    <!-- Queue button -->
+    <button type="button"
+            class="toolbar-icon-btn"
+            (click)="openQueueModal()"
+            title="Patient queue"
+            *ngIf="canUseQueueAndWorkContext">
+      <i class="bi bi-list-ol"></i>
+      <span class="toolbar-label">Queue</span>
+    </button>
+
+    <!-- Patient → Registry -->
+    <a [routerLink]="['/overview/all-patients']"
+       class="toolbar-icon-btn"
+       title="Patient registry"
+       *ngIf="account && businessSettings">
+      <i class="bi bi-person-gear"></i>
+      <span class="toolbar-label">Patient</span>
+    </a>
+
+    <!-- Services -->
+    <a [routerLink]="['/overview/services-management']"
+       class="toolbar-icon-btn"
+       title="Services"
+       *ngIf="account && businessSettings">
+      <i class="bi bi-heart-pulse"></i>
+      <span class="toolbar-label">Services</span>
+    </a>
+
+    <!-- ── Notifications dropdown ── -->
+    <div class="header-notifications-dropdown" *ngIf="account && businessSettings">
+      <button type="button"
+              class="toolbar-icon-btn header-notifications-toggle"
+              [class.active]="notificationsMenuOpen"
+              aria-label="Notifications"
+              [attr.aria-expanded]="notificationsMenuOpen"
+              (click)="toggleNotificationsMenu($event)">
+        <span class="header-icon-wrap" aria-hidden="true">
+          <i class="bi bi-bell header-action-icon"></i>
+          <span class="badge header-notifications-badge" *ngIf="notificationCount > 0">
+            {{ notificationCount > 99 ? '99+' : notificationCount }}
+          </span>
+        </span>
+      </button>
+      <div class="header-notifications-panel"
+           *ngIf="notificationsMenuOpen"
+           (click)="$event.stopPropagation()">
+        <div class="header-notifications-menu-head">
+          <span class="header-notifications-menu-title">Notifications</span>
+          <button type="button"
+                  class="btn btn-link btn-sm p-0 header-notifications-refresh"
+                  (click)="refreshNotifications(); $event.stopPropagation()"
+                  [disabled]="notificationsLoading"
+                  title="Refresh">
+            <i class="bi"
+               [class.bi-arrow-clockwise]="!notificationsLoading"
+               [class.bi-hourglass-split]="notificationsLoading"></i>
+          </button>
+        </div>
+        <div class="header-notifications-scroll custom-scrollbar">
+          <p class="header-notifications-empty"
+             *ngIf="notificationsLoading && !notifications.length">Loading notifications…</p>
+          <p class="header-notifications-empty"
+             *ngIf="!notificationsLoading && !notifications.length">No notifications right now.</p>
+          <button type="button"
+                  class="header-notification-item"
+                  *ngFor="let n of notifications"
+                  [ngClass]="notificationToneClass(n.tone)"
+                  (click)="openNotification(n)">
+            <span class="header-notification-icon" [ngClass]="n.tone">
+              <i class="bi" [ngClass]="n.icon"></i>
+            </span>
+            <span class="header-notification-body">
+              <span class="header-notification-title">{{ n.title }}</span>
+              <span class="header-notification-message">{{ n.message }}</span>
+              <span class="header-notification-time" *ngIf="n.timeLabel">{{ n.timeLabel }}</span>
+            </span>
+            <i class="bi bi-chevron-right header-notification-chevron" *ngIf="n.route"></i>
+          </button>
+        </div>
+        <div class="header-notifications-menu-foot">
+          <a class="dropdown-item small" routerLink="/overview/reorder-levels" (click)="closeToolbarMenus()">
+            <i class="bi bi-box-seam me-1"></i> Stock alerts
+          </a>
+          <a class="dropdown-item small" routerLink="/overview/queue-management" (click)="closeToolbarMenus()">
+            <i class="bi bi-list-ol me-1"></i> Queue
+          </a>
+          <a class="dropdown-item small" routerLink="/overview/subscription" (click)="closeToolbarMenus()">
+            <i class="bi bi-calendar-check me-1"></i> Subscription
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Messages (opens page with collapsed overview sidebar) ── -->
+    <button type="button"
+            class="toolbar-icon-btn header-messages-toggle"
+            *ngIf="account && businessSettings"
+            aria-label="Messages"
+            title="Messages"
+            (click)="openAllMessages()">
+      <span class="header-icon-wrap" aria-hidden="true">
+        <i class="bi bi-chat-square-text header-action-icon"></i>
+        <span class="badge header-messages-badge" *ngIf="messagesUnreadTotal > 0">
+          {{ messagesUnreadTotal > 99 ? '99+' : messagesUnreadTotal }}
+        </span>
+      </span>
+    </button>
+
+    <!-- ── Profile avatar + custom panel ── -->
+    <div class="toolbar-profile-wrap">
+      <button type="button"
+              class="toolbar-avatar-btn"
+              [class.active]="profileMenuOpen"
+              (click)="toggleProfileMenu($event)"
+              aria-label="Profile menu">
+        <img *ngIf="profilePic !== defaultProfilePic"
+             [src]="profilePic"
+             (error)="onProfilePicError($event)"
+             alt="Profile"
+             class="toolbar-avatar-img">
+        <span *ngIf="profilePic === defaultProfilePic"
+              class="toolbar-avatar-initials">{{ getInitials() }}</span>
+      </button>
+
+      <!-- Profile panel -->
+      <div class="toolbar-profile-panel" *ngIf="profileMenuOpen" (click)="$event.stopPropagation()">
+
+        <!-- Head: avatar + name/email/role -->
+        <div class="profile-panel-head">
+          <img [src]="profilePic || defaultProfilePic"
+               (error)="onProfilePicError($event)"
+               alt="Profile"
+               class="profile-panel-avatar">
+          <div class="profile-panel-info">
+            <div class="profile-panel-name">{{ accountUserName || accountUseremail }}</div>
+            <div class="profile-panel-email">{{ accountUseremail }}</div>
+            <div class="profile-panel-role">{{ accountRolesLabel }}</div>
+          </div>
+        </div>
+
+        <div class="profile-panel-divider"></div>
+
+        <a class="profile-panel-item"
+           [routerLink]="['/overview/user-profile']"
+           *ngIf="account"
+           (click)="closeToolbarMenus()">
+          <i class="bi bi-person-circle"></i> View Profile
+        </a>
+        <a class="profile-panel-item"
+           routerLink="/settings-privacy"
+           *ngIf="account"
+           (click)="closeToolbarMenus()">
+          <i class="bi bi-gear"></i> Settings &amp; Privacy
+        </a>
+        <a class="profile-panel-item"
+           routerLink="/overview/user-management"
+           *ngIf="isMdUser"
+           (click)="closeToolbarMenus()">
+          <i class="bi bi-people-fill"></i> User Management
+        </a>
+
+        <div class="profile-panel-divider" *ngIf="account"></div>
+
+        <a class="profile-panel-item"
+           routerLink="/help"
+           fragment="message"
+           *ngIf="account"
+           (click)="closeToolbarMenus()">
+          <i class="bi bi-headset"></i> Customer care
+        </a>
+        <a class="profile-panel-item"
+           routerLink="/help"
+           fragment="contact"
+           *ngIf="account"
+           (click)="closeToolbarMenus()">
+          <i class="bi bi-telephone"></i> Contact support
+        </a>
+        <a class="profile-panel-item"
+           [routerLink]="['/overview/system-documentation']"
+           (click)="closeToolbarMenus()">
+          <i class="bi bi-window-desktop"></i> Documentation
+        </a>
+
+        <div class="profile-panel-divider"></div>
+
+        <button class="profile-panel-item"
+                (click)="logOut()"
+                *ngIf="logout">
+          <i class="bi bi-power profile-icon-danger"></i> Sign out
+        </button>
+        <button class="profile-panel-item"
+                (click)="signIn()"
+                *ngIf="signin">
+          <i class="bi bi-box-arrow-in-right"></i> Sign in
+        </button>
+        <button class="profile-panel-item"
+                (click)="systemUpGrade(); closeToolbarMenus()">
+          <i class="bi bi-arrow-repeat"></i> Update System
+        </button>
+
+        <!-- Appearance -->
+        <div class="profile-panel-divider"></div>
+        <div class="profile-panel-appearance">
+          <span class="profile-panel-appearance-label">Appearance</span>
+          <div class="profile-panel-theme-btns">
+            <button type="button"
+                    class="theme-btn"
+                    [class.active]="!isDarkMode"
+                    (click)="setTheme(false)">
+              <i class="bi bi-sun"></i> Light
+            </button>
+            <button type="button"
+                    class="theme-btn"
+                    [class.active]="isDarkMode"
+                    (click)="setTheme(true)">
+              <i class="bi bi-moon-stars"></i> Dark
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</header>
+
+
+<!-- ══════════════════════════════════════════════════
+     MODALS  (outside <header> so z-index works cleanly)
+     ══════════════════════════════════════════════════ -->
+
+<!-- Department & room switch modal -->
+<div class="header-modal-overlay header-modal-overlay-nested"
+     *ngIf="showWorkContextModal"
+     (click)="closeWorkContextModal()">
+  <div class="header-modal-card header-modal-card-work-context" (click)="$event.stopPropagation()">
+    <div class="header-modal-head">
+      <h3 class="header-modal-title">
+        <i class="bi bi-building"></i> Department &amp; room
+      </h3>
+      <button type="button" class="btn btn-light btn-sm" (click)="closeWorkContextModal()">Close</button>
+    </div>
+    <div class="header-modal-body">
+      <p class="work-context-hint text-muted">
+        Choose your working department and room. The queue shows patients for your current selection.
+      </p>
+      <section class="work-context-section" *ngIf="accessibleDepartments.length > 0">
+        <h4 class="work-context-section-title">
+          <i class="bi bi-building"></i> Department
+        </h4>
+        <ul class="work-context-list">
+          <li *ngFor="let dept of accessibleDepartments">
+            <button type="button"
+                    class="work-context-item"
+                    [class.active]="isActiveDepartment(dept)"
+                    (click)="selectActiveDepartment(dept)">
+              <span class="work-context-item-name">{{ dept.name }}</span>
+              <i class="bi bi-check-lg work-context-check" *ngIf="isActiveDepartment(dept)"></i>
+            </button>
+          </li>
+        </ul>
+      </section>
+      <section class="work-context-section" *ngIf="accessibleRooms.length > 0">
+        <h4 class="work-context-section-title">
+          <i class="bi bi-door-open"></i> Room
+          <span class="work-context-section-sub text-muted" *ngIf="activeDeptShortName">
+            in {{ activeDeptShortName }}
+          </span>
+        </h4>
+        <ul class="work-context-list">
+          <li *ngFor="let room of accessibleRooms">
+            <button type="button"
+                    class="work-context-item"
+                    [class.active]="isActiveRoom(room)"
+                    (click)="selectActiveRoom(room)">
+              <span class="work-context-item-name">{{ room.name }}</span>
+              <i class="bi bi-check-lg work-context-check" *ngIf="isActiveRoom(room)"></i>
+            </button>
+          </li>
+        </ul>
+      </section>
+      <p class="work-context-empty text-muted"
+         *ngIf="accessibleDepartments.length === 0 && accessibleRooms.length === 0">
+        No departments or rooms assigned. Ask an administrator to assign you in User Management.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Take client modal -->
+<div class="header-modal-overlay header-modal-overlay-nested"
+     *ngIf="showTakeClientModal"
+     (click)="closeTakeClientModal()">
+  <div class="header-modal-card header-modal-card-work-context" (click)="$event.stopPropagation()">
+    <div class="header-modal-head">
+      <h3 class="header-modal-title">
+        <i class="bi bi-signpost-split-fill" style="color:#059669;"></i>
+        Take client — {{ takeClientEntry?.patientSurname }} {{ takeClientEntry?.patientOtherNames }}
+      </h3>
+      <button type="button" class="btn btn-light btn-sm" (click)="closeTakeClientModal()">Cancel</button>
+    </div>
+    <div class="header-modal-body">
+      <p class="work-context-hint text-muted" *ngIf="takeClientStep === 'department'">
+        Choose your assigned department. Your header will switch to that department and room.
+      </p>
+      <p class="work-context-hint text-muted" *ngIf="takeClientStep === 'room'">
+        Choose your assigned room in <strong>{{ takeClientSelectedDept?.name }}</strong>.
+      </p>
+      <section class="work-context-section" *ngIf="takeClientStep === 'department'">
+        <h4 class="work-context-section-title"><i class="bi bi-building"></i> Department</h4>
+        <ul class="work-context-list">
+          <li *ngFor="let dept of takeClientDepartmentOptions">
+            <button type="button" class="work-context-item" (click)="pickTakeClientDepartment(dept)">
+              <span class="work-context-item-name">{{ dept.name }}</span>
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </li>
+        </ul>
+      </section>
+      <section class="work-context-section" *ngIf="takeClientStep === 'room'">
+        <button type="button" class="btn btn-link btn-sm ps-0 mb-2" (click)="backTakeClientToDepartments()">
+          <i class="bi bi-arrow-left"></i> Back to departments
+        </button>
+        <h4 class="work-context-section-title"><i class="bi bi-door-open"></i> Room</h4>
+        <ul class="work-context-list">
+          <li *ngFor="let room of takeClientRooms">
+            <button type="button" class="work-context-item" (click)="pickTakeClientRoom(room)">
+              <span class="work-context-item-name">{{ room.name }}</span>
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Patient queue modal -->
+<div class="header-modal-overlay"
+     *ngIf="showQueueModal"
+     (click)="closeQueueModal()">
+  <div class="header-modal-card header-modal-card-wide" (click)="$event.stopPropagation()">
+    <div class="header-modal-head">
+      <h3 class="header-modal-title">
+        <i class="bi bi-list-ol"></i> Patient queue
+        <span class="header-queue-room-tag" *ngIf="queuePageDepartmentLabel">
+          · {{ queuePageDepartmentLabel }}
+        </span>
+      </h3>
+      <button type="button" class="btn btn-light btn-sm" (click)="closeQueueModal()">Close</button>
+    </div>
+    <div class="header-queue-tabs">
+      <button type="button"
+              *ngFor="let tab of queueTabs"
+              class="header-queue-tab"
+              [class.active]="queueTab === tab.id"
+              (click)="setQueueTab(tab.id)">
+        {{ tab.label }}
+      </button>
+    </div>
+    <div class="header-modal-body">
+      <p *ngIf="queueLoading" class="header-modal-loading">Loading queue…</p>
+
+      <!-- Current -->
+      <table class="table table-sm header-queue-table"
+             *ngIf="!queueLoading && queueTab === 'current'">
+        <thead>
+          <tr>
+            <th>#</th><th>Queue #</th><th>Patient</th><th>OP No</th>
+            <th>From</th><th>To</th><th>Status</th><th>Queued by</th><th>Queued at</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let q of queueEntries; let i = index"
+              [class.queue-row-emergency]="q.emergency">
+            <td>{{ i + 1 }}</td>
+            <td><strong>{{ q.queueNumber }}</strong></td>
+            <td>
+              <span *ngIf="q.emergency" class="queue-emergency-badge">EMERGENCY</span>
+              <button type="button"
+                      class="btn btn-link btn-sm p-0 queue-patient-link"
+                      [disabled]="queueVisitLoadingEntryId != null"
+                      (click)="openQueuePatientVisit(q)"
+                      title="Open patient visit">
+                {{ q.patientSurname }} {{ q.patientOtherNames }}
+              </button>
+            </td>
+            <td>{{ q.patientFileNo }}</td>
+            <td>{{ q.fromModuleName }}</td>
+            <td><span class="queue-dest-badge">{{ q.toModuleName || '—' }}</span></td>
+            <td>
+              <span class="queue-status-badge"
+                    [ngClass]="'queue-status-' + (q.status || 'WAITING').toLowerCase()">
+                {{ q.status }}
+              </span>
+            </td>
+            <td>{{ q.queuedBy || '—' }}</td>
+            <td>{{ formatQueueDate(q.queuedAt) }}</td>
+            <td class="queue-actions-cell">
+              <button type="button"
+                      class="btn btn-link btn-sm p-0 queue-open-visit-btn"
+                      [disabled]="takeClientNavigating || queueVisitLoadingEntryId != null"
+                      (click)="takeClientToDepartment(q)"
+                      title="Take client to your department">
+                <i class="bi"
+                   [ngClass]="takeClientNavigating ? 'bi-hourglass-split' : 'bi-signpost-split-fill'"></i>
+              </button>
+              <button type="button"
+                      class="btn btn-link btn-sm p-0 queue-edit-btn"
+                      (click)="openQueueEdit(q)"
+                      title="Edit queue entry">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="queueEntries.length === 0">
+            <td colspan="10" class="header-modal-empty">{{ queueEmptyMessage }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Discharged -->
+      <table class="table table-sm header-queue-table"
+             *ngIf="!queueLoading && queueTab === 'discharged'">
+        <thead>
+          <tr>
+            <th>#</th><th>Queue #</th><th>Patient</th><th>OP No</th>
+            <th>From</th><th>Last room / dept</th><th>Discharged at</th><th>Queued by</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let q of queueEntries; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td><strong>{{ q.queueNumber }}</strong></td>
+            <td>{{ q.patientSurname }} {{ q.patientOtherNames }}</td>
+            <td>{{ q.patientFileNo }}</td>
+            <td>{{ q.fromModuleName }}</td>
+            <td><span class="queue-dest-badge">{{ q.toModuleName || '—' }}</span></td>
+            <td>{{ formatQueueDate(q.completedAt) }}</td>
+            <td>{{ q.queuedBy || '—' }}</td>
+          </tr>
+          <tr *ngIf="queueEntries.length === 0">
+            <td colspan="8" class="header-modal-empty">{{ queueEmptyMessage }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Referred -->
+      <table class="table table-sm header-queue-table"
+             *ngIf="!queueLoading && queueTab === 'referred'">
+        <thead>
+          <tr>
+            <th>#</th><th>Patient</th><th>OP No</th>
+            <th>Referred from</th><th>Referred to</th><th>Referred by</th><th>Referred at</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let q of queueEntries; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td>{{ q.patientSurname }} {{ q.patientOtherNames }}</td>
+            <td>{{ q.patientFileNo }}</td>
+            <td>{{ q.referredFromModuleName || q.fromModuleName || '—' }}</td>
+            <td><span class="queue-dest-badge">{{ q.toModuleName || '—' }}</span></td>
+            <td>{{ q.referredBy || q.queuedBy || '—' }}</td>
+            <td>{{ formatQueueDate(q.referredAt) }}</td>
+          </tr>
+          <tr *ngIf="queueEntries.length === 0">
+            <td colspan="7" class="header-modal-empty">{{ queueEmptyMessage }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Queue entry edit modal -->
+<div class="header-modal-overlay header-modal-overlay-nested"
+     *ngIf="showQueueEditModal"
+     (click)="closeQueueEditModal()">
+  <div class="header-modal-card header-modal-card-edit" (click)="$event.stopPropagation()">
+    <div class="header-modal-head">
+      <h3 class="header-modal-title">
+        <i class="bi bi-pencil-square"></i> Edit queue entry
+      </h3>
+      <button type="button" class="btn btn-light btn-sm" (click)="closeQueueEditModal()">Cancel</button>
+    </div>
+    <div class="header-modal-body" *ngIf="editingQueueEntry">
+      <p class="queue-edit-patient">
+        <strong>{{ editingQueueEntry.patientSurname }} {{ editingQueueEntry.patientOtherNames }}</strong>
+        <span class="text-muted"> · {{ editingQueueEntry.patientFileNo }}</span>
+      </p>
+      <div class="row g-2">
+        <div class="col-md-6">
+          <label class="form-label">Status</label>
+          <select class="form-select form-select-sm" [(ngModel)]="queueEditForm.status">
+            <option *ngFor="let s of queueStatusOptions" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Send to room / department</label>
+          <select class="form-select form-select-sm" [(ngModel)]="queueEditForm.toModuleId">
+            <option [ngValue]="editingQueueEntry.toModuleId">
+              Keep in {{ editingQueueEntry.toModuleName }}
+            </option>
+            <option *ngFor="let m of forwardModuleOptions" [ngValue]="m.id">{{ m.name }}</option>
+          </select>
+        </div>
+        <div class="col-12" *ngIf="isQueueDischargeDestination(queueEditForm.toModuleId)">
+          <p class="text-muted small mb-0">
+            Patient will be removed from every active queue across all departments.
+          </p>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Note</label>
+          <input type="text"
+                 class="form-control form-control-sm"
+                 [(ngModel)]="queueEditForm.note"
+                 placeholder="Optional note" />
+        </div>
+        <div class="col-12">
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   id="queueEditEmergency"
+                   [(ngModel)]="queueEditForm.emergency" />
+            <label class="form-check-label" for="queueEditEmergency">
+              Emergency (moves to top of queue)
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button type="button" class="btn btn-light btn-sm" (click)="closeQueueEditModal()">Cancel</button>
+        <button type="button"
+                class="btn btn-primary btn-sm"
+                [disabled]="queueEditSaving"
+                (click)="saveQueueEdit()">
+          {{ queueEditSaving ? 'Saving…' : 'Save changes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

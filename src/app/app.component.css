@@ -1,0 +1,25 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.api-resolving-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  background: #1e3a8a;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.app-main {
+  flex: 1;
+}

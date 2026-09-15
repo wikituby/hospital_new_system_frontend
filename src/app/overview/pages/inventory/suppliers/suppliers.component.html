@@ -1,0 +1,277 @@
+<!-- Add Supplier Modal -->
+<div class="supplier-modal-overlay" id="supplierModal" *ngIf="!isCollapsedNewSupplier">
+  <div class="supplier-modal-container">
+    <div class="supplier-modal">
+      <div class="supplier-modal-header">
+        <h2 class="supplier-modal-title">
+          <i class="bi bi-person-plus-fill"></i>
+          {{ saveButtonStatus }}
+        </h2>
+        <button type="button" class="supplier-modal-close" (click)="closeSupplierModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="supplier-modal-body">
+        <form #supplierForm="ngForm" (ngSubmit)="saveSupplier(currentSupplier)">
+          <div class="supplier-form-grid">
+            <div class="supplier-form-field full-width">
+              <label for="supplierName" class="supplier-form-label">
+                Supplier Name <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     [(ngModel)]="currentSupplier.supplierName" 
+                     name="supplierName" 
+                     class="supplier-form-input" 
+                     id="supplierName" 
+                     placeholder="Enter supplier name" 
+                     required>
+            </div>
+
+            <div class="supplier-form-field">
+              <label for="abbreviation" class="supplier-form-label">Abbreviation</label>
+              <input type="text" 
+                     [(ngModel)]="currentSupplier.abbreviation" 
+                     name="abbreviation" 
+                     class="supplier-form-input" 
+                     id="abbreviation" 
+                     placeholder="e.g., ABC Corp">
+            </div>
+
+            <div class="supplier-form-field">
+              <label for="contact" class="supplier-form-label">Contact</label>
+              <input type="tel" 
+                     [(ngModel)]="currentSupplier.contact" 
+                     name="contact" 
+                     class="supplier-form-input" 
+                     id="contact" 
+                     placeholder="Starts with 256"
+                     maxlength="12"
+                     pattern="256[0-9]{9}"
+                     inputmode="numeric">
+            </div>
+
+            <div class="supplier-form-field">
+              <label for="emailAddress" class="supplier-form-label">Email Address</label>
+              <input type="email" 
+                     [(ngModel)]="currentSupplier.emailAddress" 
+                     name="emailAddress" 
+                     class="supplier-form-input" 
+                     id="emailAddress" 
+                     placeholder="supplier@example.com">
+            </div>
+
+            <div class="supplier-form-field">
+              <label for="webSiteAddress" class="supplier-form-label">Website Address</label>
+              <input type="url" 
+                     [(ngModel)]="currentSupplier.webSiteAddress" 
+                     name="webSiteAddress" 
+                     class="supplier-form-input" 
+                     id="webSiteAddress" 
+                     placeholder="https://www.example.com">
+            </div>
+
+            <div class="supplier-form-field full-width">
+              <label for="physicalAddress" class="supplier-form-label">Physical Address</label>
+              <input type="text" 
+                     [(ngModel)]="currentSupplier.physicalAddress" 
+                     name="physicalAddress" 
+                     class="supplier-form-input" 
+                     id="physicalAddress" 
+                     placeholder="Street address, City, Country">
+            </div>
+
+            <div class="supplier-form-field full-width">
+              <label for="description" class="supplier-form-label">Description</label>
+              <textarea [(ngModel)]="currentSupplier.description" 
+                        name="description" 
+                        class="supplier-form-textarea" 
+                        id="description" 
+                        placeholder="Additional notes or description about the supplier"
+                        rows="3"></textarea>
+            </div>
+          </div>
+
+          <div *ngIf="showDivAddToDataBaseNewSupplier" class="supplier-form-message" [ngClass]="{'success': responseColor === 'rgb(11, 155, 112)', 'error': responseColor === 'rgb(238, 16, 16)'}">
+            <i class="bi" [ngClass]="responseColor === 'rgb(11, 155, 112)' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>
+            {{ responseMessage }}
+          </div>
+
+          <div *ngIf="showDivUpdatedLoaderNewSupplier" class="supplier-form-loading">
+            <div class="supplier-loader"></div>
+            <p>Saving supplier...</p>
+          </div>
+
+          <div class="supplier-modal-actions">
+            <button type="button" 
+                    class="supplier-btn-secondary" 
+                    (click)="closeSupplierModal()"
+                    [disabled]="isButtonDisabled">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="supplier-btn-primary" 
+                    [disabled]="isButtonDisabled">
+              <span *ngIf="!showDivUpdatedLoaderNewSupplier">
+                <i class="bi bi-save"></i>
+                {{ saveButtonStatus }}
+              </span>
+              <span *ngIf="showDivUpdatedLoaderNewSupplier" class="button-loading">
+                <span class="spinner-small"></span>
+                Saving...
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="suppliers-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-people-fill"></i>
+        Suppliers
+      </h2>
+      <p class="page-subtitle">Manage your suppliers</p>
+    </div>
+    
+    <div class="header-right">
+      <button class="add-supplier-btn" 
+              type="button"
+              (click)="openSupplierModal()">
+        <i class="bi bi-plus-circle-fill"></i>
+        Add New Supplier
+      </button>
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" 
+               [ngModel]="searchQuery" 
+               (ngModelChange)="onSearchQueryChange($event)"
+               placeholder="Search suppliers...">
+      </div>
+      
+      <select class="filter-select" [ngModel]="selectedColumn" (ngModelChange)="onSelectedColumnChange($event)">
+        <option value="all">All Fields</option>
+        <option value="supplierName">Supplier Name</option>
+        <option value="emailAddress">Email</option>
+        <option value="contact">Contact</option>
+        <option value="abbreviation">Abbreviation</option>
+      </select>
+
+      <div class="dropdown">
+        <button class="action-btn" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-download"></i>
+          Export
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li (click)="exportToExcel()" class="dropdown-item">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+          </li>
+          <li (click)="downloadPdf()" class="dropdown-item">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ filteredSupplierList.length }}</div>
+        <div class="stat-label">Total Suppliers</div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isLoadingService" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading suppliers data...</p>
+  </div>
+
+  <div *ngIf="showDivUpdatedOut" class="alert" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div class="table-container" *ngIf="!isLoadingService">
+    <div class="table-wrapper" #htmlData>
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>SN</th>
+            <th>Supplier Name</th>
+            <th>Abbreviation</th>
+            <th>Contact</th>
+            <th>Email Address</th>
+            <th>Physical Address</th>
+            <th>Website</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let supplier of filteredSupplierList | paginate: { itemsPerPage: itemsPerPage, currentPage: page }; let i = index">
+            <td>
+              <span class="shelf-number">{{ (page - 1) * itemsPerPage + i + 1 }}</span>
+            </td>
+            <td>
+              <div class="item-details">
+                <div class="item-title" [title]="supplier.supplierName">
+                  {{ supplier.supplierName || 'N/A' }}
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="description-text">{{ supplier.abbreviation || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="description-text">{{ supplier.contact || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="description-text">{{ supplier.emailAddress || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="description-text">{{ supplier.physicalAddress || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="description-text">{{ supplier.webSiteAddress || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="description-text">{{ supplier.description || 'N/A' }}</span>
+            </td>
+          </tr>
+          <tr *ngIf="filteredSupplierList.length === 0">
+            <td colspan="8" class="no-data">
+              <i class="bi bi-inbox"></i>
+              <p>No suppliers found</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-wrapper">
+      <div class="pagination-info">
+        Showing {{ (page - 1) * itemsPerPage + 1 }} - {{ page * itemsPerPage > filteredSupplierList.length ? filteredSupplierList.length : page * itemsPerPage }} of {{ filteredSupplierList.length }} suppliers
+      </div>
+      <pagination-controls (pageChange)="onPageChange($event)"></pagination-controls>
+      <div class="pagination-size">
+        <select [ngModel]="itemsPerPage" (ngModelChange)="onItemsPerPageChange($event)" class="page-size-select">
+          <option [ngValue]="10">10 per page</option>
+          <option [ngValue]="15">15 per page</option>
+          <option [ngValue]="25">25 per page</option>
+          <option [ngValue]="50">50 per page</option>
+          <option [ngValue]="100">100 per page</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+

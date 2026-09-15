@@ -1,0 +1,63 @@
+<div class="row" style="padding-left: 125px;padding-top: 20px;color: rgb(19, 137, 98);">
+  <p><strong style="color: rgb(15, 129, 68);">Category: <span class="badge badge-success" style="margin-left:5px;font-size: 14px;">Products Details</span></strong></p>
+</div>
+
+<div class="row">
+    <div class="card-img" style="width: 50%;border-color: black;">
+        <img src="{{sharedValue.image}}" class="card-img-top" alt="...">
+ 
+      </div>
+    <div class="col-sm-6" style="border-color: black;">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">{{sharedValue.title}}</h5>
+          <p class="card-text">{{sharedValue.description}}</p>
+          <p class="card-text"><strong>Price:</strong>${{sharedValue.price}}<span class="badge badge-danger" style="margin-left:5px;font-size: 15px;">Discount</span></p>
+          <p class="card-text"><strong>Product Category: </strong>{{sharedValue.category}}</p>
+          <button type="button" class="btn btn-success" (click)="addtoCart(sharedValue)" style="padding: 14px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="23" color="#ffffff" height="23" fill="currentColor"
+            class="bi bi-cart-check" viewBox="0 0 16 16">
+            <path
+              d="M11.354 6.354a.5.5 0 0 0-.708-.708L8 8.293 6.854 7.146a.5.5 0 1 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0l3-3z" />
+            <path
+              d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1H.5zm3.915 10L3.102 4h10.796l-1.313 7h-8.17zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
+          </svg><strong style="margin-left: 5px;">Add to cart</strong>
+
+        </button>
+  
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="row">
+        <ng-container *ngFor="let item of sharedValue2">
+            <div class="card col-md-2">
+                <img (click)="sharedValue2(item)"  [routerLink]="['/product-details']" src="{{item.image}}" alt="">
+                <h5 (click)="sharedValue2(item)"  [routerLink]="['/product-details']" class="itemdata">{{item.title}}</h5>
+
+                <p (click)="sharedValue2(item)"  [routerLink]="['/product-details']" class="itemdata">{{item.description}}</p>
+
+                <p (click)="sharedValue2(item)"  [routerLink]="['/product-details']" ><strong>Price: </strong>${{item.price}}<span class="badge badge-danger"
+                        style="margin-left:20px;">Discount</span>
+                </p>
+
+                <p (click)="sharedValue2(item)"  [routerLink]="['/product-details']" ><strong>Category: </strong>{{item.category}}</p>
+
+                <button (click)="addtoCart(item)" type="button" class="btn btn-outline-success" 
+                    style="padding-left: 5px;">
+                    Add to cart
+
+                </button>
+
+                <!--<button (click)="addtoDetails(item)"  [routerLink]="['/product-details']" type="button" 
+                    class="btn btn-outline" style="color: rgb(7, 124, 85);">
+                    View Product Details
+
+                </button>-->
+
+            </div>
+        </ng-container>
+    </div>
+</div>

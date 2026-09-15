@@ -1,0 +1,187 @@
+<div class="messages-page" [class.dark]="isDarkMode">
+  <aside class="sidebar">
+    <header class="sidebar-header">
+      <h2>Messages</h2>
+      <div class="sidebar-header-actions">
+        <span class="badge-count" *ngIf="totalUnread > 0">{{ totalUnread }} unread</span>
+        <span class="badge-count badge-count--muted" *ngIf="totalUnread === 0">{{ conversations.length }}</span>
+        <button
+          type="button"
+          class="btn-new-chat"
+          (click)="toggleUserSelector()"
+          title="Start new conversation">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="sidebar-search">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        placeholder="Search people or messages"
+        [(ngModel)]="searchText"
+      />
+    </div>
+
+    <nav class="sidebar-tabs">
+      <button
+        type="button"
+        [class.active]="activeFilter === 'all'"
+        (click)="setFilter('all')">
+        All
+      </button>
+      <button
+        type="button"
+        [class.active]="activeFilter === 'unread'"
+        (click)="setFilter('unread')">
+        Unread
+        <span *ngIf="hasUnread" class="dot"></span>
+      </button>
+    </nav>
+
+    <div *ngIf="showUserSelector" class="user-selector">
+      <div class="user-selector-header">
+        <h3>New conversation</h3>
+        <button type="button" class="btn-close-selector" (click)="showUserSelector = false">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+      <p *ngIf="errorMessage" class="user-selector-error">{{ errorMessage }}</p>
+      <div class="user-list custom-scrollbar">
+        <p *ngIf="isLoading" class="loading-conversations">Loading users…</p>
+        <button
+          *ngFor="let user of filteredAvailableUsers"
+          type="button"
+          class="user-item"
+          (click)="startConversation(user)"
+          [disabled]="isLoading">
+          <div class="avatar">
+            <span>{{ (displayUserName(user) || 'U')[0] }}</span>
+          </div>
+          <div class="user-info">
+            <div class="user-name">{{ displayUserName(user) }}</div>
+            <div class="user-username">@{{ user.username }}</div>
+            <div class="user-role" *ngIf="user.role">{{ user.role }}</div>
+          </div>
+        </button>
+        <div *ngIf="!isLoading && filteredAvailableUsers.length === 0" class="no-users">
+          <p>No users found</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="conversation-list custom-scrollbar" *ngIf="!showUserSelector">
+      <p *ngIf="isLoading" class="loading-conversations">Loading conversations…</p>
+      <button
+        *ngFor="let conv of filteredConversations"
+        type="button"
+        class="conversation-item"
+        [class.active]="conv.active"
+        (click)="selectConversation(conv)">
+        <div class="avatar">
+          <span>{{ conv.name[0] }}</span>
+        </div>
+        <div class="conversation-main">
+          <div class="row-1">
+            <span class="name">{{ conv.name }}</span>
+            <span class="time">{{ conv.time }}</span>
+          </div>
+          <div class="row-2" *ngIf="conv.title">
+            <span class="title">{{ conv.title }}</span>
+          </div>
+          <div class="row-3">
+            <span class="preview">{{ conv.lastMessage || 'No messages yet' }}</span>
+            <span *ngIf="conv.unread && conv.unread > 0" class="unread-badge">
+              {{ conv.unread }}
+            </span>
+          </div>
+        </div>
+      </button>
+      <div *ngIf="!isLoading && filteredConversations.length === 0" class="no-conversations">
+        <p>No conversations yet</p>
+        <button type="button" class="btn-start-chat" (click)="toggleUserSelector()">
+          Start a conversation
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <section class="chat-area" *ngIf="selectedConversation; else noChatSelected">
+    <header class="chat-header">
+      <div class="chat-info">
+        <div class="avatar large">
+          <span>{{ selectedConversation.name[0] }}</span>
+        </div>
+        <div class="chat-meta">
+          <div class="title-row">
+            <span class="name">{{ selectedConversation.name }}</span>
+          </div>
+          <div class="sub-row" *ngIf="selectedConversation.participantUsername">
+            <span class="username">@{{ selectedConversation.participantUsername }}</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="chat-body custom-scrollbar" #chatBody>
+      <p *ngIf="isLoadingMessages" class="loading-messages">Loading messages…</p>
+      <p *ngIf="!isLoadingMessages && messages.length === 0" class="no-messages">
+        No messages yet. Say hello to start the conversation.
+      </p>
+      <div
+        *ngFor="let msg of messages; trackBy: trackByMessageId"
+        class="message-row"
+        [ngClass]="{
+          'me': msg.from === 'me',
+          'them': msg.from === 'them',
+          'system': msg.from === 'system'
+        }">
+        <div
+          class="message-bubble"
+          [ngClass]="{
+            'system-warning': msg.accent === 'warning',
+            'system-info': msg.accent === 'info'
+          }">
+          <span class="message-text">{{ msg.text }}</span>
+          <div class="message-meta">
+            <span *ngIf="msg.time" class="message-time">{{ msg.time }}</span>
+            <span *ngIf="msg.from === 'me'" class="message-status">
+              <i *ngIf="msg.pending" class="bi bi-clock status-pending" title="Sending"></i>
+              <i *ngIf="!msg.pending && !msg.isRead" class="bi bi-check status-sent" title="Sent"></i>
+              <i *ngIf="!msg.pending && msg.isRead" class="bi bi-check-all status-read" title="Read"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="chat-input">
+      <div class="input-wrapper">
+        <textarea
+          #msgInput
+          class="message-field"
+          rows="1"
+          placeholder="Type a message (Enter to send, Shift+Enter for new line)"
+          (keydown)="onMessageKeydown($event, msgInput)"
+        ></textarea>
+      </div>
+      <button type="button" class="send-btn" (click)="sendMessage(msgInput)" title="Send">
+        <i class="bi bi-send-fill"></i>
+      </button>
+    </footer>
+  </section>
+
+  <ng-template #noChatSelected>
+    <section class="chat-area no-chat">
+      <div class="no-chat-content">
+        <i class="bi bi-chat-dots no-chat-icon"></i>
+        <h3>Team messages</h3>
+        <p>Select a conversation or start a new one with hospital staff</p>
+        <button type="button" class="btn-start-chat" (click)="toggleUserSelector()">
+          <i class="bi bi-plus-lg"></i> New conversation
+        </button>
+      </div>
+    </section>
+  </ng-template>
+</div>

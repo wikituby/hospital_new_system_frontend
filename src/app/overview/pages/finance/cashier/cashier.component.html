@@ -1,0 +1,635 @@
+<div class="cashier-component-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-cash-register"></i>
+        Cashier Desk
+      </h1>
+      <p class="page-subtitle">Process payments, issue receipts, and track daily collections</p>
+    </div>
+    <div class="header-right">
+      <button class="btn-secondary" (click)="loadPayments()" [disabled]="isLoading">
+        <i class="bi bi-arrow-repeat"></i>
+        Refresh
+      </button>
+      <button class="btn-primary" (click)="openReceivePayment()">
+        <i class="bi bi-plus-circle"></i>
+        Receive Payment
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card stat-today">
+      <div class="stat-icon"><i class="bi bi-calendar-check"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ todayTransactions }}</div>
+        <div class="stat-label">Today's Transactions</div>
+      </div>
+    </div>
+    <div class="stat-card stat-amount">
+      <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">UGX {{ formatAmount(todayAmount) }}</div>
+        <div class="stat-label">Today's Collections</div>
+      </div>
+    </div>
+    <div class="stat-card stat-pending">
+      <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ pendingPayments }}</div>
+        <div class="stat-label">Pending Payments</div>
+      </div>
+    </div>
+    <div class="stat-card stat-approved">
+      <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ approvedToday }}</div>
+        <div class="stat-label">Approved Today</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'debts'" (click)="setTab('debts')">
+      Clients with debt
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'transactions'" (click)="setTab('transactions')">
+      Transactions &amp; Receipts
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'receive'" (click)="setTab('receive')">
+      Receive Payment
+    </button>
+  </div>
+
+  <p class="alert success" *ngIf="responseMessage">{{ responseMessage }}</p>
+  <p class="alert error" *ngIf="responseError">{{ responseError }}</p>
+
+  <!-- Debts tab -->
+  <ng-container *ngIf="activeTab === 'debts'">
+    <div class="debt-panel" *ngIf="!selectedDebtClient">
+      <div class="filters-row">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Search client…" [(ngModel)]="debtSearch">
+        </div>
+        <button class="btn-secondary" type="button" (click)="loadDebtClients()" [disabled]="loadingDebtClients">
+          <i class="bi bi-arrow-repeat"></i> Refresh
+        </button>
+      </div>
+      <p class="debt-hint">Pay icon settles debt oldest-visit-first. Tap a client to see visits.</p>
+      <div class="loading-inline" *ngIf="loadingDebtClients">Loading clients…</div>
+      <div class="empty-state" *ngIf="!loadingDebtClients && filteredDebtClients.length === 0">
+        No clients with outstanding debt
+      </div>
+      <div class="debt-list" *ngIf="!loadingDebtClients">
+        <button
+          type="button"
+          class="debt-row"
+          *ngFor="let client of filteredDebtClients"
+          (click)="openDebtClient(client)">
+          <div class="debt-row-main">
+            <strong>{{ clientName(client) }}</strong>
+            <span class="debt-amount">UGX {{ formatAmount(clientDebt(client)) }}</span>
+          </div>
+          <button
+            type="button"
+            class="icon-pay"
+            title="Pay debt"
+            (click)="openClientPay(client, $event)">
+            <i class="bi bi-cash-coin"></i>
+          </button>
+        </button>
+      </div>
+    </div>
+
+    <div class="debt-panel" *ngIf="selectedDebtClient && !selectedDebtVisit">
+      <button type="button" class="btn-link" (click)="backToDebtClients()">
+        <i class="bi bi-arrow-left"></i> All clients
+      </button>
+      <div class="debt-heading">
+        <div>
+          <h2>{{ clientName(selectedDebtClient) }}</h2>
+          <p>Visits with balance · pay icon pays that visit only</p>
+        </div>
+        <button type="button" class="btn-primary" (click)="openClientPay(selectedDebtClient)">
+          <i class="bi bi-cash-coin"></i>
+          Pay all (FIFO)
+        </button>
+      </div>
+      <div class="loading-inline" *ngIf="loadingDebtVisits">Loading visits…</div>
+      <div class="empty-state" *ngIf="!loadingDebtVisits && debtVisits.length === 0">
+        No visits with outstanding balance
+      </div>
+      <div class="debt-list" *ngIf="!loadingDebtVisits">
+        <button
+          type="button"
+          class="debt-row"
+          *ngFor="let visit of debtVisits"
+          (click)="openDebtVisit(visit)">
+          <div class="debt-row-main">
+            <strong>Visit #{{ visit.visitNumber || visit.id }}</strong>
+            <span>{{ visit.visitDate || '' }}</span>
+            <span class="debt-amount">UGX {{ formatAmount(visit.balanceDue) }}</span>
+          </div>
+          <button
+            type="button"
+            class="icon-pay"
+            title="Pay this visit"
+            (click)="openVisitPay(visit, $event)">
+            <i class="bi bi-cash-coin"></i>
+          </button>
+        </button>
+      </div>
+    </div>
+
+    <div class="debt-panel" *ngIf="selectedDebtClient && selectedDebtVisit">
+      <button
+        type="button"
+        class="btn-link"
+        (click)="debtLineGroupDetail ? backToDebtVisitGroups() : backToDebtVisits()">
+        <i class="bi bi-arrow-left"></i>
+        {{ debtLineGroupDetail ? 'Visit groups' : 'Visits' }}
+      </button>
+      <div class="debt-heading">
+        <div>
+          <h2>Visit #{{ selectedDebtVisit.visitNumber || selectedDebtVisit.id }}</h2>
+          <p>
+            {{ clientName(selectedDebtClient) }} · balance
+            UGX {{ formatAmount(selectedDebtVisit.balanceDue) }}
+          </p>
+        </div>
+        <button type="button" class="btn-primary" (click)="openVisitPay(selectedDebtVisit)">
+          <i class="bi bi-cash-coin"></i>
+          Pay visit
+        </button>
+      </div>
+      <div class="loading-inline" *ngIf="loadingDebtLines">Loading bill lines…</div>
+
+      <!-- Category summary cards -->
+      <div class="debt-list" *ngIf="!loadingDebtLines && !debtLineGroupDetail">
+        <p class="debt-hint">Tap a card to see lines. Pay icon settles that group total.</p>
+        <button
+          type="button"
+          class="debt-row"
+          (click)="openDebtLineGroup('treatment')"
+          [disabled]="debtTreatments.length === 0">
+          <div class="debt-row-main">
+            <strong>Treatment given</strong>
+            <span *ngIf="debtTreatments.length; else noTreatments">
+              {{ debtTreatments.length }} item{{ debtTreatments.length === 1 ? '' : 's' }}
+            </span>
+            <ng-template #noTreatments><span>No treatments</span></ng-template>
+            <span class="debt-amount" *ngIf="debtTreatments.length">
+              UGX {{ formatAmount(debtTreatmentsTotal) }}
+            </span>
+          </div>
+          <button
+            type="button"
+            class="icon-pay"
+            title="Pay treatments"
+            [disabled]="!debtTreatments.length || !(selectedDebtVisit.balanceDue > 0)"
+            (click)="openGroupPay('treatment', $event)">
+            <i class="bi bi-cash-coin"></i>
+          </button>
+        </button>
+        <button
+          type="button"
+          class="debt-row"
+          (click)="openDebtLineGroup('procedure')"
+          [disabled]="debtProcedures.length === 0">
+          <div class="debt-row-main">
+            <strong>Procedures done</strong>
+            <span *ngIf="debtProcedures.length; else noProcedures">
+              {{ debtProcedures.length }} item{{ debtProcedures.length === 1 ? '' : 's' }}
+            </span>
+            <ng-template #noProcedures><span>No procedures</span></ng-template>
+            <span class="debt-amount" *ngIf="debtProcedures.length">
+              UGX {{ formatAmount(debtProceduresTotal) }}
+            </span>
+          </div>
+          <button
+            type="button"
+            class="icon-pay"
+            title="Pay procedures"
+            [disabled]="!debtProcedures.length || !(selectedDebtVisit.balanceDue > 0)"
+            (click)="openGroupPay('procedure', $event)">
+            <i class="bi bi-cash-coin"></i>
+          </button>
+        </button>
+      </div>
+
+      <!-- Line detail for a group -->
+      <ng-container *ngIf="!loadingDebtLines && debtLineGroupDetail === 'treatment'">
+        <h3 class="debt-section-title">Treatment given</h3>
+        <div class="empty-state" *ngIf="debtTreatments.length === 0">No treatments</div>
+        <div class="debt-list">
+          <div class="debt-row static" *ngFor="let row of debtTreatments">
+            <div class="debt-row-main">
+              <strong>{{ lineName(row, 'treatment') }}</strong>
+              <span>{{ row.status || 'treatment' }}</span>
+              <span class="debt-amount">UGX {{ formatAmount(lineAmount(row)) }}</span>
+            </div>
+            <button type="button" class="icon-pay" title="Pay this treatment" (click)="openLinePay(row, 'treatment', $event)">
+              <i class="bi bi-cash-coin"></i>
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="!loadingDebtLines && debtLineGroupDetail === 'procedure'">
+        <h3 class="debt-section-title">Procedures done</h3>
+        <div class="empty-state" *ngIf="debtProcedures.length === 0">No procedures</div>
+        <div class="debt-list">
+          <div class="debt-row static" *ngFor="let row of debtProcedures">
+            <div class="debt-row-main">
+              <strong>{{ lineName(row, 'procedure') }}</strong>
+              <span class="debt-amount">UGX {{ formatAmount(lineAmount(row)) }}</span>
+            </div>
+            <button type="button" class="icon-pay" title="Pay this procedure" (click)="openLinePay(row, 'procedure', $event)">
+              <i class="bi bi-cash-coin"></i>
+            </button>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </ng-container>
+
+  <!-- Transactions tab -->
+  <ng-container *ngIf="activeTab === 'transactions'">
+    <div class="filters-section">
+      <div class="filters-row">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input
+            type="text"
+            placeholder="Search receipt, patient, amount, notes…"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="currentPage = 1">
+        </div>
+        <select class="filter-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
+          <option value="">All Status</option>
+          <option value="Approved">Approved</option>
+          <option value="Pending">Pending</option>
+        </select>
+        <select class="filter-select" [(ngModel)]="paymentFormFilter" (ngModelChange)="currentPage = 1">
+          <option value="">All Payment Forms</option>
+          <option *ngFor="let method of paymentMethods" [value]="method.id">{{ method.label }}</option>
+        </select>
+        <input type="date" class="filter-select filter-select-date" [(ngModel)]="dateFromFilter" (ngModelChange)="currentPage = 1" title="From date">
+        <input type="date" class="filter-select filter-select-date" [(ngModel)]="dateToFilter" (ngModelChange)="currentPage = 1" title="To date">
+      </div>
+    </div>
+
+    <div class="table-section">
+      <div class="table-header">
+        <h3 class="table-title">Payment Transactions</h3>
+        <span class="table-count">{{ filteredPayments.length }} record(s)</span>
+      </div>
+
+      <div *ngIf="isLoading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading transactions…</p>
+      </div>
+
+      <div class="table-container" *ngIf="!isLoading">
+        <table class="data-table" *ngIf="paginatedPayments.length; else noTransactions">
+          <thead>
+            <tr>
+              <th>Receipt</th>
+              <th>Amount</th>
+              <th>Payment Form</th>
+              <th>Paid By</th>
+              <th>Received By</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of paginatedPayments; let i = index">
+              <td><div class="item-id">{{ receiptNumber(item, i) }}</div></td>
+              <td><strong>UGX {{ formatAmount(item.amountToPay) }}</strong></td>
+              <td>{{ item.paymentForm || '—' }}</td>
+              <td>{{ item.paidBy || '—' }}</td>
+              <td>{{ item.receivedBy || '—' }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="statusClass(item.status)">
+                  {{ item.status || '—' }}
+                </span>
+              </td>
+              <td>{{ formatDate(item.dateOfPayment) }}</td>
+              <td>{{ item.timeOfPayment || '—' }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-icon" title="View receipt" (click)="viewReceipt(item)">
+                    <i class="bi bi-receipt"></i>
+                  </button>
+                  <button class="btn-icon" title="Open visit" (click)="openPaymentVisit(item)" *ngIf="item.visitId">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <ng-template #noTransactions>
+          <div class="empty-state">
+            <i class="bi bi-receipt-cutoff"></i>
+            <h3>No transactions found</h3>
+            <p>Receive a payment or adjust your filters to see records.</p>
+            <button class="btn-primary" (click)="openReceivePayment()">
+              <i class="bi bi-plus-circle"></i>
+              Receive Payment
+            </button>
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="pagination" *ngIf="!isLoading && filteredPayments.length > itemsPerPage">
+        <button class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Receive payment tab -->
+  <ng-container *ngIf="activeTab === 'receive'">
+    <div class="receive-grid">
+      <div class="receive-panel">
+        <div class="section-header">
+          <h2 class="section-title">
+            <i class="bi bi-search"></i>
+            Find Visit
+          </h2>
+        </div>
+
+        <div class="visit-search-row">
+          <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input
+              type="text"
+              placeholder="Search by patient name…"
+              [(ngModel)]="visitSearchQuery"
+              (keyup.enter)="searchVisits()">
+          </div>
+          <button class="btn-secondary" (click)="searchVisits()" [disabled]="isSearchingVisits">
+            <i class="bi bi-search"></i>
+            Search
+          </button>
+        </div>
+
+        <div *ngIf="isSearchingVisits" class="loading-state compact">
+          <div class="spinner"></div>
+          <p>Searching visits…</p>
+        </div>
+
+        <div class="visit-list" *ngIf="!isSearchingVisits">
+          <button
+            type="button"
+            class="visit-card"
+            *ngFor="let visit of visitResults"
+            [class.selected]="selectedVisit?.id === visit.id"
+            (click)="selectVisit(visit)">
+            <div class="visit-card-main">
+              <div class="visit-patient">{{ visit.patientName || 'Unknown patient' }}</div>
+              <div class="visit-meta">
+                Visit #{{ visit.visitNumber || visit.id }}
+                <span *ngIf="visit.visitDate"> · {{ visit.visitDate }}</span>
+                <span *ngIf="visit.visitType"> · {{ visit.visitType }}</span>
+              </div>
+            </div>
+            <div class="visit-balance" *ngIf="visit.balanceDue != null">
+              UGX {{ formatAmount(visit.balanceDue) }}
+            </div>
+          </button>
+
+          <div class="empty-state compact" *ngIf="visitResults.length === 0">
+            <i class="bi bi-person-lines-fill"></i>
+            <p>No visits found. Try another name or check recent visits.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="receive-panel payment-panel">
+        <div class="section-header">
+          <h2 class="section-title">
+            <i class="bi bi-wallet2"></i>
+            Payment Details
+          </h2>
+          <button class="btn-sm btn-secondary" *ngIf="selectedVisit" (click)="clearSelectedVisit()">
+            Clear
+          </button>
+        </div>
+
+        <div *ngIf="selectedVisit; else noVisitSelected" class="payment-form-wrap">
+          <div class="selected-visit-banner">
+            <div>
+              <div class="banner-name">{{ selectedVisit.patientName }}</div>
+              <div class="banner-meta">
+                Visit #{{ selectedVisit.visitNumber || selectedVisit.id }}
+                <span *ngIf="selectedVisit.visitDate"> · {{ selectedVisit.visitDate }}</span>
+              </div>
+            </div>
+            <button class="btn-sm btn-secondary" (click)="openVisit(selectedVisit)">
+              <i class="bi bi-box-arrow-up-right"></i>
+              Open Visit
+            </button>
+          </div>
+
+          <div class="balance-banner" *ngIf="visitBalance != null">
+            <span>Balance due</span>
+            <strong>UGX {{ formatAmount(visitBalance) }}</strong>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Amount to pay</label>
+              <input
+                type="number"
+                class="form-input"
+                [(ngModel)]="paymentForm.amountToPay"
+                placeholder="0.00"
+                min="0"
+                step="0.01">
+            </div>
+            <div class="form-group">
+              <label>Paid by</label>
+              <input type="text" class="form-input" [(ngModel)]="paymentForm.paidBy" placeholder="Payer name">
+            </div>
+            <div class="form-group full-width">
+              <label>Payment form</label>
+              <div class="payment-methods">
+                <button
+                  type="button"
+                  class="payment-method"
+                  *ngFor="let method of paymentMethods"
+                  [class.active]="paymentForm.paymentForm === method.id"
+                  (click)="paymentForm.paymentForm = method.id">
+                  <i [ngClass]="method.icon"></i>
+                  {{ method.label }}
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <select class="form-input" [(ngModel)]="paymentForm.status">
+                <option value="Approved">Approved</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Notes</label>
+              <input type="text" class="form-input" [(ngModel)]="paymentForm.notes" placeholder="Receipt notes">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-primary" (click)="processPayment()" [disabled]="isSaving">
+              <i class="bi bi-check-circle"></i>
+              {{ isSaving ? 'Saving…' : 'Record Payment' }}
+            </button>
+          </div>
+        </div>
+
+        <ng-template #noVisitSelected>
+          <div class="empty-state">
+            <i class="bi bi-person-check"></i>
+            <h3>Select a visit</h3>
+            <p>Search and pick a patient visit to record a payment.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </ng-container>
+</div>
+
+<!-- Receipt modal -->
+<div class="modal-overlay" *ngIf="showReceiptModal" (click)="closeReceiptModal()">
+  <div class="receipt-modal" [class.dark]="isDarkMode" (click)="$event.stopPropagation()">
+    <div class="receipt-modal-header no-print">
+      <h3>Payment Receipt</h3>
+      <button class="btn-icon" (click)="closeReceiptModal()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="receipt-body" id="cashier-receipt" *ngIf="selectedPayment">
+      <div class="receipt-brand">
+        <i class="bi bi-hospital"></i>
+        <div>
+          <div class="receipt-title">Payment Receipt</div>
+          <div class="receipt-sub">{{ receiptNumber(selectedPayment) }}</div>
+        </div>
+      </div>
+
+      <div class="receipt-amount">
+        UGX {{ formatAmount(selectedPayment.amountToPay) }}
+      </div>
+
+      <div class="receipt-details">
+        <div class="receipt-row">
+          <span>Payment form</span>
+          <strong>{{ selectedPayment.paymentForm || '—' }}</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Status</span>
+          <strong>{{ selectedPayment.status || '—' }}</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Paid by</span>
+          <strong>{{ selectedPayment.paidBy || '—' }}</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Received by</span>
+          <strong>{{ selectedPayment.receivedBy || '—' }}</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Date</span>
+          <strong>{{ formatDate(selectedPayment.dateOfPayment) }}</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Time</span>
+          <strong>{{ selectedPayment.timeOfPayment || '—' }}</strong>
+        </div>
+        <div class="receipt-row" *ngIf="selectedPayment.notes">
+          <span>Notes</span>
+          <strong>{{ selectedPayment.notes }}</strong>
+        </div>
+      </div>
+
+      <p class="receipt-footer">Thank you for your payment.</p>
+    </div>
+
+    <div class="receipt-modal-actions no-print">
+      <button class="btn-secondary" (click)="closeReceiptModal()">Close</button>
+      <button class="btn-primary" (click)="printReceipt()">
+        <i class="bi bi-printer"></i>
+        Print Receipt
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Debt pay modal -->
+<div class="modal-backdrop" *ngIf="showDebtPayModal" (click)="closeDebtPayModal()"></div>
+<div class="debt-pay-modal" *ngIf="showDebtPayModal" role="dialog" aria-modal="true">
+  <div class="debt-pay-header">
+    <div>
+      <h3>{{ debtPayTitle }}</h3>
+      <p>{{ debtPaySubtitle }}</p>
+    </div>
+    <button type="button" class="btn-secondary" (click)="closeDebtPayModal()">Close</button>
+  </div>
+  <div class="balance-banner">
+    <span>Outstanding</span>
+    <strong>UGX {{ formatAmount(debtPayTotalDue) }}</strong>
+  </div>
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Amount to pay</label>
+      <input
+        type="number"
+        min="0"
+        step="1"
+        [(ngModel)]="debtPayForm.amountToPay"
+        (ngModelChange)="onDebtPayAmountChange()">
+    </div>
+    <div class="form-group">
+      <label>Balance after payment</label>
+      <div class="readonly-value">UGX {{ formatAmount(debtPayRemaining) }}</div>
+    </div>
+    <div class="form-group">
+      <label>Payment method</label>
+      <select [(ngModel)]="debtPayForm.paymentForm">
+        <option *ngFor="let m of paymentMethods" [value]="m.id">{{ m.label }}</option>
+      </select>
+    </div>
+    <div class="form-group full">
+      <label>Notes</label>
+      <input type="text" [(ngModel)]="debtPayForm.notes">
+    </div>
+  </div>
+  <div class="allocation-preview" *ngIf="debtPayMode === 'client' && debtPayAllocation.length">
+    <h4>Applies to visits (oldest first)</h4>
+    <div class="alloc-row" *ngFor="let a of debtPayAllocation">
+      <span>Visit #{{ a.visitNumber }}</span>
+      <span>due {{ formatAmount(a.balanceDue) }}</span>
+      <strong>pay {{ formatAmount(a.allocated) }}</strong>
+    </div>
+  </div>
+  <p class="alert error" *ngIf="debtPayMessage">{{ debtPayMessage }}</p>
+  <div class="debt-pay-actions">
+    <button type="button" class="btn-secondary" (click)="closeDebtPayModal()" [disabled]="debtPaySaving">Cancel</button>
+    <button type="button" class="btn-primary" (click)="submitDebtPay()" [disabled]="debtPaySaving">
+      {{ debtPaySaving ? 'Paying…' : ('Pay UGX ' + formatAmount(debtPayForm.amountToPay || 0)) }}
+    </button>
+  </div>
+</div>

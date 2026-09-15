@@ -1,0 +1,111 @@
+<div class="subscription-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-key"></i>
+        Subscription Status
+      </h1>
+      <p class="page-subtitle">View subscription status and activate your health facility plan</p>
+    </div>
+    <div class="header-right">
+      <button class="btn-primary" *ngIf="isActive" (click)="goToDashboard()">
+        <i class="bi bi-grid"></i>
+        Open Dashboard
+      </button>
+      <button class="btn-payment" type="button" (click)="goToPayment()">
+        <i class="bi bi-phone"></i>
+        Payment
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="responseMessage" class="feedback-banner" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div
+    class="expiry-warning-banner"
+    *ngIf="!isLoading && expiryWarning?.showWarning"
+    [class.urgent]="expiryWarning?.urgent">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>
+      <strong>{{ expiryWarning?.message }}</strong>
+      <span>{{ expiryWarning?.remainingLabel }} remaining · Expires {{ formatDate(status.periodEnd) }}</span>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading subscription status...</p>
+  </div>
+
+  <div class="subscription-layout" *ngIf="!isLoading">
+    <section class="status-card" [class.active]="isActive">
+      <div class="status-badge" [class.on]="isActive">{{ isActive ? 'Active' : (status.status | titlecase) }}</div>
+      <h2>{{ status.facilityName || 'No facility activated yet' }}</h2>
+      <p class="facility-address" *ngIf="status.facilityAddress">{{ status.facilityAddress }}</p>
+      <p class="status-message">{{ status.message }}</p>
+
+      <div class="status-meta" *ngIf="isActive">
+        <div>
+          <span class="meta-label">Valid until</span>
+          <span class="meta-value">{{ formatDate(status.periodEnd) }}</span>
+        </div>
+        <div>
+          <span class="meta-label">Modules</span>
+          <span class="meta-value">{{ moduleLabels.join(', ') }}</span>
+        </div>
+      </div>
+
+      <div class="cancel-section" *ngIf="isActive && canActivate">
+        <button type="button" class="btn-cancel" (click)="openCancelConfirm()" [disabled]="isCancelling">
+          <i class="bi bi-x-circle"></i>
+          Cancel activation
+        </button>
+        <p class="cancel-hint">Ends the current subscription immediately. Users will need a new activation code to access modules again.</p>
+      </div>
+    </section>
+
+    <section class="activate-card" *ngIf="canActivate">
+      <h3>Activate subscription</h3>
+      <p class="activate-hint">
+        Paste the full activation token sent by your vendor (starts with <code>MC1.</code>).
+        Legacy short codes like <code>{{ demoTokenHint }}</code> still work for testing.
+      </p>
+
+      <label class="field-label" for="activationToken">Activation code</label>
+      <textarea
+        id="activationToken"
+        class="token-input token-textarea"
+        rows="4"
+        [(ngModel)]="activationToken"
+        placeholder="Paste the full MC1. activation token here..."
+        autocomplete="off"
+        [disabled]="isActivating"></textarea>
+
+      <button class="btn-primary activate-btn" (click)="activate()" [disabled]="isActivating || !activationToken.trim()">
+        <i class="bi bi-check-circle" *ngIf="!isActivating"></i>
+        <span *ngIf="!isActivating">Activate</span>
+        <span *ngIf="isActivating">Activating...</span>
+      </button>
+    </section>
+
+    <section class="activate-card readonly-card" *ngIf="!canActivate && !isActive">
+      <h3>Activation required</h3>
+      <p>Your facility subscription is not active. Please contact an MD or administrator to enter the activation code.</p>
+    </section>
+  </div>
+
+  <div class="cancel-modal-backdrop" *ngIf="showCancelConfirm" (click)="closeCancelConfirm()">
+    <div class="cancel-modal" (click)="$event.stopPropagation()">
+      <h3>Cancel subscription?</h3>
+      <p>This will immediately deactivate your facility subscription. Staff will lose access to subscribed modules until a new activation code is entered.</p>
+      <div class="cancel-modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeCancelConfirm()" [disabled]="isCancelling">Keep active</button>
+        <button type="button" class="btn-danger" (click)="cancelActivation()" [disabled]="isCancelling">
+          {{ isCancelling ? 'Cancelling...' : 'Yes, cancel activation' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

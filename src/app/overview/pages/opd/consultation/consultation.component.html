@@ -1,0 +1,254 @@
+<div class="consultation-page" [class.dark]="isDarkMode">
+  <div class="row content">
+    <!-- Patient Info Sidebar -->
+    <div class="col-sm-2 consultation-sidebar">
+      <div class="sidebar-content">
+        <!-- Patient Profile -->
+        <div class="patient-profile-card">
+          <div class="patient-avatar-wrapper">
+            <img class="patient-avatar" 
+                 [src]="selectedPatient?.profilePic || 'assets/images/vector.jpeg'" 
+                 alt="Patient Avatar"
+                 onerror="this.src='assets/images/vector.jpeg'">
+          </div>
+          <div class="patient-name-section">
+            <h3 class="patient-name">
+              {{ selectedPatient?.name || (selectedPatient?.firstName + ' ' + selectedPatient?.lastName) || 'Select Patient' }}
+            </h3>
+            <div class="patient-file-number">
+              <i class="bi bi-file-earmark-medical"></i>
+              File No: {{ selectedPatient?.fileNo || selectedPatient?.patientFileNo || 'N/A' }}
+            </div>
+          </div>
+        </div>
+
+        <hr class="sidebar-divider">
+
+        <!-- Patient Quick Info -->
+        <div class="patient-quick-info" *ngIf="selectedPatient">
+          <div class="info-item">
+            <i class="bi bi-calendar3"></i>
+            <span>Age: {{ selectedPatient?.age || 'N/A' }}</span>
+          </div>
+          <div class="info-item">
+            <i class="bi bi-gender-ambiguous"></i>
+            <span>Gender: {{ selectedPatient?.gender || 'N/A' }}</span>
+          </div>
+          <div class="info-item">
+            <i class="bi bi-telephone"></i>
+            <span>{{ selectedPatient?.phone || 'N/A' }}</span>
+          </div>
+        </div>
+
+        <hr class="sidebar-divider" *ngIf="selectedPatient">
+
+        <!-- Action Buttons -->
+        <div class="sidebar-actions">
+          <button class="btn-sidebar-primary" (click)="startNewConsultation()">
+            <i class="bi bi-plus-circle"></i>
+            New Consultation
+          </button>
+          <button class="btn-sidebar-secondary" *ngIf="selectedPatient">
+            <i class="bi bi-clock-history"></i>
+            Visit History
+          </button>
+        </div>
+
+        <hr class="sidebar-divider">
+
+        <!-- Patient Queue (if no patient selected) -->
+        <div class="patient-queue-section" *ngIf="!selectedPatient">
+          <h4 class="queue-title">
+            <i class="bi bi-list-ul"></i>
+            Patient Queue
+          </h4>
+          <div class="queue-search">
+            <i class="bi bi-search"></i>
+            <input type="text" 
+                   placeholder="Search patients..." 
+                   [(ngModel)]="searchQuery"
+                   class="queue-search-input">
+          </div>
+          <div class="queue-list">
+            <div class="queue-item" 
+                 *ngFor="let patient of filteredPatients" 
+                 [class.active]="patient.active"
+                 (click)="startConsultation(patient)">
+              <div class="queue-item-avatar">{{ patient.initials }}</div>
+              <div class="queue-item-info">
+                <div class="queue-item-name">{{ patient.name }}</div>
+                <div class="queue-item-meta">
+                  <span>File: {{ patient.fileNo }}</span>
+                  <span class="queue-status" [class]="'status-' + patient.status">
+                    {{ patient.status }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="col-sm-10 consultation-main-content">
+      <div class="content-wrapper">
+        <!-- Consultation Form -->
+        <div class="consultation-form-container" *ngIf="selectedPatient; else noPatientSelected">
+          <!-- Form Header -->
+          <div class="form-header">
+            <h2 class="form-title">
+              <i class="bi bi-clipboard-pulse"></i>
+              Consultation Details
+            </h2>
+            <div class="form-header-actions">
+              <button class="btn-form-secondary">
+                <i class="bi bi-save"></i>
+                Save Draft
+              </button>
+              <button class="btn-form-primary">
+                <i class="bi bi-check-circle"></i>
+                Complete Consultation
+              </button>
+            </div>
+          </div>
+
+          <!-- Consultation Form -->
+          <form class="consultation-form">
+            <!-- Chief Complaint -->
+            <div class="form-field">
+              <label class="form-label">
+                <i class="bi bi-chat-left-text"></i>
+                Chief Complaint
+              </label>
+              <textarea class="form-textarea" 
+                        rows="3" 
+                        placeholder="Enter patient's chief complaint..."></textarea>
+            </div>
+
+            <!-- History of Present Illness -->
+            <div class="form-field">
+              <label class="form-label">
+                <i class="bi bi-file-text"></i>
+                History of Present Illness (HPI)
+              </label>
+              <textarea class="form-textarea" 
+                        rows="4" 
+                        placeholder="Describe the history of present illness..."></textarea>
+            </div>
+
+            <!-- Vital Signs -->
+            <div class="form-field">
+              <label class="form-label">
+                <i class="bi bi-heart-pulse"></i>
+                Vital Signs
+              </label>
+              <div class="vital-signs-grid">
+                <div class="vital-field">
+                  <label class="vital-label">BP (mmHg)</label>
+                  <input type="text" class="form-input" placeholder="120/80">
+                </div>
+                <div class="vital-field">
+                  <label class="vital-label">Pulse (bpm)</label>
+                  <input type="number" class="form-input" placeholder="72">
+                </div>
+                <div class="vital-field">
+                  <label class="vital-label">Temperature (°C)</label>
+                  <input type="number" class="form-input" placeholder="36.5">
+                </div>
+                <div class="vital-field">
+                  <label class="vital-label">Respiratory Rate</label>
+                  <input type="number" class="form-input" placeholder="18">
+                </div>
+                <div class="vital-field">
+                  <label class="vital-label">O2 Saturation (%)</label>
+                  <input type="number" class="form-input" placeholder="98">
+                </div>
+                <div class="vital-field">
+                  <label class="vital-label">Weight (kg)</label>
+                  <input type="number" class="form-input" placeholder="70">
+                </div>
+              </div>
+            </div>
+
+            <!-- Physical Examination -->
+            <div class="form-field">
+              <label class="form-label">
+                <i class="bi bi-clipboard-check"></i>
+                Physical Examination
+              </label>
+              <textarea class="form-textarea" 
+                        rows="5" 
+                        placeholder="Enter physical examination findings..."></textarea>
+            </div>
+
+            <!-- Diagnosis -->
+            <div class="form-field">
+              <label class="form-label">
+                <i class="bi bi-clipboard-pulse"></i>
+                Diagnosis
+              </label>
+              <div class="diagnosis-input-group">
+                <input type="text" 
+                       class="form-input" 
+                       placeholder="Search diagnosis (ICD-10)">
+                <button type="button" class="btn-diagnosis-search">
+                  <i class="bi bi-search"></i>
+                  Search
+                </button>
+              </div>
+              <div class="diagnosis-tags">
+                <span class="diagnosis-tag">
+                  A00.9 - Cholera, unspecified
+                  <i class="bi bi-x"></i>
+                </span>
+              </div>
+            </div>
+
+            <!-- Treatment Plan -->
+            <div class="form-field">
+              <label class="form-label">
+                <i class="bi bi-prescription2"></i>
+                Treatment Plan
+              </label>
+              <textarea class="form-textarea" 
+                        rows="4" 
+                        placeholder="Enter treatment plan and recommendations..."></textarea>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+              <button type="button" class="btn-form-secondary">
+                <i class="bi bi-save"></i>
+                Save Draft
+              </button>
+              <button type="button" class="btn-form-success">
+                <i class="bi bi-check-circle"></i>
+                Complete Consultation
+              </button>
+              <button type="button" class="btn-form-primary">
+                <i class="bi bi-prescription"></i>
+                Generate Prescription
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- No Patient Selected State -->
+        <ng-template #noPatientSelected>
+          <div class="empty-state">
+            <div class="empty-state-icon">
+              <i class="bi bi-clipboard-pulse"></i>
+            </div>
+            <h3>No Patient Selected</h3>
+            <p>Select a patient from the queue to start consultation</p>
+            <button class="btn-form-primary" (click)="startNewConsultation()">
+              <i class="bi bi-plus-circle"></i>
+              Start New Consultation
+            </button>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>

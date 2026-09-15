@@ -1,0 +1,209 @@
+<div class="expired-items-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-calendar-x"></i>
+        Expired items
+      </h2>
+      <p class="page-subtitle" *ngIf="inventoryIsStockBatch">
+        Lists batches whose <strong>expiry date has passed</strong> and <strong>stock on hand is above zero</strong>.
+        Register records the removal and sets that batch’s on-hand quantity to <strong>zero</strong>.
+      </p>
+      <p class="page-subtitle" *ngIf="!inventoryIsStockBatch">
+        Lists shop-item receives whose <strong>expiry date has passed</strong> and <strong>remaining quantity is above zero</strong>.
+        Register records the removal, reduces item stock at hand, and drops that receive from the list.
+      </p>
+    </div>
+    <div class="header-right">
+      <div class="search-box" *ngIf="activeTab === 'expired-list'">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          [ngModelOptions]="{ standalone: true }"
+          placeholder="{{ inventoryIsStockBatch ? 'Search item, batch, store…' : 'Search item, brand, store…' }}"
+        />
+      </div>
+      <div class="search-box" *ngIf="activeTab === 'expired-register'">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          [(ngModel)]="registerSearchQuery"
+          [ngModelOptions]="{ standalone: true }"
+          placeholder="Search register…"
+        />
+      </div>
+      <button type="button" class="action-btn" (click)="loadData(); loadRegister()" title="Refresh all">
+        <i class="bi bi-arrow-clockwise"></i>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <nav class="expired-tabs" aria-label="Expired items sections">
+    <button
+      type="button"
+      class="expired-tab"
+      [class.active]="activeTab === 'expired-list'"
+      (click)="setTab('expired-list')"
+    >
+      <i class="bi bi-list-ul"></i>
+      {{ inventoryIsStockBatch ? 'Expired batch list' : 'Expired item list' }}
+    </button>
+    <button
+      type="button"
+      class="expired-tab"
+      [class.active]="activeTab === 'expired-register'"
+      (click)="setTab('expired-register')"
+    >
+      <i class="bi bi-journal-check"></i>
+      Expiry register
+      <span class="tab-badge" *ngIf="registerList.length">{{ registerList.length }}</span>
+    </button>
+  </nav>
+
+  <div
+    class="feedback-banner"
+    *ngIf="registerFeedback"
+    [class.feedback-banner--error]="registerFeedbackError"
+  >
+    <i class="bi" [ngClass]="registerFeedbackError ? 'bi-exclamation-circle' : 'bi-check-circle'"></i>
+    {{ registerFeedback }}
+    <button type="button" class="feedback-dismiss" (click)="clearRegisterFeedback()" aria-label="Dismiss">×</button>
+  </div>
+
+  <!-- Tab: expired batches -->
+  <ng-container *ngIf="activeTab === 'expired-list'">
+    <div class="summary-bar" *ngIf="!isLoading">
+      <span class="summary-pill summary-pill--danger">
+        <i class="bi bi-exclamation-octagon"></i>
+        {{ expiredBatches.length }} expired {{ inventoryIsStockBatch ? 'batch(es)' : 'receive(s)' }}
+      </span>
+      <span class="summary-meta" *ngIf="searchQuery.trim()">
+        Showing {{ filteredRows.length }} match(es)
+      </span>
+    </div>
+
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="loader"></div>
+      <p>Loading {{ inventoryIsStockBatch ? 'stock batches' : 'expired receives' }}…</p>
+    </div>
+
+    <div class="table-container table-container--scroll" *ngIf="!isLoading">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>SN</th>
+            <th>{{ inventoryIsStockBatch ? 'Batch ID' : 'Receive ID' }}</th>
+            <th>Item</th>
+            <th>{{ inventoryIsStockBatch ? 'Batch #' : 'Brand' }}</th>
+            <th *ngIf="inventoryIsStockBatch">Store</th>
+            <th>Qty on hand</th>
+            <th>Expiry</th>
+            <th class="th-action">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let batch of filteredRows; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td>{{ batch.id ?? 'N/A' }}</td>
+            <td class="cell-item">{{ itemLabel(batch) }}</td>
+            <td>{{ batchNumberLabel(batch) }}</td>
+            <td *ngIf="inventoryIsStockBatch">{{ storeLabel(batch) }}</td>
+            <td>{{ displayQty(batch) }}</td>
+            <td class="cell-expired">{{ formatExpiry(batch.expiryDate) }}</td>
+            <td class="td-action">
+              <button
+                type="button"
+                class="btn-register"
+                (click)="registerBatch(batch)"
+                [disabled]="
+                  registeringBatchId != null ||
+                  getStockItemIdFromBatch(batch) == null ||
+                  !hasPositiveStock(batch)
+                "
+                [title]="
+                  getStockItemIdFromBatch(batch) == null
+                    ? (inventoryIsStockBatch
+                        ? 'Missing stock item id — cannot register'
+                        : 'Missing item id — cannot register')
+                    : !hasPositiveStock(batch)
+                      ? 'No stock on hand'
+                      : inventoryIsStockBatch
+                        ? 'Register removal and zero batch stock'
+                        : 'Register removal and reduce item stock'
+                "
+              >
+                <span *ngIf="!isRegistering(batch)"><i class="bi bi-journal-plus"></i> Register</span>
+                <span *ngIf="isRegistering(batch)" class="btn-register-loading">…</span>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredRows.length === 0">
+            <td [attr.colspan]="inventoryIsStockBatch ? 8 : 7" class="no-data">
+              <i class="bi bi-check2-circle" *ngIf="expiredBatches.length === 0"></i>
+              <i class="bi bi-search" *ngIf="expiredBatches.length > 0"></i>
+              <p *ngIf="expiredBatches.length === 0">
+                No expired {{ inventoryIsStockBatch ? 'batches' : 'receives' }} with stock on hand (expired + qty &gt; 0).
+              </p>
+              <p *ngIf="expiredBatches.length > 0">No rows match your search.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
+  <!-- Tab: register -->
+  <ng-container *ngIf="activeTab === 'expired-register'">
+    <div class="summary-bar" *ngIf="!loadingRegister">
+      <span class="summary-pill summary-pill--neutral">
+        <i class="bi bi-journal-text"></i>
+        {{ registerList.length }} register entr{{ registerList.length === 1 ? 'y' : 'ies' }}
+      </span>
+    </div>
+
+    <div *ngIf="loadingRegister" class="loading-container">
+      <div class="loader"></div>
+      <p>Loading expiry register…</p>
+    </div>
+
+    <div class="table-container table-container--scroll" *ngIf="!loadingRegister">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>SN</th>
+            <th>Register ID</th>
+            <th>Item</th>
+            <th>{{ inventoryIsStockBatch ? 'Stock item ID' : 'Item ID' }}</th>
+            <th>{{ inventoryIsStockBatch ? 'Batch #' : 'Brand / ref' }}</th>
+            <th>Qty recorded</th>
+            <th>Expiry</th>
+            <th>Removed at</th>
+            <th>Removed by</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of filteredRegisterRows; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td>{{ row.id ?? 'N/A' }}</td>
+            <td class="cell-item">{{ registerItemLabel(row) }}</td>
+            <td>{{ registerIdLabel(row) }}</td>
+            <td>{{ row.batchNumber || 'N/A' }}</td>
+            <td>{{ displayRegisterQty(row) }}</td>
+            <td>{{ formatRegisterExpiryCell(row) }}</td>
+            <td class="cell-muted">{{ formatRegisterRemoval(row) }}</td>
+            <td>{{ row.removedBy || 'N/A' }}</td>
+          </tr>
+          <tr *ngIf="filteredRegisterRows.length === 0">
+            <td colspan="9" class="no-data">
+              <i class="bi bi-inbox"></i>
+              <p *ngIf="registerList.length === 0">No entries in the expiry register yet.</p>
+              <p *ngIf="registerList.length > 0">No rows match your search.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</div>

@@ -1,0 +1,189 @@
+
+.card{
+    padding: 25px;
+    margin: 25px;
+    height: 30vh;
+    border:1px solid rgb(255, 255, 255);
+    border-radius: 50px;
+}
+.img-preview{
+  height: 250px;
+  width: 330px;
+}
+
+
+.dp-hidden {
+  width: 0;
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+.custom-day {
+  text-align: center;
+  padding: 0.185rem 0.25rem;
+  display: inline-block;
+  height: 2rem;
+  width: 2rem;
+}
+.custom-day.focused {
+  background-color: #e6e6e6;
+}
+.custom-day.range,
+.custom-day:hover {
+  background-color: rgb(2, 117, 216);
+  color: white;
+}
+.custom-day.faded {
+  background-color: rgba(2, 117, 216, 0.5);
+}
+
+
+
+
+.custom-thead {
+    background-color: green; /* Change this to your preferred color */
+    color: white; /* Set text color for better contrast */
+  }
+
+.bi-dash-circle:hover{
+    color: rgb(218, 34, 34);
+}
+
+.bi-plus-circle:hover{
+    color: rgb(24, 143, 66);
+}
+.bi-plus-circle{
+    cursor: pointer;
+    font-size: 18px;
+}
+.bi-dash-circle{
+    cursor: pointer;
+    font-size: 18px;
+}
+.table-container {
+    max-height: 400px; /* Adjust this value as needed */
+    overflow-y: auto; /* Enable vertical scrolling */
+  }
+
+.content{
+    margin-top: 50px;
+    padding: 20px;
+    border-radius: 50px;
+}
+.center{
+    top: 50%;
+    left:50%;
+    transform: translate(-45%, -45%);
+    text-align: center;
+    position: absolute;
+}
+
+.cartItemControl{
+    display: flex;
+    float: auto;
+}
+.cont {
+    align-items: end;
+}
+
+
+.cont {
+    display: flex; /* Use Flexbox */
+  }
+
+.item {
+    /* Optional: Add styling for individual items */
+    padding: 10px;
+    margin-right: 10px;
+  }
+
+  th {
+    top: 0;
+    position: sticky;
+    
+    
+ }
+
+.center img{
+    color: inherit;
+    border: none;
+    outline: none;
+    width: 200px;
+    height: 220px;
+    text-decoration: none;
+    margin: 20px 0px;
+}
+.table{
+    min-width: none;
+    position: relative;
+    word-wrap: break-word;
+    background-color: white;
+}
+
+
+/* app.component.css */
+.table-responsive {
+    max-height: 850px; /* Set a maximum height for the table container */
+    overflow-y: auto;
+  }
+
+  .form-area{
+    text-align: center;
+  }
+  
+
+/* Style for the container */
+.number-input {
+    display: flex;
+    align-items: center;
+  }
+
+  /* Style for the plus and minus buttons */
+  .number-input button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+  }
+
+  .number-input button:focus {
+    outline: none;
+  }
+
+  /* Style for the plus and minus icons */
+  .number-input .minus::before {
+    content: "\f068"; /* Font Awesome icon code for minus */
+    font-family: "Font Awesome 5 Free";
+  }
+  .plus::before{
+    background-color: green;
+  }
+
+  .number-input .plus::before {
+    content: "\f067"; /* Font Awesome icon code for plus */
+    font-family: "Font Awesome 5 Free";
+  }
+
+  /* Style for the quantity */
+  .quantity {
+    font-size: 24px;
+    margin: 0 10px;
+  }
+
+  .simple-loader {
+    border: 4px solid #f3f3f3 ;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin-top: 5px;
+    margin-bottom: 10px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  

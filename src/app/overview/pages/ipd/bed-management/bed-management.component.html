@@ -1,0 +1,195 @@
+<div class="ipd-bed-management-page" [class.dark]="isDarkMode">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-hospital"></i>
+        Bed & Ward Management
+      </h1>
+      <p class="page-subtitle">Monitor bed availability, ward assignments, and room allocations</p>
+    </div>
+    <div class="header-right">
+      <button class="btn-primary" (click)="assignBed()">
+        <i class="bi bi-plus-circle"></i>
+        Assign Bed
+      </button>
+      <button class="btn-secondary">
+        <i class="bi bi-arrow-left-right"></i>
+        Transfer Patient
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card stat-occupied">
+      <div class="stat-icon">
+        <i class="bi bi-bed"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{totalBeds - availableBeds}}/{{totalBeds}}</div>
+        <div class="stat-label">Beds Occupied</div>
+        <div class="stat-progress">
+          <div class="progress-bar" [style.width.%]="((totalBeds - availableBeds) / totalBeds) * 100"></div>
+        </div>
+      </div>
+    </div>
+    <div class="stat-card stat-available">
+      <div class="stat-icon">
+        <i class="bi bi-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{availableBeds}}</div>
+        <div class="stat-label">Available Beds</div>
+      </div>
+    </div>
+    <div class="stat-card stat-reserved">
+      <div class="stat-icon">
+        <i class="bi bi-clock"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{reservedBeds}}</div>
+        <div class="stat-label">Reserved</div>
+      </div>
+    </div>
+    <div class="stat-card stat-maintenance">
+      <div class="stat-icon">
+        <i class="bi bi-tools"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{maintenanceBeds}}</div>
+        <div class="stat-label">Under Maintenance</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ward Filter Tabs -->
+  <div class="ward-tabs">
+    <button class="ward-tab" 
+            *ngFor="let ward of wards" 
+            [class.active]="selectedWard === ward.id"
+            (click)="selectWard(ward.id)">
+      <i class="bi" [ngClass]="ward.icon"></i>
+      {{ward.name}}
+      <span class="ward-badge">{{ward.available}}/{{ward.total}}</span>
+    </button>
+  </div>
+
+  <!-- Ward Layout -->
+  <div class="ward-layout-section">
+    <div class="ward-header">
+      <h2 class="ward-title">
+        <i class="bi" [ngClass]="getWardIcon()"></i>
+        {{getWardName()}} - Bed Layout
+      </h2>
+      <div class="ward-actions">
+        <select class="filter-select" [(ngModel)]="viewMode">
+          <option value="grid">Grid View</option>
+          <option value="list">List View</option>
+        </select>
+        <button class="btn-sm btn-secondary">
+          <i class="bi bi-arrow-clockwise"></i>
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- Grid View -->
+    <div class="bed-grid" *ngIf="viewMode === 'grid'">
+      <div class="bed-card" 
+           *ngFor="let bed of getBedsForWard()" 
+           [class]="'bed-' + bed.status"
+           (click)="selectBed(bed)">
+        <div class="bed-header">
+          <div class="bed-number">{{bed.number}}</div>
+          <div class="bed-status-badge" [class]="'status-' + bed.status">
+            {{bed.status | titlecase}}
+          </div>
+        </div>
+        <div class="bed-body" *ngIf="bed.patient">
+          <div class="patient-info-mini">
+            <div class="patient-avatar-mini">{{bed.patient.initials}}</div>
+            <div>
+              <div class="patient-name-mini">{{bed.patient.name}}</div>
+              <div class="patient-meta-mini">
+                File: {{bed.patient.fileNo}} | Age: {{bed.patient.age}}
+              </div>
+            </div>
+          </div>
+          <div class="bed-meta">
+            <span><i class="bi bi-calendar"></i> {{bed.admissionDate}}</span>
+            <span><i class="bi bi-clock"></i> {{bed.daysOccupied}} days</span>
+          </div>
+        </div>
+        <div class="bed-empty" *ngIf="!bed.patient">
+          <i class="bi bi-dash-circle"></i>
+          <span>Available</span>
+        </div>
+        <div class="bed-actions" *ngIf="bed.patient">
+          <button class="btn-icon" (click)="viewPatientDetails(bed.patient)">
+            <i class="bi bi-eye"></i>
+          </button>
+          <button class="btn-icon" (click)="transferPatient(bed)">
+            <i class="bi bi-arrow-left-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- List View -->
+    <div class="bed-list" *ngIf="viewMode === 'list'">
+      <div class="bed-list-header">
+        <div class="col-bed">Bed Number</div>
+        <div class="col-status">Status</div>
+        <div class="col-patient">Patient</div>
+        <div class="col-admission">Admission Date</div>
+        <div class="col-days">Days</div>
+        <div class="col-actions">Actions</div>
+      </div>
+      <div class="bed-list-item" 
+           *ngFor="let bed of getBedsForWard()"
+           [class]="'status-' + bed.status">
+        <div class="col-bed">
+          <strong>{{bed.number}}</strong>
+          <span class="bed-type">{{bed.type}}</span>
+        </div>
+        <div class="col-status">
+          <span class="status-badge" [class]="'status-' + bed.status">
+            {{bed.status | titlecase}}
+          </span>
+        </div>
+        <div class="col-patient" *ngIf="bed.patient">
+          <div class="patient-info-list">
+            <div class="patient-avatar-list">{{bed.patient.initials}}</div>
+            <div>
+              <div class="patient-name-list">{{bed.patient.name}}</div>
+              <div class="patient-meta-list">File: {{bed.patient.fileNo}}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-patient" *ngIf="!bed.patient">
+          <span class="text-muted">Available</span>
+        </div>
+        <div class="col-admission">
+          {{bed.admissionDate || '-'}}
+        </div>
+        <div class="col-days">
+          {{bed.daysOccupied || '-'}}
+        </div>
+        <div class="col-actions">
+          <button class="btn-icon" *ngIf="bed.patient" (click)="viewPatientDetails(bed.patient)">
+            <i class="bi bi-eye"></i>
+          </button>
+          <button class="btn-icon" *ngIf="bed.patient" (click)="transferPatient(bed)">
+            <i class="bi bi-arrow-left-right"></i>
+          </button>
+          <button class="btn-icon" *ngIf="!bed.patient" (click)="assignBedToWard(bed)">
+            <i class="bi bi-plus-circle"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bed Details Modal (would be implemented) -->
+</div>

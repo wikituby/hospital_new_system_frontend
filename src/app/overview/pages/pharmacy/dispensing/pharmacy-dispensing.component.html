@@ -1,0 +1,234 @@
+<div class="pharmacy-dispensing-page" [class.dark]="isDarkMode">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-capsule"></i>
+        Pharmacy Dispensing
+      </h1>
+      <p class="page-subtitle">Dispense medications and manage prescriptions</p>
+    </div>
+    <div class="header-right">
+      <button class="btn-primary" (click)="newDispensing()">
+        <i class="bi bi-plus-circle"></i>
+        New Dispensing
+      </button>
+      <button class="btn-secondary">
+        <i class="bi bi-file-earmark-medical"></i>
+        View Prescriptions
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card stat-pending">
+      <div class="stat-icon">
+        <i class="bi bi-clock-history"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{pendingPrescriptions}}</div>
+        <div class="stat-label">Pending Prescriptions</div>
+      </div>
+    </div>
+    <div class="stat-card stat-today">
+      <div class="stat-icon">
+        <i class="bi bi-calendar-check"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{dispensedToday}}</div>
+        <div class="stat-label">Dispensed Today</div>
+      </div>
+    </div>
+    <div class="stat-card stat-stock">
+      <div class="stat-icon">
+        <i class="bi bi-exclamation-triangle"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{lowStockItems}}</div>
+        <div class="stat-label">Low Stock Items</div>
+      </div>
+    </div>
+    <div class="stat-card stat-revenue">
+      <div class="stat-icon">
+        <i class="bi bi-cash-stack"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">${{todayRevenue}}</div>
+        <div class="stat-label">Today's Revenue</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="content-grid">
+    <!-- Pending Prescriptions Queue -->
+    <div class="prescriptions-queue">
+      <div class="section-header">
+        <h2 class="section-title">
+          <i class="bi bi-list-ul"></i>
+          Pending Prescriptions
+        </h2>
+        <div class="queue-filters">
+          <select class="filter-select" [(ngModel)]="priorityFilter">
+            <option value="">All Priorities</option>
+            <option value="urgent">Urgent</option>
+            <option value="normal">Normal</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="Search by patient name or prescription ID..." [(ngModel)]="searchQuery">
+      </div>
+
+      <div class="prescription-list">
+        <div class="prescription-item" 
+             *ngFor="let prescription of filteredPrescriptions"
+             [class.active]="selectedPrescription?.id === prescription.id"
+             (click)="selectPrescription(prescription)">
+          <div class="prescription-header">
+            <div class="prescription-id">RX-{{prescription.id}}</div>
+            <div class="prescription-date">{{prescription.date}}</div>
+          </div>
+          <div class="prescription-patient">
+            <div class="patient-avatar-small">{{prescription.patient.initials}}</div>
+            <div class="patient-info">
+              <div class="patient-name">{{prescription.patient.name}}</div>
+              <div class="patient-meta">File: {{prescription.patient.fileNo}} | Age: {{prescription.patient.age}}</div>
+            </div>
+          </div>
+          <div class="prescription-details">
+            <div class="prescription-doctor">
+              <i class="bi bi-person-badge"></i>
+              {{prescription.doctor}}
+            </div>
+            <div class="prescription-items">
+              <i class="bi bi-capsule"></i>
+              {{prescription.itemsCount}} items
+            </div>
+          </div>
+          <div class="prescription-status" [class]="'status-' + prescription.status">
+            {{prescription.status | titlecase}}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dispensing Form -->
+    <div class="dispensing-form-section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <i class="bi bi-clipboard-check"></i>
+          Dispensing Details
+        </h2>
+      </div>
+
+      <div class="dispensing-form" *ngIf="selectedPrescription; else noPrescriptionSelected">
+        <!-- Patient Info Card -->
+        <div class="patient-info-card">
+          <div class="patient-avatar-large">{{selectedPrescription.patient.initials}}</div>
+          <div class="patient-details-large">
+            <h3>{{selectedPrescription.patient.name}}</h3>
+            <p>File No: {{selectedPrescription.patient.fileNo}} | Age: {{selectedPrescription.patient.age}} | Gender: {{selectedPrescription.patient.gender}}</p>
+            <p class="prescription-info">Prescription ID: RX-{{selectedPrescription.id}} | Date: {{selectedPrescription.date}}</p>
+          </div>
+        </div>
+
+        <!-- Prescribed Medications -->
+        <div class="medications-section">
+          <h3 class="section-subtitle">
+            <i class="bi bi-capsule"></i>
+            Prescribed Medications
+          </h3>
+          
+          <div class="medications-list">
+            <div class="medication-item" *ngFor="let med of selectedPrescription.medications">
+              <div class="medication-info">
+                <div class="medication-name">{{med.name}}</div>
+                <div class="medication-details">
+                  <span>{{med.dosage}}</span>
+                  <span>{{med.frequency}}</span>
+                  <span>{{med.duration}}</span>
+                </div>
+                <div class="medication-instructions">{{med.instructions}}</div>
+              </div>
+              <div class="medication-stock">
+                <div class="stock-info" [class.low-stock]="med.stock < med.quantity">
+                  <i class="bi bi-box"></i>
+                  Stock: {{med.stock}} {{med.unit}}
+                </div>
+                <div class="quantity-needed">
+                  Required: {{med.quantity}} {{med.unit}}
+                </div>
+              </div>
+              <div class="medication-actions">
+                <input type="number" 
+                       class="quantity-input" 
+                       [(ngModel)]="med.dispensedQuantity"
+                       [max]="med.stock"
+                       [min]="0"
+                       placeholder="Qty">
+                <button class="btn-sm btn-success" *ngIf="med.stock >= med.quantity" (click)="dispenseMedication(med)">
+                  <i class="bi bi-check"></i>
+                  Dispense
+                </button>
+                <button class="btn-sm btn-warning" *ngIf="med.stock < med.quantity" (click)="partialDispense(med)">
+                  <i class="bi bi-exclamation-triangle"></i>
+                  Partial
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dispensing Summary -->
+        <div class="dispensing-summary">
+          <h3 class="section-subtitle">
+            <i class="bi bi-receipt"></i>
+            Dispensing Summary
+          </h3>
+          
+          <div class="summary-table">
+            <div class="summary-row" *ngFor="let item of dispensingSummary">
+              <div class="summary-item-name">{{item.name}}</div>
+              <div class="summary-item-qty">{{item.quantity}} {{item.unit}}</div>
+              <div class="summary-item-price">${{item.price}}</div>
+              <div class="summary-item-total">${{item.total}}</div>
+            </div>
+          </div>
+          
+          <div class="summary-total">
+            <div class="total-label">Total Amount:</div>
+            <div class="total-value">${{totalAmount}}</div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+          <button class="btn-secondary">
+            <i class="bi bi-save"></i>
+            Save Draft
+          </button>
+          <button class="btn-success" (click)="completeDispensing()">
+            <i class="bi bi-check-circle"></i>
+            Complete Dispensing
+          </button>
+          <button class="btn-primary">
+            <i class="bi bi-printer"></i>
+            Print Receipt
+          </button>
+        </div>
+      </div>
+
+      <ng-template #noPrescriptionSelected>
+        <div class="empty-state">
+          <i class="bi bi-capsule"></i>
+          <h3>No Prescription Selected</h3>
+          <p>Select a prescription from the queue to start dispensing</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

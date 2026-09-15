@@ -1,0 +1,110 @@
+﻿<div class="expense-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div>
+      <h1><i class="bi bi-graph-up"></i> Income Overview</h1>
+      <p class="subtitle">Analytics and summaries for client payments and recorded income.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="loadAll()" [disabled]="isLoading">
+        <i class="bi bi-arrow-repeat"></i> Refresh
+      </button>
+      <a class="btn-primary" routerLink="/overview/income-transactions">
+        <i class="bi bi-plus-circle"></i> Record Income
+      </a>
+    </div>
+  </div>
+
+  <div class="breadcrumb-row">
+    <span class="current"><i class="bi bi-graph-up"></i> Overview</span>
+    <span class="sep">/</span>
+    <a routerLink="/overview/income-transactions"><i class="bi bi-cash-stack"></i> Transactions</a>
+    <span class="sep">/</span>
+    <a routerLink="/overview/income-accounts"><i class="bi bi-wallet2"></i> Accounts</a>
+    <span class="sep">/</span>
+    <a routerLink="/overview/income-categories"><i class="bi bi-folder2-open"></i> Categories</a>
+  </div>
+
+  <div class="date-filter-row">
+    <label>From</label>
+    <input class="form-control date-input" type="date" [(ngModel)]="dateFrom" />
+    <label>To</label>
+    <input class="form-control date-input" type="date" [(ngModel)]="dateTo" />
+    <button class="btn-secondary" (click)="applyDateFilter()" [disabled]="isLoading">Apply</button>
+    <button class="btn-secondary btn-ghost" (click)="clearDateFilter()" [disabled]="isLoading">Reset</button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading income analytics...</p>
+  </div>
+
+  <ng-container *ngIf="!isLoading">
+    <div class="stats-row">
+      <div class="stat-card accent-gold total-card">
+        <i class="bi bi-currency-exchange"></i>
+        <div>
+          <div class="stat-value">{{ formatAmount(totalIncome) }}</div>
+          <div class="stat-label">Total Income</div>
+        </div>
+      </div>
+      <div class="stat-card accent-blue">
+        <i class="bi bi-receipt-cutoff"></i>
+        <div>
+          <div class="stat-value">{{ transactionCount }}</div>
+          <div class="stat-label">Manual Transactions</div>
+        </div>
+      </div>
+      <div class="stat-card accent-purple">
+        <i class="bi bi-calculator"></i>
+        <div>
+          <div class="stat-value">{{ formatAmount(averageIncome) }}</div>
+          <div class="stat-label">Avg per Transaction</div>
+        </div>
+      </div>
+      <div class="stat-card accent-green">
+        <i class="bi bi-wallet2"></i>
+        <div>
+          <div class="stat-value">{{ accounts.length }}</div>
+          <div class="stat-label">Income Accounts</div>
+        </div>
+      </div>
+      <div class="stat-card accent-warn">
+        <i class="bi bi-folder"></i>
+        <div>
+          <div class="stat-value">{{ categories.length }}</div>
+          <div class="stat-label">Categories</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row account-breakdown">
+      <div class="stat-card" [ngClass]="accountAccent(account.accountType)" *ngFor="let account of accountCards">
+        <i class="bi" [ngClass]="accountIcon(account.accountType)"></i>
+        <div>
+          <div class="stat-value">{{ formatAmount(account.totalAmount) }}</div>
+          <div class="stat-label">{{ account.label }}</div>
+          <div class="stat-meta" *ngIf="account.readOnly">Auto from cashier receipts · {{ account.entryCount }} receipt(s)</div>
+          <div class="stat-meta" *ngIf="!account.readOnly">{{ account.entryCount }} record(s)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="surface chart-surface" *ngIf="categoryChartData.length">
+      <h3 class="chart-title"><i class="bi bi-bar-chart-line"></i> Income by Category (manual entries)</h3>
+      <div class="vertical-chart">
+        <div class="v-bar-wrapper" *ngFor="let row of categoryChartData">
+          <div class="v-bar-value">{{ formatAmount(row.amount) }}</div>
+          <div class="v-bar-track">
+            <div class="v-bar-fill green" [style.height.%]="row.percent"></div>
+          </div>
+          <div class="v-bar-label">{{ row.name }}</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="table-note">
+      Client payments are calculated from approved cashier receipts. Use
+      <a routerLink="/overview/income-transactions">Income Transactions</a> to record donations, grants, and other income.
+    </p>
+  </ng-container>
+</div>

@@ -1,0 +1,119 @@
+<ng-container *ngIf="products.length !=0; else noData">
+            <div style="max-height: 300px;padding-left: 50px;padding-right: 50px;padding-top: 10px;padding-bottom: 10px;">
+
+                <table class="table table-responsive table-bordered " style="border-radius: 10px;max-height: 470px;">
+                    <thead class="table-success">
+                        <tr>
+                            <th>Sr.no</th>
+                            <th>Name</th>
+                            <th>Product Image</th>
+                            <th>Description</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Total</th>
+                            <th>Action</th>
+
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+
+                        <tr *ngFor="let item of products  | paginate: { itemsPerPage: 10, currentPage: p }, let i = index">
+                            <td>{{i+1}}</td>
+                            <td class="itemdata">{{item.title}}</td>
+                            <td><img src="{{item.image}}" style="width: 120px;max-height: 120px;" alt=""></td>
+                            <td class="itemdata" style="width: 20%;">{{item.description }}</td>
+                            <td>${{item.price}}</td>
+                            <td>
+
+
+                                <div class="number-input">
+                                    <i (click)="decrementQuantity(item)" class="bi bi-dash-circle"></i>
+                                    <h4 class="quantity">{{item.quantity}}</h4>
+                                    <i (click)="incrementQuantity(item)" class="bi bi-plus-circle"></i>
+                                </div>
+
+
+
+
+                            </td>
+                            <td>${{item.total}}</td>
+                            <td>
+
+                   
+
+                                <button (click)="removeProduct(item)" data-toggle="modal" data-target="#myModalDeleteWarningSingleItem" type="button"
+                                class="btn btn-outline-danger"
+                                style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem; ">
+                                <span>
+                                    <i class="bi bi-trash-fill"></i>
+                                </span>
+                                <span style="margin-left: 3px;">
+                                    Delete
+                                </span>
+
+                            </button>
+
+                        
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+
+                </table>
+
+                <pagination-controls (pageChange)="p = $event"></pagination-controls>
+
+
+                <div class="row-container">
+                    <div class="item"><button (click)="removeAllProduct()" class="btn btn-danger"><strong
+                                style="font-size: 18px;">Empty Cart</strong></button>
+                    </div>
+                    <div class="item"><button [routerLink]="['/products']" class="btn btn-warning"><strong
+                                style="font-size: 18px;">Shop More</strong></button>
+                    </div>
+                    <div class="item"><button [routerLink]="['/checkout']" class="btn btn-success"><strong
+                                style="font-size: 18px;">Check Out ${{allProducts | number: '1.1-1'}}</strong></button>
+                    </div>
+                    <div class="item"><button [routerLink]="['/checkout']" class="btn btn-success"
+                            style="font-size: 24px;background-color: white;color: black;border-color: white;"><span>
+                                <strong>Total Amount: ${{allProducts | number: '1.1-1'}}</strong></span>
+                        </button>
+                    </div>
+
+                </div>
+    </div>
+
+</ng-container>
+
+
+<ng-template #noData>
+    <div class="container">
+        <div class="card">
+            <h4 class="card-title">My Cart</h4>
+        </div>
+
+
+        <div class="center">
+
+            <i class="bi bi-cart4" style="font-size: 10rem; color: rgb(26, 150, 109);"></i>
+            <br><br><br>
+            <h5 style="font-size: 2rem;">Your cart is empty</h5><br>
+            <h6 style="font-size: 1rem;">Add item to it now</h6>
+
+
+            <div class="container">
+
+                <button [routerLink]="['/products']" type="button" class="btn btn-success"
+                    style="border-radius: 15px;font-size: 1rem;">
+                    Shop Now
+
+                </button>
+            </div>
+        </div>
+    </div>
+</ng-template>

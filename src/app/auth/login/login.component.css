@@ -1,0 +1,98 @@
+.finger:hover {
+  cursor: pointer;
+}
+
+.login-brand-row {
+  gap: 10px;
+}
+
+.login-brand-logo {
+  height: 64px;
+  width: auto;
+  max-width: 80px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.login-brand-title {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #5181da;
+}
+
+.login-brand-subtitle {
+  color: #727777;
+  margin-left: 7px;
+}
+
+.login-side-image-wrap {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 32px;
+  padding-left: 40px;
+  padding-right: 0px;
+}
+
+.login-side-image {
+  width: 95%;
+  max-width: 440px;
+  height: auto;
+  object-fit: contain;
+}
+
+.login-server-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin: 0 0 1rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  font-size: 0.82rem;
+}
+
+.login-server-label {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.login-server-value {
+  flex: 1 1 12rem;
+  min-width: 0;
+  color: #334155;
+  word-break: break-all;
+}
+
+.login-change-server {
+  border: none;
+  background: transparent;
+  color: #5181da;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.login-change-server:hover {
+  color: #3d6bb8;
+}
+
+.simple-loader {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4b949c;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

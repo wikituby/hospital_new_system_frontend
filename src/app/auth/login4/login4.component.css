@@ -1,0 +1,63 @@
+.finger:hover{
+    cursor: pointer;
+}
+
+.login-server-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin: 0 0 1rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  background: #f0f9fa;
+  border: 1px solid #b8d9dc;
+  font-size: 0.82rem;
+}
+
+.login-server-label {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.login-server-value {
+  flex: 1 1 12rem;
+  min-width: 0;
+  color: #334155;
+  word-break: break-all;
+}
+
+.login-change-server {
+  border: none;
+  background: transparent;
+  color: #4b949c;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.login-change-server:hover {
+  color: #35757c;
+}
+
+@media (max-width: 768px) {
+  section.vh-100 {
+    min-height: 100dvh;
+    height: auto;
+    padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+  }
+
+  .card {
+    border-radius: 1.25rem !important;
+  }
+
+  .d-flex.align-items-center.mb-3 {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .h1.fw-bold {
+    font-size: 22px !important;
+  }
+}

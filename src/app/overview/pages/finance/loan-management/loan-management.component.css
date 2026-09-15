@@ -1,0 +1,30 @@
+@import '../expense-accounts/expense-accounts.component.css';
+
+.stat-card.accent-warn { border-left-color: #f59e0b; }
+.stat-card.accent-warn i { color: #f59e0b; }
+.stat-card.accent-purple { border-left-color: #8b5cf6; }
+.stat-card.accent-purple i { color: #8b5cf6; }
+.dark .stat-card.accent-warn { border-left-color: #f59e0b; }
+.dark .stat-card.accent-purple { border-left-color: #8b5cf6; }
+
+.filter-select {
+  width: 160px;
+  height: 40px;
+  padding: 0 10px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+
+.status-active { background: #dbeafe; color: #1d4ed8; }
+.status-overdue { background: #fee2e2; color: #b91c1c; }
+.status-paid { background: #dcfce7; color: #166534; }
+.dark .status-active { background: #1e3a8a; color: #bfdbfe; }
+.dark .status-overdue { background: #7f1d1d; color: #fecaca; }
+.dark .status-paid { background: #14532d; color: #bbf7d0; }

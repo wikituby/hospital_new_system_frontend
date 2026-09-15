@@ -1,0 +1,323 @@
+<!-- Configure reorder modal -->
+<div class="reorder-modal-overlay" *ngIf="showConfigureModal" (click)="closeConfigureModal()">
+  <div class="reorder-modal" (click)="$event.stopPropagation()">
+    <div class="reorder-modal-header">
+      <h3><i class="bi bi-sliders"></i> Configure reorder levels</h3>
+      <button type="button" class="modal-close" (click)="closeConfigureModal()" aria-label="Close">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="reorder-modal-body" *ngIf="editingBatch">
+      <p class="modal-item-name">{{ displayStockItemName(editingBatch) }}</p>
+      <p class="modal-meta" *ngIf="inventoryIsStockBatch">
+        {{ displayStore(editingBatch) }} · Batch {{ displayBatchNumber(editingBatch) }} · In stock:
+        {{ displayInStock(editingBatch) }}
+      </p>
+      <p class="modal-meta" *ngIf="!inventoryIsStockBatch">
+        In stock: {{ displayInStock(editingBatch) }}
+      </p>
+      <form #reorderFormRef="ngForm" (ngSubmit)="saveReorderSettings(reorderFormRef)">
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="reOrderTo">Reorder to (target stock)</label>
+            <input
+              type="number"
+              id="reOrderTo"
+              name="reOrderTo"
+              class="form-input"
+              min="0"
+              [(ngModel)]="reorderForm.reOrderTo"
+              placeholder="e.g. 100"
+            />
+            <span class="field-hint">Alert when in stock falls below this level.</span>
+          </div>
+          <div class="form-field">
+            <label for="reOrderLevel">Reorder level (minimum)</label>
+            <input
+              type="number"
+              id="reOrderLevel"
+              name="reOrderLevel"
+              class="form-input"
+              min="0"
+              [(ngModel)]="reorderForm.reOrderLevel"
+              placeholder="Optional"
+            />
+          </div>
+          <div class="form-field" *ngIf="inventoryIsStockBatch">
+            <label for="reOrderQuantity">Suggested order quantity</label>
+            <input
+              type="number"
+              id="reOrderQuantity"
+              name="reOrderQuantity"
+              class="form-input"
+              min="0"
+              [(ngModel)]="reorderForm.reOrderQuantity"
+              placeholder="Optional"
+            />
+            <span class="field-hint">Used as minimum qty to order when below target.</span>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeConfigureModal()" [disabled]="isSavingReorder">
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="isSavingReorder">
+            {{ isSavingReorder ? 'Saving…' : 'Save settings' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="reorder-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        Reorder Levels
+      </h2>
+      <p class="page-subtitle" *ngIf="inventoryIsStockBatch">
+        Monitor batches below target stock and configure <strong>reorder to</strong>, <strong>reorder level</strong>,
+        and <strong>order quantity</strong> per batch under Stock Management.
+      </p>
+      <p class="page-subtitle" *ngIf="!inventoryIsStockBatch">
+        Monitor shop items below target stock and configure <strong>reorder to</strong> and
+        <strong>reorder level</strong> for each item.
+      </p>
+    </div>
+
+    <div class="header-right">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" [(ngModel)]="searchQuery" [placeholder]="inventoryIsStockBatch ? 'Search batches...' : 'Search items...'" />
+      </div>
+
+      <select class="filter-select" [(ngModel)]="selectedColumn">
+        <option value="all">All fields</option>
+        <option value="item">{{ inventoryIsStockBatch ? 'Stock item' : 'Item' }}</option>
+        <option *ngIf="inventoryIsStockBatch" value="store">Store</option>
+        <option *ngIf="inventoryIsStockBatch" value="batch">Batch no.</option>
+      </select>
+
+      <div class="dropdown store-filter-dropdown" *ngIf="inventoryIsStockBatch">
+        <button class="action-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-building"></i>
+          {{ selectedStoreFilterName }}
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu store-filter-menu">
+          <li class="px-2 py-1">
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              placeholder="Search stores…"
+              [(ngModel)]="storeFilterSearchQuery"
+              (ngModelChange)="filterStoreFilters()"
+            />
+          </li>
+          <li>
+            <button type="button" class="dropdown-item" (click)="selectStoreFilter(null)">All stores</button>
+          </li>
+          <li *ngFor="let store of filteredStoreFilterList">
+            <button type="button" class="dropdown-item" (click)="selectStoreFilter(store)">
+              {{ store.name }}
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <button type="button" class="action-btn" (click)="refresh()" title="Refresh">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+
+      <button type="button" class="action-btn" (click)="goToStockReceive()">
+        <i class="bi bi-box-arrow-in-down"></i>
+        Stock receive
+      </button>
+
+      <div class="dropdown" [class.show]="exportDropdownOpen">
+        <button class="action-btn" type="button" (click)="exportDropdownOpen = !exportDropdownOpen">
+          <i class="bi bi-download"></i>
+          Export
+        </button>
+        <ul class="dropdown-menu" [class.show]="exportDropdownOpen">
+          <li>
+            <a class="dropdown-item" href="#" (click)="exportToExcel(); $event.preventDefault()">
+              <i class="bi bi-file-earmark-excel"></i> Excel
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="#" (click)="downloadPdf(); $event.preventDefault()">
+              <i class="bi bi-file-earmark-pdf"></i> PDF
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="view-tabs">
+    <button
+      type="button"
+      class="view-tab"
+      [class.active]="viewMode === 'needs-reorder'"
+      (click)="setViewMode('needs-reorder')"
+    >
+      Below ({{ batchesBelowReorder.length }})
+    </button>
+    <button
+      type="button"
+      class="view-tab"
+      [class.active]="viewMode === 'needs-config'"
+      (click)="setViewMode('needs-config')"
+    >
+      Needs configuration ({{ batchesNeedingConfig.length }})
+    </button>
+    <button
+      type="button"
+      class="view-tab"
+      [class.active]="viewMode === 'all'"
+      (click)="setViewMode('all')"
+    >
+      All {{ inventoryIsStockBatch ? 'batches' : 'items' }} ({{ allBatches.length }})
+    </button>
+    <button type="button" class="view-tab link-tab" (click)="goToStockBatch()">
+      <i class="bi bi-box-seam"></i> {{ inventoryIsStockBatch ? 'Stock batch' : 'Items' }}
+    </button>
+  </div>
+
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon critical">
+        <i class="bi bi-exclamation-circle"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ batchesBelowReorder.length }}</div>
+        <div class="stat-label">{{ inventoryIsStockBatch ? 'Batches below reorder to' : 'Items below reorder to' }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon warn">
+        <i class="bi bi-gear"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ batchesNeedingConfig.length }}</div>
+        <div class="stat-label">Missing reorder target</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon order">
+        <i class="bi bi-cart-plus"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ totalQtyToOrder }}</div>
+        <div class="stat-label">Total units to order</div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isLoadingService" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading {{ inventoryIsStockBatch ? 'stock batches' : 'items' }}...</p>
+  </div>
+
+  <div *ngIf="showDivUpdatedOut" class="alert" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div class="table-container" *ngIf="!isLoadingService">
+    <div class="table-wrapper" #htmlData>
+      <table class="modern-table reorder-batch-table">
+        <thead>
+          <tr>
+            <th class="col-sn">SN</th>
+            <th class="col-status">Status</th>
+            <th class="col-item">{{ inventoryIsStockBatch ? 'Stock item' : 'Item' }}</th>
+            <th class="col-store" *ngIf="inventoryIsStockBatch">Store</th>
+            <th class="col-batch" *ngIf="inventoryIsStockBatch">Batch</th>
+            <th class="col-num">In stock</th>
+            <th class="col-num">Reorder to</th>
+            <th class="col-num">Reorder level</th>
+            <th class="col-num" *ngIf="inventoryIsStockBatch">Order qty</th>
+            <th class="col-num col-order">Qty to order</th>
+            <th class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="
+              let batch of filteredReorderBatches
+                | paginate: { itemsPerPage: itemsPerPage, currentPage: page };
+              let i = index
+            "
+            [class.row-critical]="isBatchBelowReorderTo(batch)"
+          >
+            <td class="col-sn">{{ (page - 1) * itemsPerPage + i + 1 }}</td>
+            <td class="col-status">
+              <span class="status-pill" [ngClass]="statusClass(batch)">{{ statusLabel(batch) }}</span>
+            </td>
+            <td class="col-item">
+              <span class="cell-clip" [title]="displayStockItemName(batch)">{{
+                displayStockItemName(batch)
+              }}</span>
+            </td>
+            <td class="col-store" *ngIf="inventoryIsStockBatch">
+              <span class="cell-clip" [title]="displayStore(batch)">{{ displayStore(batch) }}</span>
+            </td>
+            <td class="col-batch" *ngIf="inventoryIsStockBatch">{{ displayBatchNumber(batch) }}</td>
+            <td class="col-num">{{ displayInStock(batch) }}</td>
+            <td class="col-num">{{ displayReorderTo(batch) }}</td>
+            <td class="col-num">{{ displayReorderLevel(batch) }}</td>
+            <td class="col-num" *ngIf="inventoryIsStockBatch">{{ displayReorderQuantity(batch) }}</td>
+            <td class="col-num col-order">
+              <span class="qty-to-order">{{ displayQtyToOrder(batch) }}</span>
+            </td>
+            <td class="col-actions">
+              <button type="button" class="btn-configure" (click)="openConfigureModal(batch)">
+                <i class="bi bi-sliders"></i>
+                Configure
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredReorderBatches.length === 0">
+            <td [attr.colspan]="inventoryIsStockBatch ? 11 : 8" class="no-data">
+              <i class="bi bi-inbox"></i>
+              <p *ngIf="viewMode === 'needs-reorder'">
+                No {{ inventoryIsStockBatch ? 'batches' : 'items' }} are below their reorder-to level.
+              </p>
+              <p *ngIf="viewMode === 'needs-config'">
+                All {{ inventoryIsStockBatch ? 'batches in this store' : 'items' }} have a reorder target set.
+              </p>
+              <p *ngIf="viewMode === 'all'">
+                No {{ inventoryIsStockBatch ? 'stock batches found for this store' : 'shop items found' }}.
+              </p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-wrapper">
+      <div class="pagination-info">
+        Showing {{ filteredReorderBatches.length ? (page - 1) * itemsPerPage + 1 : 0 }} -
+        {{
+          page * itemsPerPage > filteredReorderBatches.length
+            ? filteredReorderBatches.length
+            : page * itemsPerPage
+        }}
+        of {{ filteredReorderBatches.length }} {{ inventoryIsStockBatch ? 'batches' : 'items' }}
+      </div>
+      <pagination-controls (pageChange)="page = $event"></pagination-controls>
+      <div class="pagination-size">
+        <select [(ngModel)]="itemsPerPage" class="page-size-select">
+          <option [ngValue]="10">10 per page</option>
+          <option [ngValue]="15">15 per page</option>
+          <option [ngValue]="25">25 per page</option>
+          <option [ngValue]="50">50 per page</option>
+          <option [ngValue]="100">100 per page</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>

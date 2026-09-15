@@ -1,0 +1,147 @@
+/* Shared modern shell for standalone pages (outside overview) + dark mode */
+
+.standalone-modern {
+  --sm-bg: #eef2f7;
+  --sm-bg-accent: #e8eef9;
+  --sm-surface: #ffffff;
+  --sm-surface-2: #f8fafc;
+  --sm-border: #e2e8f0;
+  --sm-text: #0f172a;
+  --sm-muted: #64748b;
+  --sm-primary: #3b82f6;
+  --sm-primary-soft: #dbeafe;
+  --sm-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --sm-radius: 14px;
+  min-height: calc(100vh - var(--app-header-height, 68px));
+  background:
+    radial-gradient(1200px 400px at 10% -10%, var(--sm-bg-accent), transparent 60%),
+    linear-gradient(180deg, var(--sm-bg) 0%, #f8fafc 280px);
+  color: var(--sm-text);
+  padding: 1.25rem 1.5rem 2rem;
+  box-sizing: border-box;
+}
+
+.standalone-modern.dark,
+.dark .standalone-modern {
+  --sm-bg: #0b1220;
+  --sm-bg-accent: #152238;
+  --sm-surface: #121a2b;
+  --sm-surface-2: #172033;
+  --sm-border: #243247;
+  --sm-text: #e8eef8;
+  --sm-muted: #94a3b8;
+  --sm-primary: #60a5fa;
+  --sm-primary-soft: #1e3a5f;
+  --sm-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  background:
+    radial-gradient(1000px 360px at 12% -8%, #152238, transparent 55%),
+    linear-gradient(180deg, #0b1220 0%, #0f172a 280px);
+}
+
+.standalone-modern .card,
+.standalone-modern .sm-card {
+  background: var(--sm-surface);
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius);
+  box-shadow: var(--sm-shadow);
+  color: var(--sm-text);
+}
+
+.standalone-modern .card-header,
+.standalone-modern .card-footer {
+  background: var(--sm-surface-2);
+  border-color: var(--sm-border);
+  color: var(--sm-text);
+}
+
+.standalone-modern .table-light,
+.standalone-modern .table thead th {
+  background: var(--sm-surface-2);
+  color: var(--sm-muted);
+  border-color: var(--sm-border);
+}
+
+.standalone-modern .table {
+  color: var(--sm-text);
+}
+
+.standalone-modern .table td,
+.standalone-modern .table th {
+  border-color: var(--sm-border);
+}
+
+.standalone-modern .text-muted {
+  color: var(--sm-muted) !important;
+}
+
+.standalone-modern .form-label,
+.standalone-modern label {
+  color: var(--sm-text);
+}
+
+.standalone-modern .dropdown-menu {
+  background: var(--sm-surface);
+  border-color: var(--sm-border);
+  color: var(--sm-text);
+}
+
+.standalone-modern .dropdown-item {
+  color: var(--sm-text);
+}
+
+.standalone-modern .dropdown-item:hover,
+.standalone-modern .dropdown-item:focus {
+  background: var(--sm-surface-2);
+  color: var(--sm-text);
+}
+
+.standalone-modern .modal-content {
+  background: var(--sm-surface);
+  color: var(--sm-text);
+  border-color: var(--sm-border);
+}
+
+.standalone-modern .modal-header,
+.standalone-modern .modal-footer {
+  border-color: var(--sm-border);
+}
+
+.standalone-modern .sm-title {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--sm-text);
+}
+
+.standalone-modern .sm-subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--sm-muted);
+  font-size: 0.95rem;
+}
+
+.standalone-modern input,
+.standalone-modern select,
+.standalone-modern textarea,
+.standalone-modern .form-control,
+.standalone-modern .form-select {
+  background: var(--sm-surface-2);
+  color: var(--sm-text);
+  border-color: var(--sm-border);
+}
+
+.standalone-modern input:focus,
+.standalone-modern select:focus,
+.standalone-modern textarea:focus,
+.standalone-modern .form-control:focus,
+.standalone-modern .form-select:focus {
+  border-color: var(--sm-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sm-primary) 25%, transparent);
+}
+
+.standalone-modern .btn-primary,
+.standalone-modern .sm-btn-primary {
+  background: var(--sm-primary);
+  border-color: var(--sm-primary);
+  color: #fff;
+}

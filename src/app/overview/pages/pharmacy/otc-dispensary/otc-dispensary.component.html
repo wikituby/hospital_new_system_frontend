@@ -1,0 +1,1266 @@
+<div class="otc-dispensary-page custom-scrollbar" [class.dark]="isDarkMode">
+  <div class="otc-workspace-card">
+  <div class="otc-tabs-header">
+    <nav class="otc-segment-tabs" role="tablist" aria-label="Pharmacy sections">
+      <button
+        type="button"
+        class="otc-segment-tab"
+        [class.active]="activeMainTab === 'counter'"
+        id="otc-counter-sale-tab"
+        role="tab"
+        (click)="setMainTab('counter')"
+        [attr.aria-selected]="activeMainTab === 'counter'">
+        <i class="bi bi-shop"></i>
+        <span>Counter Sale</span>
+      </button>
+      <button
+        type="button"
+        class="otc-segment-tab"
+        [class.active]="activeMainTab === 'sold'"
+        id="otc-items-sold-tab"
+        role="tab"
+        (click)="setMainTab('sold')"
+        [attr.aria-selected]="activeMainTab === 'sold'">
+        <i class="bi bi-receipt"></i>
+        <span>Items Sold</span>
+      </button>
+      <button
+        type="button"
+        class="otc-segment-tab"
+        [class.active]="activeMainTab === 'prescriptions'"
+        id="otc-doctor-prescriptions-tab"
+        role="tab"
+        (click)="setMainTab('prescriptions')"
+        [attr.aria-selected]="activeMainTab === 'prescriptions'">
+        <i class="bi bi-file-medical"></i>
+        <span>Prescriptions</span>
+      </button>
+    </nav>
+    <div class="otc-tabs-header-actions" *ngIf="activeMainTab === 'counter'">
+      <div class="otc-prescribing-switch-wrap" role="group" aria-label="Prescription fields">
+        <div class="form-check form-switch mb-0 otc-prescribing-switch">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+            id="otcPrescriptionFieldsSwitch"
+            aria-label="Prescription fields"
+            title="Prescription fields"
+            [checked]="otcIncludePrescribing"
+            (change)="onOtcPrescriptionFieldsToggle($any($event.target).checked)" />
+        </div>
+      </div>
+      <button type="button" class="otc-btn otc-btn-ghost-danger" (click)="clearCart()" [disabled]="!otcOnlyCart.length || processing">
+        <i class="bi bi-trash"></i> Clear sale list
+      </button>
+    </div>
+  </div>
+
+  <div class="tab-content otc-tab-content">
+    <div
+      class="tab-pane fade otc-counter-sale-layout"
+      [class.show]="activeMainTab === 'counter'"
+      [class.active]="activeMainTab === 'counter'"
+      id="otc-counter-sale-pane"
+      role="tabpanel"
+      aria-labelledby="otc-counter-sale-tab"
+      tabindex="0">
+  <div class="otc-sale-form-card">
+    <form #otcTreatmentForm="ngForm" (ngSubmit)="addToSaleList(otcTreatmentForm.value)">
+      <div class="otc-stock-metrics">
+        <div class="otc-metric-chip">
+          <span class="otc-metric-label">In stock (all stores)</span>
+          <span class="otc-metric-value">{{ availableQuantity }} {{ unitOfMeasure }}</span>
+        </div>
+        <div class="otc-metric-chip" *ngIf="canViewPharmacyCostColumns()">
+          <span class="otc-metric-label">Unit buy</span>
+          <span class="otc-metric-value">{{ unitBuy }}</span>
+        </div>
+        <div class="otc-metric-chip otc-metric-chip--accent">
+          <span class="otc-metric-label">Unit sell</span>
+          <span class="otc-metric-value">{{ returnUnitCost() }}</span>
+        </div>
+        <div class="otc-metric-chip otc-metric-chip--sell">
+          <span class="otc-metric-label">Line total</span>
+          <span class="otc-metric-value">{{ lineTotalAmount }}</span>
+        </div>
+        <div class="otc-unit-sell-model-field">
+          <app-unit-selling-model-picker
+            [stockItemId]="pharmacyUseStockBatch ? currentItemId : null"
+            [shopItemId]="!pharmacyUseStockBatch ? currentItemId : null"
+            [unitCostPrice]="unitBuy"
+            [(selectedModelId)]="selectedUnitSellingModelId"
+            (unitSellingPriceChange)="onOtcUnitSellingModelPriceChange($event)"
+            [compact]="true"
+            [disabled]="!currentItemId"
+            label="Unit selling model">
+          </app-unit-selling-model-picker>
+        </div>
+      </div>
+
+      <div class="form-row otc-item-select-row" [class.otc-item-select-row--simple]="!otcIncludePrescribing">
+        <div class="form-group otc-item-field mb-0">
+          <div class="dropdown otc-item-dropdown" [class.show]="otcDrugDropdownOpen">
+            <button
+              class="btn btn-block btn-sm dropdown-toggle otc-item-dropdown-toggle"
+              type="button"
+              (click)="toggleOtcDrugDropdown($event)"
+              [attr.aria-expanded]="otcDrugDropdownOpen"
+              [attr.title]="currentItemFullLabel || currentItem || 'Choose Treatment'"
+              style="border: 1px solid rgb(204, 204, 204);">
+              <span class="otc-item-dropdown-label">{{ currentItem || 'Choose Treatment' }}</span>
+            </button>
+            <ul
+              class="dropdown-menu custom-scrollbar pl-2 pr-2"
+              [class.show]="otcDrugDropdownOpen"
+              style="max-height: 400px; overflow-y: auto; width: 100%;">
+              <li class="mt-2 justify-content-left align-items-left">
+                <input
+                  #searchInput
+                  type="text"
+                  class="form-control dropdown-search ml-0"
+                  placeholder="Search items…"
+                  [(ngModel)]="searchText"
+                  name="searchText"
+                  (ngModelChange)="onOtcDrugSearchChange()"
+                  style="height: 30px; font-size: 14px; width: 100%;" />
+              </li>
+              <li *ngIf="isLoadingDrugList" class="text-muted text-center p-2">
+                {{ pharmacyUseStockBatch ? 'Loading stock batches…' : 'Loading items…' }}
+              </li>
+
+              <ng-container *ngIf="pharmacyUseStockBatch">
+              <ng-container *ngIf="!isLoadingDrugList && groupedStockItems.length; else noPharmacyStock">
+                <li
+                  class="otc-stock-item-card"
+                  [class.otc-stock-item-card--oos]="group.completelyOutOfStock"
+                  *ngFor="let group of groupedStockItems; trackBy: trackGroupedStockItem">
+                  <div class="otc-stock-item-group-header">
+                    <span class="otc-stock-item-group-title">{{ group.stockItemName | uppercase }}</span>
+                    <span *ngIf="group.completelyOutOfStock" class="otc-stock-batch-badge otc-stock-out-badge">
+                      Out of stock
+                    </span>
+                  </div>
+                  <p *ngIf="group.completelyOutOfStock" class="otc-stock-item-oos-note mb-0">
+                    No stock in any store or batch.
+                  </p>
+                  <div class="otc-stock-item-card-batches" *ngIf="group.batchLines.length">
+                    <div *ngFor="let line of group.batchLines" class="otc-stock-batch-line">
+                      <div class="otc-stock-batch-line-row">
+                        <span class="otc-stock-batch-line-label">
+                          <span
+                            *ngIf="line.expiryLabel"
+                            class="otc-stock-batch-expiry"
+                            [ngClass]="batchExpiryToneClass(line.expiryTone)">
+                            EX {{ line.expiryLabel }}
+                          </span>
+                          <span>{{ line.batchLabel }}</span>
+                        </span>
+                        <div
+                          class="otc-stock-batch-line-pricing"
+                          *ngIf="line.unitCost > 0 || line.sellingModels?.length">
+                          <span
+                            class="otc-stock-batch-price otc-stock-batch-price--cost"
+                            *ngIf="line.unitCost > 0 && canViewPharmacyCostColumns()">
+                            Cost {{ formatBatchMoney(line.unitCost) }}
+                          </span>
+                          <span
+                            class="otc-stock-batch-price otc-stock-batch-price--sell"
+                            *ngFor="let model of line.sellingModels">
+                            {{ model.name }} {{ formatBatchMoney(model.unitSellingPrice) }}
+                          </span>
+                        </div>
+                        <div class="otc-stock-batch-line-stores">
+                          <button
+                            type="button"
+                            *ngFor="let dist of line.storeDistribution"
+                            class="otc-stock-store-pick"
+                            [class.otc-stock-store-pick--selected]="batchLineHasStock(line) && currentStockBatchId === dist.item?._stockBatchId"
+                            [class.otc-stock-store-pick--empty]="!distHasSelectableStock(dist)"
+                            [disabled]="!batchLineHasStock(line) || !dist.item"
+                            (click)="selectOtcBatch(dist.item, $event)">
+                            <span class="otc-stock-store-pick-label">{{ dist.storeLabel }}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              </ng-container>
+              <ng-template #noPharmacyStock>
+                <li *ngIf="!isLoadingDrugList" class="text-muted text-center p-2">
+                  No pharmacy stock batches found{{ pharmacyStoreName ? ' for ' + pharmacyStoreName : '' }}.
+                </li>
+              </ng-template>
+              </ng-container>
+
+              <ng-container *ngIf="!pharmacyUseStockBatch">
+                <ng-container *ngIf="!isLoadingDrugList && filteredOtcItemList().length; else noPharmacyItems">
+                  <div class="dropdown-items pb-2" *ngFor="let item of filteredOtcItemList()">
+                    <li>
+                      <button
+                        type="button"
+                        class="dropdown-item mt-2 otc-pharmacy-item-option"
+                        [attr.title]="otcItemOptionLabel(item)"
+                        (click)="selectOtcItem(item, $event)">
+                        <span class="otc-pharmacy-item-option__name">{{ otcItemOptionLabel(item) | uppercase }}</span>
+                        <span class="otc-pharmacy-item-option__stock">Stock: {{ otcItemOptionStock(item) }}</span>
+                      </button>
+                    </li>
+                  </div>
+                </ng-container>
+                <ng-template #noPharmacyItems>
+                  <li *ngIf="!isLoadingDrugList" class="text-muted text-center p-2">No items found.</li>
+                </ng-template>
+              </ng-container>
+            </ul>
+          </div>
+        </div>
+
+        <div class="form-group otc-standard-dose-field mb-0" *ngIf="otcIncludePrescribing">
+          <app-standard-dosage-picker
+            [stockItemId]="pharmacyUseStockBatch ? currentItemId : null"
+            [shopItemId]="!pharmacyUseStockBatch ? currentItemId : null"
+            [drugLabel]="currentItem || currentStockItemName"
+            [lastUnitValue]="lastUnitValue"
+            [unitOfMeasure]="unitOfMeasure"
+            [patientAgeYears]="otcStandardDosagePatientAge()"
+            [patientWeightKg]="otcStandardDosagePatientWeight()"
+            [currentDoseValue]="currentTreatmentRequested.amountPerFrequencyValue"
+            [defaultRoute]="currentTreatmentRequested.route"
+            [defaultDoseUnit]="currentTreatmentRequested.amountPerFrequencyUnit"
+            [disabled]="!currentItemId"
+            (optionApplied)="applyStandardDosageOption($event)">
+          </app-standard-dosage-picker>
+        </div>
+
+        <div class="form-group otc-add-field">
+          <button
+            class="otc-btn otc-btn-primary"
+            type="submit"
+            [disabled]="processing"
+            aria-label="Add to sale">
+            <i class="bi bi-plus-lg"></i> Add to sale
+          </button>
+        </div>
+        <div class="form-group otc-clear-field">
+          <button
+            type="button"
+            class="otc-btn otc-btn-secondary"
+            (click)="clearTreatmentForm()"
+            aria-label="Clear field">
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <div class="form-row otc-prescribing-row" [class.otc-prescribing-row--simple]="!otcIncludePrescribing">
+        <ng-container *ngIf="otcIncludePrescribing">
+          <div class="form-group col-md-1">
+            <label class="form-label">Dosage</label>
+            <input
+              type="number"
+              [(ngModel)]="currentTreatmentRequested.amountPerFrequencyValue"
+              name="amountPerFrequencyValue"
+              class="form-control form-control-sm"
+              (input)="calculateNoOfUnits(); calculateTotalQty()" />
+          </div>
+          <div class="form-group col-md-1">
+            <label class="form-label">DosageUnit</label>
+            <select
+              [(ngModel)]="currentTreatmentRequested.amountPerFrequencyUnit"
+              name="amountPerFrequencyUnit"
+              class="form-control form-control-sm">
+              <option value="">Select unit</option>
+              <option *ngIf="customPrefilledDosageUnit" [value]="customPrefilledDosageUnit">
+                {{ customPrefilledDosageUnit }}
+              </option>
+              <option *ngFor="let unit of dosageUnitOptions" [value]="unit">{{ unit }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-1">
+            <label class="form-label">Frequency</label>
+            <input
+              type="number"
+              [(ngModel)]="currentTreatmentRequested.frequencyValue"
+              name="frequencyValue"
+              class="form-control form-control-sm"
+              (input)="calculateTotalQty()" />
+          </div>
+          <div class="form-group col-md-1">
+            <label class="form-label">Freq. Unit</label>
+            <select
+              [(ngModel)]="currentTreatmentRequested.frequencyUnit"
+              name="frequencyUnit"
+              class="form-control form-control-sm"
+              (change)="calculateDurationUnit(); calculateTotalQty()">
+              <option [ngValue]="null"></option>
+              <option [ngValue]="1">Day</option>
+              <option [ngValue]="7">Week</option>
+              <option [ngValue]="30">Month</option>
+            </select>
+          </div>
+          <div class="form-group col-md-1">
+            <label class="form-label">Duration</label>
+            <input
+              type="number"
+              [(ngModel)]="currentTreatmentRequested.durationValue"
+              name="durationValue"
+              class="form-control form-control-sm"
+              (input)="calculateTotalQty()" />
+          </div>
+          <div class="form-group col-md-1">
+            <label class="form-label">Dura. Unit</label>
+            <select
+              [(ngModel)]="currentTreatmentRequested.durationUnit"
+              name="durationUnit"
+              class="form-control form-control-sm">
+              <option [ngValue]="null"></option>
+              <option [ngValue]="1">Day(s)</option>
+              <option [ngValue]="7">Week(s)</option>
+              <option [ngValue]="30">Month(s)</option>
+            </select>
+          </div>
+        </ng-container>
+        <div class="form-group col-md-1">
+          <label class="form-label">Total Qty</label>
+          <input
+            type="number"
+            [(ngModel)]="currentTreatmentRequested.quantity"
+            name="quantity"
+            class="form-control form-control-sm"
+            required
+            (input)="calculateTotalFromQuantity()" />
+        </div>
+        <div class="form-group col-md-1" *ngIf="otcIncludePrescribing">
+          <label class="form-label">Total Units</label>
+          <input
+            type="number"
+            [(ngModel)]="currentTreatmentRequested.totalUnits"
+            name="totalUnits"
+            class="form-control form-control-sm"
+            required
+            (input)="calculateTotalQty()" />
+        </div>
+        <div class="form-group col-md-1">
+          <label class="form-label">Total Sell</label>
+          <input
+            type="number"
+            [(ngModel)]="currentTreatmentRequested.totalAmount"
+            name="totalAmount"
+            class="form-control form-control-sm"
+            (input)="calculateQuantityFromTotalSell()" />
+        </div>
+        <div class="form-group col-md-2">
+          <label class="form-label">Instructions</label>
+          <input
+            type="text"
+            [(ngModel)]="currentTreatmentRequested.instructions"
+            name="instructions"
+            class="form-control form-control-sm"
+            placeholder="e.g. after meals" />
+        </div>
+        <div class="form-group col-md-1">
+          <label class="form-label">Route</label>
+          <input
+            type="text"
+            [(ngModel)]="currentTreatmentRequested.route"
+            name="route"
+            class="form-control form-control-sm"
+            placeholder="e.g. Oral" />
+        </div>
+      </div>
+
+      <div *ngIf="processing" class="text-center py-2">
+        <div class="simple-loader d-inline-block" style="height: 30px; width: 30px;"></div>
+      </div>
+
+      <div *ngIf="showStatusBanner" class="otc-status-banner" [style.background-color]="responseColor">
+        <p>{{ responseMessage }}</p>
+      </div>
+    </form>
+  </div>
+
+  <div
+    class="otc-cart-scroll custom-scrollbar"
+    [class.otc-cart-scroll--prescribing]="otcIncludePrescribing"
+    [class.otc-cart-scroll--simple]="!otcIncludePrescribing"
+    #otcCartScroll>
+  <ng-container *ngIf="otcOnlyCart.length; else noSaleLines">
+    <div class="otc-cart-table-wrap">
+      <table
+        class="table table-bordered mb-0 otc-cart-table otc-modern-table"
+        [class.w-100]="!otcIncludePrescribing"
+        [class.otc-cart-table--prescribing]="otcIncludePrescribing"
+        [class.otc-cart-table--simple]="!otcIncludePrescribing">
+        <colgroup *ngIf="otcIncludePrescribing">
+          <col class="otc-cart-col otc-cart-col-sn" />
+          <col class="otc-cart-col otc-cart-col-given" />
+          <col class="otc-cart-col otc-cart-col-treatment" />
+          <col class="otc-cart-col otc-cart-col-dosage" />
+          <col class="otc-cart-col otc-cart-col-frequency" />
+          <col class="otc-cart-col otc-cart-col-duration" />
+          <col class="otc-cart-col otc-cart-col-qty" />
+          <col class="otc-cart-col otc-cart-col-cost" *ngIf="canViewPharmacyCostColumns()" />
+          <col class="otc-cart-col otc-cart-col-sell" />
+          <col class="otc-cart-col otc-cart-col-tt-cost" *ngIf="canViewPharmacyCostColumns()" />
+          <col class="otc-cart-col otc-cart-col-tt-sell" />
+          <col class="otc-cart-col otc-cart-col-action" />
+        </colgroup>
+        <colgroup *ngIf="!otcIncludePrescribing">
+          <col class="otc-cart-col otc-cart-col-sn" />
+          <col class="otc-cart-col otc-cart-col-given" />
+          <col class="otc-cart-col otc-cart-col-treatment" />
+          <col class="otc-cart-col otc-cart-col-qty" />
+          <col class="otc-cart-col otc-cart-col-cost" *ngIf="canViewPharmacyCostColumns()" />
+          <col class="otc-cart-col otc-cart-col-sell" />
+          <col class="otc-cart-col otc-cart-col-tt-cost" *ngIf="canViewPharmacyCostColumns()" />
+          <col class="otc-cart-col otc-cart-col-tt-sell" />
+          <col class="otc-cart-col otc-cart-col-action" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="no-sort">SN</th>
+            <th class="text-center no-sort otc-cart-given-head">Given</th>
+            <th class="no-sort">Treatment</th>
+            <th class="no-sort" *ngIf="otcIncludePrescribing">Dosage</th>
+            <th class="no-sort" *ngIf="otcIncludePrescribing">Frequency</th>
+            <th class="no-sort" *ngIf="otcIncludePrescribing">Duration</th>
+            <th class="no-sort">Qty</th>
+            <th class="no-sort" *ngIf="canViewPharmacyCostColumns()">Cost</th>
+            <th class="no-sort">Sell</th>
+            <th class="no-sort" *ngIf="canViewPharmacyCostColumns()">TT Cost</th>
+            <th class="no-sort">TT Sell</th>
+            <th class="no-sort">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of otcOnlyCart; let i = index" [class.otc-cart-row-not-given]="!item.given">
+            <td class="itemdata">{{ i + 1 }}</td>
+            <td class="itemdata text-center otc-cart-given-cell">
+              <label class="otc-given-radio-wrap" [attr.title]="item.given ? 'Given — included in total' : 'Not given — excluded from total'">
+                <input
+                  class="otc-given-radio"
+                  type="checkbox"
+                  [id]="'cart-given-' + item.cartLineKey"
+                  [checked]="item.given"
+                  (change)="onCartGivenChange(item, $any($event.target).checked)" />
+              </label>
+            </td>
+            <td class="itemdata otc-cart-treatment-cell">
+              {{ cartItemDisplayName(item) | uppercase }}
+            </td>
+            <td *ngIf="otcIncludePrescribing" class="itemdata">
+              {{ formatDosageDisplay(item.amountPerFrequencyValue, item.amountPerFrequencyUnit) }}
+            </td>
+            <td *ngIf="otcIncludePrescribing" class="itemdata">
+              {{ formatFrequencyDisplayForTable(item.totalUnits, item.frequencyValue, item.frequencyUnit) }}
+            </td>
+            <td *ngIf="otcIncludePrescribing" class="itemdata">
+              {{ formatCartDurationDisplay(item) }}
+            </td>
+            <td class="itemdata">{{ item.quantity }}</td>
+            <td class="itemdata" *ngIf="canViewPharmacyCostColumns()">{{ item.unitBuy }}</td>
+            <td class="itemdata">{{ item.unitSellingPrice }}</td>
+            <td class="itemdata" *ngIf="canViewPharmacyCostColumns()">
+              {{ (item.quantity || 0) * (item.unitBuy || 0) }}
+            </td>
+            <td class="itemdata" [class.text-muted]="!item.given">
+              {{ item.given ? item.totalAmount : '—' }}
+            </td>
+            <td class="itemdata otc-cart-action-cell">
+              <div class="btn-group me-1" *ngIf="item.lineSource === 'OTC'">
+                <button
+                  type="button"
+                  (click)="editLine(item)"
+                  class="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center"
+                  style="height: 19px; width: 20px; padding: 0;">
+                  <i class="bi bi-pencil-square" style="font-size: 13px;"></i>
+                </button>
+              </div>
+              <div class="btn-group">
+                <button
+                  type="button"
+                  (click)="removeLine(item)"
+                  class="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center"
+                  style="height: 19px; width: 20px; padding: 0;">
+                  <i class="bi bi-x-square" style="font-size: 13px;"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
+  <ng-template #noSaleLines>
+    <p class="text-muted text-center py-3 otc-cart-empty" style="font-size: 14px;">No items on this sale yet. Select a drug above and click <strong>Add to sale</strong>.</p>
+  </ng-template>
+  </div>
+
+  <div class="otc-payment-footer">
+    <div class="form-row align-items-end">
+      <div class="form-group col-md-2">
+        <label class="form-label" style="font-size: 14px;">Total due (Given only)</label>
+        <div class="form-control form-control-sm bg-white user-select-all">{{ formatPaymentTotal(cartSubtotal) }}</div>
+      </div>
+      <div class="form-group col-md-2">
+        <label class="form-label" style="font-size: 14px;">Payment method</label>
+        <select class="form-control form-control-sm" [(ngModel)]="paymentMethod" name="paymentMethod" [disabled]="processing">
+          <option value="Cash At Hand">Cash At Hand</option>
+          <option value="Card">Card</option>
+          <option value="Mobile Money">Mobile Money</option>
+        </select>
+      </div>
+      <div class="form-group col-md-2">
+        <label class="form-label" style="font-size: 14px;">Amount received</label>
+        <input
+          type="number"
+          class="form-control form-control-sm"
+          [(ngModel)]="amountReceived"
+          name="amountReceived"
+          [placeholder]="formatPaymentTotal(cartSubtotal)"
+          [disabled]="processing" />
+      </div>
+      <div class="form-group col-md-2">
+        <label class="form-label" style="font-size: 14px;">Change</label>
+        <div class="form-control form-control-sm bg-white">{{ formatMoney(changeDue) }}</div>
+      </div>
+      <div class="form-group col-md-2">
+        <label class="form-label" style="font-size: 14px;">Notes</label>
+        <input type="text" class="form-control form-control-sm" [(ngModel)]="saleNotes" name="saleNotes" [disabled]="processing" />
+      </div>
+      <div class="form-group col-md-2 otc-complete-field">
+        <label class="form-label" style="font-size: 14px;">&nbsp;</label>
+        <button
+          type="button"
+          class="otc-btn otc-btn-success otc-complete-btn w-100"
+          (click)="completeSale()"
+          [disabled]="processing || !hasBillableCartLines">
+          <i class="bi bi-check2-circle" *ngIf="!processing"></i>
+          {{ processing ? 'Processing…' : 'Complete sale' }}
+        </button>
+      </div>
+    </div>
+  </div>
+    </div>
+
+    <div
+      class="tab-pane fade otc-sold-tab-layout"
+      [class.show]="activeMainTab === 'sold'"
+      [class.active]="activeMainTab === 'sold'"
+      id="otc-items-sold-pane"
+      role="tabpanel"
+      aria-labelledby="otc-items-sold-tab"
+      tabindex="0">
+  <section class="otc-sales-history">
+    <div class="otc-toolbar otc-sales-history-toolbar">
+      <div class="otc-toolbar-filters">
+        <div class="otc-filter-field otc-filter-field--inline">
+          <label class="otc-filter-label" for="otcFilterDateFrom">From</label>
+          <input type="date" id="otcFilterDateFrom" class="form-control form-control-sm otc-filter-input otc-filter-date" [(ngModel)]="filterDateFrom" name="filterDateFrom" />
+        </div>
+        <div class="otc-filter-field otc-filter-field--inline">
+          <label class="otc-filter-label" for="otcFilterDateTo">To</label>
+          <input type="date" id="otcFilterDateTo" class="form-control form-control-sm otc-filter-input otc-filter-date" [(ngModel)]="filterDateTo" name="filterDateTo" />
+        </div>
+        <div class="otc-filter-field otc-filter-field--search otc-history-drug-search">
+          <div class="otc-search-input-wrap">
+            <input
+              type="text"
+              class="form-control form-control-sm otc-filter-input otc-search-input"
+              [(ngModel)]="salesHistoryDrugSearch"
+              name="salesHistoryDrugSearch"
+              placeholder="Search order no., drug, patient, staff…"
+              [disabled]="loadingSalesHistory" />
+            <i class="bi bi-search otc-search-input-icon" aria-hidden="true"></i>
+          </div>
+        </div>
+        <button type="button" class="otc-btn otc-btn-primary otc-btn-sm" (click)="applySalesDateFilter()" [disabled]="loadingSalesHistory">
+          Apply
+        </button>
+        <div class="otc-filter-field otc-filter-field--inline">
+          <label class="otc-filter-label" for="otcFilterStaff">Served by</label>
+          <select
+            id="otcFilterStaff"
+            class="form-control form-control-sm otc-filter-input otc-filter-staff-select"
+            [(ngModel)]="salesHistoryStaffFilter"
+            name="salesHistoryStaffFilter"
+            [disabled]="loadingSalesHistory">
+            <option value="">All staff</option>
+            <option *ngFor="let staff of salesHistoryStaffOptions" [value]="staff.toLowerCase()">{{ staff }}</option>
+          </select>
+        </div>
+        <div class="otc-filter-field otc-filter-field--inline">
+          <label class="otc-filter-label" for="otcFilterSource">Src</label>
+          <select
+            id="otcFilterSource"
+            class="form-control form-control-sm otc-filter-input otc-filter-src-select"
+            [(ngModel)]="salesHistorySourceFilter"
+            name="salesHistorySourceFilter"
+            [disabled]="loadingSalesHistory">
+            <option value="">All</option>
+            <option value="OTC">OTC</option>
+            <option value="RX">Rx</option>
+          </select>
+        </div>
+        <button type="button" class="otc-btn otc-btn-secondary otc-btn-sm" (click)="clearSalesFilters()" [disabled]="loadingSalesHistory">
+          Clear
+        </button>
+        <button type="button" class="otc-btn otc-btn-icon otc-btn-sm" (click)="loadSalesHistory()" [disabled]="loadingSalesHistory" title="Refresh">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      </div>
+    </div>
+
+    <p class="text-danger small mb-2" *ngIf="salesHistoryError">{{ salesHistoryError }}</p>
+    <p class="text-muted text-center py-3" *ngIf="loadingSalesHistory" style="font-size: 14px;">Loading sales history…</p>
+
+    <ng-container *ngIf="!loadingSalesHistory && !salesHistoryError">
+      <div class="otc-sales-history-content">
+      <div class="otc-sales-history-table-wrap custom-scrollbar" *ngIf="filteredSoldOrders().length; else noSoldHistory">
+        <table class="table table-bordered mb-0 otc-orders-table otc-modern-table w-100">
+          <colgroup>
+            <col class="otc-orders-col otc-orders-col-sn" />
+            <col class="otc-orders-col otc-orders-col-order" />
+            <col class="otc-orders-col otc-orders-col-date" />
+            <col class="otc-orders-col otc-orders-col-src" />
+            <col class="otc-orders-col otc-orders-col-staff" />
+            <col class="otc-orders-col otc-orders-col-summary" />
+            <col class="otc-orders-col otc-orders-col-items" />
+            <col class="otc-orders-col otc-orders-col-cost" *ngIf="canViewPharmacyCostColumns()" />
+            <col class="otc-orders-col otc-orders-col-sell" *ngIf="canViewSoldTableCostSell()" />
+            <col class="otc-orders-col otc-orders-col-details" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="no-sort">SN</th>
+              <th class="no-sort">Order no.</th>
+              <th class="no-sort">Date</th>
+              <th class="no-sort">Src</th>
+              <th class="no-sort">Served by</th>
+              <th class="no-sort">Summary</th>
+              <th class="no-sort">Items</th>
+              <th class="no-sort" *ngIf="canViewPharmacyCostColumns()">Total cost</th>
+              <th class="no-sort" *ngIf="canViewSoldTableCostSell()">Total sell</th>
+              <th class="text-center no-sort">Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let order of filteredSoldOrders(); let i = index">
+              <td class="itemdata">{{ i + 1 }}</td>
+              <td class="itemdata otc-orders-order-no">{{ order.orderNo }}</td>
+              <td class="itemdata otc-date-cell">
+                {{ order.visitDate }}<ng-container *ngIf="order.visitTime"> · {{ order.visitTime }}</ng-container>
+              </td>
+              <td class="itemdata">
+                <span class="sale-source-badge" [ngClass]="orderSourceBadgeClass(order)">{{ orderSourceLabel(order) }}</span>
+              </td>
+              <td class="itemdata otc-orders-staff-cell">{{ soldOrderStaffLabel(order) }}</td>
+              <td class="itemdata otc-orders-summary-cell">
+                <span class="otc-orders-summary-text">{{ soldOrderSummaryText(order) }}</span>
+              </td>
+              <td class="itemdata">{{ order.lineCount }}</td>
+              <td class="itemdata" *ngIf="canViewPharmacyCostColumns()">{{ formatSoldMoney(order.totalCost) }}</td>
+              <td class="itemdata" *ngIf="canViewSoldTableCostSell()">{{ formatSoldMoney(order.totalSell) }}</td>
+              <td class="itemdata text-center">
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm otc-order-details-btn p-0"
+                  title="View order items"
+                  aria-label="View order items"
+                  (click)="openSoldOrderDetails(order)">
+                  <i class="bi bi-list-ul"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="otc-sales-history-footer" aria-label="Sales summary totals" *ngIf="canViewSoldSummaryFooter()">
+        <div class="otc-sales-summary-grid">
+          <div class="otc-sales-summary-item">
+            <span class="otc-sales-summary-label">Total orders</span>
+            <span class="otc-sales-summary-value">{{ historyOrderCount }}</span>
+            <span
+              class="otc-sales-summary-hint"
+              *ngIf="hasSoldHistoryClientFilters && soldOrders.length && historyOrderCount < soldOrders.length">
+              of {{ soldOrders.length }} in range
+            </span>
+          </div>
+          <div class="otc-sales-summary-item">
+            <span class="otc-sales-summary-label">Line items (qty)</span>
+            <span class="otc-sales-summary-value">{{ historyTotalQty }}</span>
+          </div>
+          <div class="otc-sales-summary-item" *ngIf="canViewSoldTableCostSell()">
+            <span class="otc-sales-summary-label">Total sell</span>
+            <span class="otc-sales-summary-value otc-sales-summary-value--sell">{{ formatSoldMoney(historyTotalSell) }}</span>
+          </div>
+          <div class="otc-sales-summary-item">
+            <span class="otc-sales-summary-label">Total amount received</span>
+            <span class="otc-sales-summary-value">{{ formatSoldMoney(historyTotalReceived) }}</span>
+          </div>
+          <div class="otc-sales-summary-item">
+            <span class="otc-sales-summary-label">Balance</span>
+            <span
+              class="otc-sales-summary-value"
+              [class.otc-sales-summary-value--negative]="historyTotalBalance > 0">
+              {{ formatSoldMoney(historyTotalBalance) }}
+            </span>
+          </div>
+          <div class="otc-sales-summary-item" *ngIf="canViewPharmacyCostColumns()">
+            <span class="otc-sales-summary-label">Total cost</span>
+            <span class="otc-sales-summary-value">{{ formatSoldMoney(historyTotalCost) }}</span>
+          </div>
+          <div class="otc-sales-summary-item otc-sales-summary-item--profit" *ngIf="canViewSoldHistoryProfit">
+            <span class="otc-sales-summary-label">Profit</span>
+            <span
+              class="otc-sales-summary-value"
+              [class.otc-sales-summary-value--negative]="historyTotalProfit < 0"
+              [class.otc-sales-summary-value--positive]="historyTotalProfit > 0">
+              {{ formatSoldMoney(historyTotalProfit) }}
+            </span>
+          </div>
+        </div>
+      </footer>
+
+      <ng-template #noSoldHistory>
+        <div class="otc-sales-history-empty flex-grow-1">
+          <p class="text-muted text-center py-3 mb-0" style="font-size: 14px;" *ngIf="soldOrders.length && hasSoldHistoryClientFilters; else noSoldHistoryEmpty">
+            No orders match the current filters in this date range.
+          </p>
+          <ng-template #noSoldHistoryEmpty>
+            <p class="text-muted text-center py-3 mb-0" style="font-size: 14px;">No orders found for the selected date range.</p>
+          </ng-template>
+        </div>
+      </ng-template>
+      </div>
+    </ng-container>
+  </section>
+    </div>
+
+    <div
+      class="tab-pane fade otc-rx-modern-tab"
+      [class.show]="activeMainTab === 'prescriptions'"
+      [class.active]="activeMainTab === 'prescriptions'"
+      id="otc-doctor-prescriptions-pane"
+      role="tabpanel"
+      aria-labelledby="otc-doctor-prescriptions-tab"
+      tabindex="0">
+      <div class="rx-studio">
+        <p class="rx-studio-alert rx-studio-alert--error" *ngIf="doctorPrescriptionsError">{{ doctorPrescriptionsError }}</p>
+        <div
+          *ngIf="showStatusBanner && activeMainTab === 'prescriptions'"
+          class="rx-studio-alert"
+          [ngStyle]="{ 'background-color': responseColor, color: '#fff' }">
+          {{ responseMessage }}
+        </div>
+
+        <div class="rx-studio-loading" *ngIf="loadingDoctorPrescriptions">
+          <div class="rx-studio-spinner" aria-hidden="true"></div>
+          <span>Loading prescriptions…</span>
+        </div>
+
+        <div class="rx-studio-layout" *ngIf="!loadingDoctorPrescriptions && !doctorPrescriptionsError">
+          <aside class="rx-studio-queue" aria-label="Prescription visits">
+            <ng-container *ngIf="groupedPrescriptionVisits().length; else noDoctorRxQueue">
+              <div
+                class="rx-visit-card"
+                *ngFor="let group of groupedPrescriptionVisits()"
+                [class.rx-visit-card--active]="selectedPrescriptionVisitId === group.visitId"
+                [class.rx-visit-card--done]="isPrescriptionVisitSaleDone(group.visitId)"
+                (click)="selectPrescriptionVisitCard(group)">
+                <div class="rx-visit-card-top">
+                  <span class="rx-visit-avatar" aria-hidden="true">{{ (group.patientName || 'P').charAt(0) }}</span>
+                  <div class="rx-visit-meta">
+                    <div class="rx-visit-name-row">
+                      <span class="rx-visit-name">{{ group.patientName }}</span>
+                      <button
+                        type="button"
+                        class="rx-visit-queue-btn"
+                        title="Queue patient"
+                        (click)="openRxQueueModal(group, $event)">
+                        <i class="bi bi-list-ol" aria-hidden="true"></i>
+                        Queue
+                      </button>
+                    </div>
+                    <span class="rx-visit-visit">Visit {{ group.visitNumber || group.visitId }}</span>
+                  </div>
+                  <span class="rx-visit-badge" [ngClass]="prescriptionVisitOrderStatusClass(group)">
+                    {{ prescriptionVisitOrderStatusLabel(group) }}
+                  </span>
+                </div>
+                <div class="rx-visit-card-bottom">
+                  <span class="rx-visit-date">
+                    <i class="bi bi-calendar3"></i>
+                    {{ group.visitDate }}<ng-container *ngIf="group.visitTime"> · {{ group.visitTime }}</ng-container>
+                  </span>
+                  <span class="rx-visit-lines">{{ group.rows.length }} line{{ group.rows.length === 1 ? '' : 's' }}</span>
+                </div>
+              </div>
+            </ng-container>
+            <ng-template #noDoctorRxQueue>
+              <div class="rx-studio-empty">
+                <i class="bi bi-inbox"></i>
+                <p>No pending prescriptions.</p>
+              </div>
+            </ng-template>
+          </aside>
+
+          <main class="rx-studio-detail" id="otc-rx-drugs-section" aria-label="Prescription details">
+            <ng-container *ngIf="selectedPrescriptionGroup() as sel; else rxNoSelection">
+              <section class="rx-detail-section">
+                <div class="rx-detail-section-head">
+                  <div class="rx-detail-section-head-line">
+                    <h4>Items to dispense</h4>
+                    <span class="rx-detail-inline-meta">
+                      <span class="rx-detail-inline-name">{{ sel.patientName }}</span>
+                      <span class="rx-detail-dot">·</span>
+                      <span>Visit {{ sel.visitNumber || sel.visitId }}</span>
+                      <span class="rx-detail-dot">·</span>
+                      <span>{{ sel.visitDate }}<ng-container *ngIf="sel.visitTime"> · {{ sel.visitTime }}</ng-container></span>
+                      <span
+                        class="rx-visit-badge rx-visit-badge--inline"
+                        [ngClass]="prescriptionVisitOrderStatusClass(sel)">
+                        {{ isPrescriptionVisitSaleDone(sel.visitId) ? 'Sale completed' : prescriptionVisitOrderStatusLabel(sel) }}
+                      </span>
+                    </span>
+                  </div>
+                  <span class="rx-detail-count">{{ selectedPrescriptionDetailRows.length }} items</span>
+                </div>
+                <div class="rx-table-wrap" *ngIf="selectedPrescriptionDetailRows.length; else noSelectedRxLines">
+                  <table class="rx-table otc-cart-table otc-cart-table--prescribing">
+                    <thead>
+                      <tr>
+                        <th class="text-center otc-rx-dsp-head" title="Dispensed (set when you complete a dispense)">
+                          DSP
+                        </th>
+                        <th>Item</th>
+                        <th>Dosage</th>
+                        <th>Frequency</th>
+                        <th>Duration</th>
+                        <th>Qty</th>
+                        <th *ngIf="canViewPharmacyCostColumns()">Cost</th>
+                        <th>Sell</th>
+                        <th *ngIf="canViewPharmacyCostColumns()">TT Cost</th>
+                        <th>TT Sell</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let row of selectedPrescriptionDetailRows" [class.otc-cart-row-not-given]="row.dispensed !== true">
+                        <td class="text-center otc-cart-given-cell">
+                          <app-pd-dsp-adm
+                            [item]="row"
+                            [inputIdPrefix]="'otc-rx'"
+                            mode="dispensed-only"
+                            [disabled]="true"
+                            [dispensedReadonly]="true">
+                          </app-pd-dsp-adm>
+                        </td>
+                        <td class="otc-cart-treatment-cell">
+                          {{ row.itemName | uppercase }}
+                          <span class="otc-rx-sundry-tag" *ngIf="isSundryPrescriptionRow(row)">Sundry</span>
+                        </td>
+                        <td>{{ prescriptionRowDosage(row) }}</td>
+                        <td>{{ prescriptionRowFrequency(row) }}</td>
+                        <td>{{ prescriptionRowDuration(row) }}</td>
+                        <td class="otc-rx-qty-cell">
+                          <input
+                            type="number"
+                            class="form-control form-control-sm otc-rx-qty-input"
+                            [ngModel]="row.quantity"
+                            (ngModelChange)="onPrescriptionQuantityChange(row, $event)"
+                            [ngModelOptions]="{ standalone: true }"
+                            min="0"
+                            step="1"
+                            inputmode="numeric"
+                            [disabled]="processing || isPrescriptionVisitSaleDone(sel.visitId) || isSundryPrescriptionRow(row)"
+                            [attr.aria-label]="'Quantity for ' + row.itemName" />
+                          <span class="otc-rx-qty-hint text-muted" *ngIf="isSundryPrescriptionRow(row)">
+                            Stock deducted when recorded
+                          </span>
+                          <span class="otc-rx-qty-hint text-muted" *ngIf="!isSundryPrescriptionRow(row) && !prescriptionQtyExceedsStock(row)">
+                            Stock: {{ prescriptionItemTotalStock(row) }}
+                          </span>
+                          <span class="otc-rx-qty-hint text-danger" *ngIf="!isSundryPrescriptionRow(row) && prescriptionQtyExceedsStock(row)">
+                            Exceeds stock · {{ prescriptionItemTotalStock(row) }}
+                          </span>
+                        </td>
+                        <td *ngIf="canViewPharmacyCostColumns()">{{ row.unitBuy }}</td>
+                        <td>{{ row.unitSellingPrice }}</td>
+                        <td *ngIf="canViewPharmacyCostColumns()">{{ prescriptionRowTtCost(row) }}</td>
+                        <td [class.text-muted]="!row.given">{{ row.given ? prescriptionRowTtSell(row) : '—' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <ng-template #noSelectedRxLines>
+                  <div class="rx-studio-empty rx-studio-empty--compact">
+                    <p>No prescription or sundry lines for this visit.</p>
+                  </div>
+                </ng-template>
+              </section>
+
+              <footer class="rx-checkout" *ngIf="!isPrescriptionVisitSaleDone(sel.visitId)">
+                <div class="rx-checkout-grid">
+                  <label class="rx-checkout-field">
+                    <span>Total due</span>
+                    <strong>{{ formatPaymentTotal(prescriptionSubtotal) }}</strong>
+                  </label>
+                  <label class="rx-checkout-field">
+                    <span>Payment method</span>
+                    <select
+                      class="rx-checkout-input"
+                      [(ngModel)]="rxPaymentMethod"
+                      name="rxPaymentMethod"
+                      [ngModelOptions]="{ standalone: true }"
+                      [disabled]="processing">
+                      <option value="Cash At Hand">Cash At Hand</option>
+                      <option value="Card">Card</option>
+                      <option value="Mobile Money">Mobile Money</option>
+                    </select>
+                  </label>
+                  <label class="rx-checkout-field">
+                    <span>Amount received</span>
+                    <input
+                      type="number"
+                      class="rx-checkout-input"
+                      [(ngModel)]="rxAmountReceived"
+                      name="rxAmountReceived"
+                      [ngModelOptions]="{ standalone: true }"
+                      [placeholder]="formatPaymentTotal(prescriptionSubtotal)"
+                      [disabled]="processing" />
+                  </label>
+                  <label class="rx-checkout-field">
+                    <span>Change</span>
+                    <strong>{{ formatMoney(prescriptionChangeDue) }}</strong>
+                  </label>
+                  <div class="rx-checkout-actions">
+                    <button
+                      type="button"
+                      class="rx-studio-btn rx-studio-btn--success rx-checkout-submit"
+                      (click)="completePrescriptionSale(true)"
+                      [disabled]="processing || !canCompletePrescriptionSale">
+                      <i class="bi bi-cash-coin"></i>
+                      {{ processing ? 'Processing…' : 'Dispensed & money received' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="rx-studio-btn rx-studio-btn--secondary rx-checkout-submit"
+                      (click)="completePrescriptionSale(false)"
+                      [disabled]="processing || !canCompletePrescriptionSale">
+                      <i class="bi bi-capsule"></i>
+                      {{ processing ? 'Processing…' : 'Dispensed, no money received' }}
+                    </button>
+                  </div>
+                </div>
+              </footer>
+            </ng-container>
+
+            <ng-template #rxNoSelection>
+              <div class="rx-studio-empty rx-studio-empty--detail">
+                <i class="bi bi-capsule"></i>
+                <h3>Select a prescription visit</h3>
+                <p>Choose a patient from the list on the left to view drugs and complete the sale.</p>
+              </div>
+            </ng-template>
+          </main>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<div class="otc-queue-modal-overlay" *ngIf="showRxQueueModal" (click)="closeRxQueueModal()">
+  <div class="otc-queue-modal" (click)="$event.stopPropagation()" *ngIf="rxQueueTarget as target">
+    <div class="otc-queue-modal-head">
+      <h3 class="otc-queue-modal-title">Add to queue</h3>
+      <button type="button" class="btn btn-light btn-sm" (click)="closeRxQueueModal()">Close</button>
+    </div>
+
+    <div class="otc-queue-patient-summary">
+      <div><strong>Surname:</strong> <span class="otc-queue-patient-value">{{ rxQueuePatientSurname() }}</span></div>
+      <div><strong>Visit:</strong> <span class="otc-queue-patient-value">{{ target.visitNumber || target.visitId }}</span></div>
+      <div><strong>Other Names:</strong> <span class="otc-queue-patient-value">{{ rxQueuePatientOtherNames() }}</span></div>
+      <div><strong>Patient:</strong> <span class="otc-queue-patient-value">{{ target.patientName }}</span></div>
+    </div>
+
+    <hr />
+
+    <p class="otc-queue-error" *ngIf="rxQueueError">{{ rxQueueError }}</p>
+
+    <div class="otc-queue-form-grid">
+      <label>From
+        <select name="otcRxQueueFromModuleId" [(ngModel)]="rxQueueForm.fromModuleId">
+          <option [ngValue]="null">Select module</option>
+          <option *ngFor="let m of hospitalModules" [ngValue]="m.id">{{ m.name }}</option>
+        </select>
+      </label>
+
+      <label>To
+        <select [(ngModel)]="rxQueueForm.toModuleId" (ngModelChange)="onRxQueueToModuleChange()">
+          <option [ngValue]="null">Select destination</option>
+          <option *ngFor="let m of rxQueueDestinationModules" [ngValue]="m.id">{{ m.name }}</option>
+        </select>
+      </label>
+
+      <label *ngIf="!isQueueDischargeDestination(rxQueueForm.toModuleId)">Clinic
+        <select [(ngModel)]="rxQueueForm.clinicId">
+          <option [ngValue]="null">—</option>
+          <option *ngFor="let c of rxQueueClinics" [ngValue]="c.id">{{ c.name }}</option>
+        </select>
+      </label>
+
+      <label>Visit Default Scheme
+        <select [(ngModel)]="rxQueueForm.patientGroupId" (ngModelChange)="onRxQueueSchemeChange()">
+          <option [ngValue]="null">—</option>
+          <option *ngFor="let g of rxQueuePatientGroups" [ngValue]="g.id">{{ g.groupName }}</option>
+        </select>
+      </label>
+
+      <label class="full">Note
+        <textarea [(ngModel)]="rxQueueForm.note" rows="3"></textarea>
+      </label>
+    </div>
+
+    <div class="otc-queue-checkboxes">
+      <label class="otc-queue-check">
+        <input type="checkbox" [(ngModel)]="rxQueueForm.emergency" /> Is Emergency
+      </label>
+      <label class="otc-queue-check">
+        <input type="checkbox" [(ngModel)]="rxQueueForm.revisit" /> Is Revisit
+      </label>
+      <label class="otc-queue-check" *ngIf="!isQueueDischargeDestination(rxQueueForm.toModuleId)">
+        <input type="checkbox" [(ngModel)]="rxQueueForm.printQueueTicket" /> Print Queue Ticket
+      </label>
+    </div>
+
+    <div class="otc-queue-modal-actions">
+      <button type="button" class="btn btn-light btn-sm" (click)="closeRxQueueModal()" [disabled]="rxQueueSaving">Cancel</button>
+      <button type="button" class="btn btn-success btn-sm" (click)="submitRxQueue()" [disabled]="rxQueueSaving">
+        {{
+          rxQueueSaving
+            ? (isQueueDischargeDestination(rxQueueForm.toModuleId) ? 'Discharging...' : 'Queuing...')
+            : (isQueueDischargeDestination(rxQueueForm.toModuleId) ? 'Discharge patient' : 'Queue patient')
+        }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal fade otc-receipt-modal"
+  [class.show]="showReceiptModal"
+  [style.display]="showReceiptModal ? 'block' : 'none'"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="otcReceiptModalLabel"
+  [attr.aria-hidden]="!showReceiptModal">
+  <div class="modal-dialog modal-dialog-centered otc-receipt-dialog" role="document">
+    <div class="modal-content otc-receipt-modal-content" *ngIf="receipt as r">
+      <div class="modal-header">
+        <h5 class="modal-title" id="otcReceiptModalLabel">
+          {{ r.patientName ? 'Pharmacy visit receipt' : 'OTC sale receipt' }} — {{ r.saleNo }}
+        </h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="closeReceiptModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div
+          id="otc-receipt-print"
+          class="otc-receipt-print"
+          [class.otc-receipt-print--simple]="!r.includePrescribing">
+          <div class="otc-receipt-letterhead">
+            <img [src]="facilityLogoUrl" alt="Facility logo" class="otc-receipt-logo" />
+            <h1 class="otc-receipt-facility">{{ r.facilityName }}</h1>
+          </div>
+          <p class="otc-receipt-meta">{{ r.patientName ? 'Pharmacy Visit Sale' : 'OTC Counter Sale' }}</p>
+          <p class="otc-receipt-meta" *ngIf="r.patientName"><strong>Patient:</strong> {{ r.patientName }}</p>
+          <p class="otc-receipt-meta">
+            <strong>{{ r.saleNo }}</strong><br />
+            {{ r.saleDateLabel }} · {{ r.saleTimeLabel }}
+          </p>
+          <p class="otc-receipt-meta">Served by: {{ r.receivedBy }}</p>
+          <table class="otc-receipt-table">
+            <thead>
+              <tr>
+                <th class="no-sort">Item</th>
+                <th class="no-sort" *ngIf="r.includePrescribing">Dosage</th>
+                <th class="num no-sort">Qty</th>
+                <th class="num no-sort">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let line of r.lines" [class.otc-receipt-line-not-given]="line.given === false">
+                <td>
+                  {{ line.itemName }}
+                </td>
+                <td *ngIf="r.includePrescribing">{{ line.dosage || '—' }}</td>
+                <td class="num">{{ line.quantity }}</td>
+                <td class="num">{{ line.given === false ? '—' : formatMoney(line.lineTotal) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="otc-receipt-totals">
+            <div><span>Total due</span><strong>{{ formatMoney(r.subtotal) }}</strong></div>
+            <div><span>Payment</span><span>{{ r.paymentMethod }}</span></div>
+            <div><span>Amount received</span><strong>{{ formatMoney(r.amountReceived) }}</strong></div>
+            <div><span>Change</span><strong>{{ formatMoney(r.changeDue) }}</strong></div>
+          </div>
+          <p class="otc-receipt-notes" *ngIf="r.notes">Notes: {{ r.notes }}</p>
+          <p class="otc-receipt-thanks">Thank you</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeReceiptModal()">Close</button>
+        <button type="button" class="btn btn-outline-primary" (click)="downloadReceiptPdf()">
+          <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+        </button>
+        <button type="button" class="btn btn-primary" (click)="printOtcReceipt()">
+          <i class="bi bi-printer me-1"></i> Print receipt (PDF)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showReceiptModal" *ngIf="showReceiptModal"></div>
+
+<div
+  class="modal fade otc-order-details-modal"
+  [class.show]="showOrderDetailsModal"
+  [style.display]="showOrderDetailsModal ? 'block' : 'none'"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="otcOrderDetailsModalLabel"
+  [attr.aria-hidden]="!showOrderDetailsModal">
+  <div class="modal-dialog modal-dialog-centered modal-lg otc-order-details-dialog" role="document">
+    <div class="modal-content" *ngIf="selectedSoldOrder as order">
+      <div class="modal-header">
+        <h5 class="modal-title" id="otcOrderDetailsModalLabel">
+          Order {{ order.orderNo }}
+          <span class="sale-source-badge ms-2" [ngClass]="orderSourceBadgeClass(order)">{{ orderSourceLabel(order) }}</span>
+        </h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="closeSoldOrderDetailsModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="otc-order-details-meta mb-2">
+          <span>{{ order.visitDate }}</span>
+          <span *ngIf="order.visitTime"> · {{ order.visitTime }}</span>
+          <ng-container *ngIf="soldOrderVisitNumber(order) as visitNo">
+            <span> · Visit {{ visitNo }}</span>
+            <span *ngIf="soldOrderPatientName(order) as patientName"> · {{ patientName }}</span>
+          </ng-container>
+          <span *ngIf="!soldOrderVisitNumber(order) && soldOrderPatientName(order) as patientName"> · {{ patientName }}</span>
+          <span class="text-muted"> · {{ order.lineCount }} item(s)</span>
+          <span *ngIf="soldOrderStaffLabel(order) !== '—'"> · Served by {{ soldOrderStaffLabel(order) }}</span>
+        </p>
+        <div class="otc-order-lines-scroll">
+          <table class="table table-responsive table-bordered mb-0" style="border-radius: 10px; background-color: #e4ebf8;">
+            <thead class="table-success" style="background-color: #e4ebf8;">
+              <tr style="background-color: #e4ebf8;">
+                <th class="no-sort" style="padding: 6px; width: 4%; background-color: #e4ebf8; border-right-color: #c6c7c9;">SN</th>
+                <th
+                  class="no-sort"
+                  style="padding: 6px; background-color: #e4ebf8; border-right-color: #c6c7c9;"
+                  [style.width.%]="otcIncludePrescribing ? 28 : 40">
+                  Treatment
+                </th>
+                <th *ngIf="otcIncludePrescribing" class="no-sort" style="padding: 6px; width: 8%; background-color: #e4ebf8; border-right-color: #c6c7c9;">Dosage</th>
+                <th *ngIf="otcIncludePrescribing" class="no-sort" style="padding: 6px; width: 11%; background-color: #e4ebf8; border-right-color: #c6c7c9;">Frequency</th>
+                <th *ngIf="otcIncludePrescribing" class="no-sort" style="padding: 6px; width: 9%; background-color: #e4ebf8; border-right-color: #c6c7c9;">Duration</th>
+                <th class="no-sort" style="padding: 6px; width: 5%; background-color: #e4ebf8; border-right-color: #c6c7c9;">Qty</th>
+                <th class="no-sort" style="padding: 6px; width: 6%; background-color: #e4ebf8; border-right-color: #c6c7c9;" *ngIf="canViewSoldOrderModalCostColumns(order)">Cost</th>
+                <th class="no-sort" style="padding: 6px; width: 6%; background-color: #e4ebf8; border-right-color: #c6c7c9;" *ngIf="canViewSoldOrderModalFinancials(order)">Sell</th>
+                <th class="no-sort" style="padding: 6px; width: 7%; background-color: #e4ebf8; border-right-color: #c6c7c9;" *ngIf="canViewSoldOrderModalCostColumns(order)">TT Cost</th>
+                <th class="no-sort" style="padding: 6px; width: 7%; background-color: #e4ebf8; border-right-color: #c6c7c9;" *ngIf="canViewSoldOrderModalFinancials(order)">TT Sell</th>
+                <th *ngIf="canDeleteSoldLine" class="no-sort" style="padding: 6px; width: 5%; background-color: #e4ebf8;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of order.lines; let j = index">
+                <td class="itemdata" style="font-size: smaller; padding: 6px;">{{ j + 1 }}</td>
+                <td class="itemdata" style="font-size: smaller; padding: 6px;">{{ row.itemName | uppercase }}</td>
+                <td *ngIf="otcIncludePrescribing" class="itemdata" style="font-size: smaller; padding: 6px;">{{ soldRowDosage(row) }}</td>
+                <td *ngIf="otcIncludePrescribing" class="itemdata" style="font-size: smaller; padding: 6px;">{{ soldRowFrequency(row) }}</td>
+                <td *ngIf="otcIncludePrescribing" class="itemdata" style="font-size: smaller; padding: 6px;">{{ soldRowDuration(row) }}</td>
+                <td class="itemdata" style="font-size: smaller; padding: 6px;">{{ row.quantity }}</td>
+                <td class="itemdata" style="font-size: smaller; padding: 6px;" *ngIf="canViewSoldOrderModalCostColumns(order)">{{ row.unitBuy }}</td>
+                <td class="itemdata" style="font-size: smaller; padding: 6px;" *ngIf="canViewSoldOrderModalFinancials(order)">{{ row.unitSellingPrice }}</td>
+                <td class="itemdata" style="font-size: smaller; padding: 6px;" *ngIf="canViewSoldOrderModalCostColumns(order)">{{ formatSoldMoney(row.quantity * row.unitBuy) }}</td>
+                <td class="itemdata" style="font-size: smaller; padding: 6px;" *ngIf="canViewSoldOrderModalFinancials(order)">{{ formatSoldMoney(row.totalAmount) }}</td>
+                <td *ngIf="canDeleteSoldLine" class="itemdata text-center" style="font-size: smaller; padding: 6px;">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    title="Delete line and restore stock"
+                    [disabled]="isDeletingSoldRow(row)"
+                    (click)="requestDeleteSoldLine(row, order)">
+                    <span *ngIf="isDeletingSoldRow(row)" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span *ngIf="!isDeletingSoldRow(row)">Delete</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot *ngIf="canViewSoldOrderModalFooter(order)">
+              <tr style="background-color: #d1dae8; font-weight: 700;">
+                <td [attr.colspan]="otcIncludePrescribing ? 5 : 2" style="padding: 8px 6px; text-align: right; font-size: 13px;">Order total</td>
+                <td style="padding: 8px 6px; font-size: 13px;">{{ orderTotalQty(order) }}</td>
+                <td style="padding: 8px 6px;" *ngIf="canViewSoldOrderModalCostColumns(order)"></td>
+                <td style="padding: 8px 6px;" *ngIf="canViewSoldOrderModalFinancials(order)"></td>
+                <td style="padding: 8px 6px; font-size: 13px;" *ngIf="canViewSoldOrderModalCostColumns(order)">{{ formatSoldMoney(order.totalCost) }}</td>
+                <td style="padding: 8px 6px; font-size: 13px;" *ngIf="canViewSoldOrderModalFinancials(order)">{{ formatSoldMoney(order.totalSell) }}</td>
+                <td *ngIf="canDeleteSoldLine" style="padding: 8px 6px;"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeSoldOrderDetailsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showOrderDetailsModal" *ngIf="showOrderDetailsModal"></div>
+
+<div class="otc-queue-modal-overlay" *ngIf="showDeleteSoldLineConfirm" (click)="closeDeleteSoldLineConfirm()">
+  <div class="otc-queue-modal otc-delete-sold-line-modal" (click)="$event.stopPropagation()" *ngIf="deleteSoldLineTarget">
+    <div class="otc-queue-modal-head">
+      <h3 class="otc-queue-modal-title">Confirm delete</h3>
+      <button
+        type="button"
+        class="btn btn-light btn-sm"
+        [disabled]="deletingSoldLineId != null"
+        (click)="closeDeleteSoldLineConfirm()">
+        Close
+      </button>
+    </div>
+    <p class="otc-delete-sold-line-message">
+      Remove <strong>{{ deleteSoldLineTargetLabel() }}</strong> from this order and restore
+      <strong>{{ deleteSoldLineTargetQty() }}</strong> unit(s) to stock?
+    </p>
+    <p class="otc-delete-sold-line-note" *ngIf="deleteSoldLineTargetRemovesOrder()">
+      This is the only item in the order. The whole order will be removed from Items sold.
+    </p>
+    <div class="otc-queue-modal-actions">
+      <button
+        type="button"
+        class="btn btn-light btn-sm"
+        [disabled]="deletingSoldLineId != null"
+        (click)="closeDeleteSoldLineConfirm()">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn btn-danger btn-sm"
+        [disabled]="deletingSoldLineId != null"
+        (click)="confirmDeleteSoldLine()">
+        <span *ngIf="deletingSoldLineId != null" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+        {{ deletingSoldLineId != null ? 'Deleting…' : 'Delete' }}
+      </button>
+    </div>
+  </div>
+</div>
+

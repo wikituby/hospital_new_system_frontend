@@ -1,0 +1,66 @@
+/* Highlight the row that was just received so it is obvious at the top of the table. */
+:host ::ng-deep tr.row-just-received td {
+  background: rgba(11, 155, 112, 0.18) !important;
+  transition: background 0.6s ease;
+}
+
+.receive-store-dates-row {
+  grid-template-columns:
+    minmax(120px, 0.5fr)
+    minmax(130px, 0.28fr)
+    minmax(130px, 0.28fr)
+    auto;
+  align-items: end;
+}
+
+.receive-store-dates-row .form-field--store {
+  max-width: 220px;
+}
+
+.receive-store-dates-row .form-field--date {
+  max-width: 170px;
+}
+
+.receive-store-dates-row .form-field--actions {
+  min-width: max-content;
+  justify-self: end;
+}
+
+.receive-store-dates-row .actions-spacer {
+  visibility: hidden;
+  user-select: none;
+}
+
+.receive-store-dates-row .inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.receive-store-dates-row .inline-actions .btn-primary,
+.receive-store-dates-row .inline-actions .btn-secondary {
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .receive-store-dates-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .receive-store-dates-row .form-field--store,
+  .receive-store-dates-row .form-field--date {
+    max-width: none;
+  }
+
+  .receive-store-dates-row .form-field--actions {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .receive-store-dates-row {
+    grid-template-columns: 1fr;
+  }
+}

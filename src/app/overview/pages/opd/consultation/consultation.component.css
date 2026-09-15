@@ -1,0 +1,725 @@
+/* Consultation Page Styles */
+.consultation-page {
+  min-height: 100vh;
+  background-color: #f5f7fb;
+  transition: all 0.3s ease;
+}
+
+.consultation-page.dark {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+.content {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+}
+
+/* Sidebar Styles */
+.consultation-sidebar {
+  background: white;
+  border-right: 1px solid #e2e8f0;
+  padding: 20px;
+  height: 100vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+}
+
+.consultation-page.dark .consultation-sidebar {
+  background: #1e293b;
+  border-right-color: #334155;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Patient Profile Card */
+.patient-profile-card {
+  text-align: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.patient-avatar-wrapper {
+  margin-bottom: 12px;
+}
+
+.patient-avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  object-fit: cover;
+}
+
+.patient-name-section {
+  text-align: center;
+}
+
+.patient-name {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: white;
+}
+
+.patient-file-number {
+  font-size: 13px;
+  opacity: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.sidebar-divider {
+  margin: 0;
+  border-color: #e2e8f0;
+  opacity: 0.5;
+}
+
+.consultation-page.dark .sidebar-divider {
+  border-color: #334155;
+}
+
+/* Patient Quick Info */
+.patient-quick-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #475569;
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.consultation-page.dark .info-item {
+  background: #0f172a;
+  color: #cbd5e1;
+}
+
+.info-item i {
+  color: #3b82f6;
+  font-size: 16px;
+}
+
+/* Sidebar Actions */
+.sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-sidebar-primary,
+.btn-sidebar-secondary {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-sidebar-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-sidebar-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-sidebar-secondary {
+  background: white;
+  color: #475569;
+  border: 1.5px solid #d1d5db;
+}
+
+.consultation-page.dark .btn-sidebar-secondary {
+  background: #334155;
+  color: #cbd5e1;
+  border-color: #475569;
+}
+
+.btn-sidebar-secondary:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.consultation-page.dark .btn-sidebar-secondary:hover {
+  background: #475569;
+}
+
+/* Patient Queue Section */
+.patient-queue-section {
+  margin-top: 20px;
+}
+
+.queue-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.consultation-page.dark .queue-title {
+  color: #f1f5f9;
+}
+
+.queue-search {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.queue-search i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.queue-search-input {
+  width: 100%;
+  padding: 10px 12px 10px 40px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  color: #0f172a;
+  transition: all 0.2s ease;
+}
+
+.consultation-page.dark .queue-search-input {
+  background: #0f172a;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+.queue-search-input:focus {
+  outline: none;
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 3px rgba(209, 213, 219, 0.1);
+}
+
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.queue-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.consultation-page.dark .queue-item {
+  background: #0f172a;
+  border-color: #475569;
+}
+
+.queue-item:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.queue-item.active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.consultation-page.dark .queue-item.active {
+  background: #1e3a5f;
+}
+
+.queue-item-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.queue-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.queue-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.consultation-page.dark .queue-item-name {
+  color: #f1f5f9;
+}
+
+.queue-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.consultation-page.dark .queue-item-meta {
+  color: #94a3b8;
+}
+
+.queue-status {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-waiting {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.status-in-progress {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.status-completed {
+  background: #d1fae5;
+  color: #059669;
+}
+
+/* Main Content Area */
+.consultation-main-content {
+  padding: 20px;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.content-wrapper {
+  max-width: 100%;
+}
+
+/* Consultation Form Container */
+.consultation-form-container {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.consultation-page.dark .consultation-form-container {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+/* Form Header */
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.consultation-page.dark .form-header {
+  border-bottom-color: #334155;
+}
+
+.form-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.consultation-page.dark .form-title {
+  color: #f1f5f9;
+}
+
+.form-title i {
+  color: #3b82f6;
+  font-size: 28px;
+}
+
+.form-header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Form Fields with Embedded Labels */
+.form-field {
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.form-label {
+  position: absolute;
+  top: -8px;
+  left: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #0f172a;
+  background: white;
+  padding: 0 6px;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.consultation-page.dark .form-label {
+  color: #e2e8f0;
+  background: #1e293b;
+}
+
+.form-label i {
+  color: #3b82f6;
+  font-size: 14px;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  background: white;
+  color: #0f172a;
+}
+
+.consultation-page.dark .form-input,
+.consultation-page.dark .form-textarea {
+  background: #0f172a;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 3px rgba(209, 213, 219, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Vital Signs Grid */
+.vital-signs-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .vital-signs-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.vital-field {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.vital-label {
+  position: absolute;
+  top: -8px;
+  left: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #0f172a;
+  background: white;
+  padding: 0 6px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.consultation-page.dark .vital-label {
+  color: #e2e8f0;
+  background: #1e293b;
+}
+
+/* Diagnosis Input Group */
+.diagnosis-input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.diagnosis-input-group .form-input {
+  flex: 1;
+}
+
+.btn-diagnosis-search {
+  padding: 12px 20px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-diagnosis-search:hover {
+  background: #2563eb;
+}
+
+.diagnosis-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.diagnosis-tag {
+  background: #eff6ff;
+  color: #1e40af;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.consultation-page.dark .diagnosis-tag {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+
+.diagnosis-tag i {
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.consultation-page.dark .form-actions {
+  border-top-color: #334155;
+}
+
+.btn-form-primary,
+.btn-form-secondary,
+.btn-form-success {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-form-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-form-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-form-secondary {
+  background: white;
+  color: #475569;
+  border: 1.5px solid #d1d5db;
+}
+
+.consultation-page.dark .btn-form-secondary {
+  background: #334155;
+  color: #cbd5e1;
+  border-color: #475569;
+}
+
+.btn-form-secondary:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.consultation-page.dark .btn-form-secondary:hover {
+  background: #475569;
+}
+
+.btn-form-success {
+  background: #10b981;
+  color: white;
+}
+
+.btn-form-success:hover {
+  background: #059669;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: #94a3b8;
+}
+
+.consultation-page.dark .empty-state {
+  color: #475569;
+}
+
+.empty-state-icon {
+  margin-bottom: 24px;
+}
+
+.empty-state-icon i {
+  font-size: 80px;
+  color: #cbd5e1;
+}
+
+.consultation-page.dark .empty-state-icon i {
+  color: #475569;
+}
+
+.empty-state h3 {
+  font-size: 24px;
+  margin: 0 0 12px 0;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.consultation-page.dark .empty-state h3 {
+  color: #94a3b8;
+}
+
+.empty-state p {
+  font-size: 16px;
+  margin: 0 0 24px 0;
+  color: #94a3b8;
+}
+
+.consultation-page.dark .empty-state p {
+  color: #64748b;
+}
+
+/* Scrollbar Styling */
+.consultation-sidebar::-webkit-scrollbar,
+.consultation-main-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.consultation-sidebar::-webkit-scrollbar-track,
+.consultation-main-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.consultation-page.dark .consultation-sidebar::-webkit-scrollbar-track,
+.consultation-page.dark .consultation-main-content::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.consultation-sidebar::-webkit-scrollbar-thumb,
+.consultation-main-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.consultation-page.dark .consultation-sidebar::-webkit-scrollbar-thumb,
+.consultation-page.dark .consultation-main-content::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.consultation-sidebar::-webkit-scrollbar-thumb:hover,
+.consultation-main-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+  .content {
+    flex-direction: column;
+  }
+
+  .consultation-sidebar {
+    height: auto;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .consultation-page.dark .consultation-sidebar {
+    border-bottom-color: #334155;
+  }
+
+  .consultation-main-content {
+    height: auto;
+  }
+}

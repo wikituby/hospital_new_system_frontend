@@ -1,0 +1,17 @@
+<div class="global-feedback-overlay" *ngIf="state.isVisible" (click)="close()">
+  <div class="global-feedback-card" [ngClass]="state.type" (click)="$event.stopPropagation()">
+    <div class="feedback-icon">
+      <i class="bi bi-check-circle-fill" *ngIf="state.type === 'success'"></i>
+      <i class="bi bi-x-circle-fill" *ngIf="state.type === 'error'"></i>
+      <i class="bi bi-info-circle-fill" *ngIf="state.type === 'info'"></i>
+      <i class="bi bi-exclamation-triangle-fill" *ngIf="state.type === 'warning'"></i>
+    </div>
+    <div class="feedback-content">
+      <h4>{{ state.type === 'success' ? 'Success' : state.type === 'error' ? 'Error' : state.type === 'warning' ? 'Alert' : 'Notice' }}</h4>
+      <p>{{ state.message }}</p>
+    </div>
+    <button type="button" class="close-btn" (click)="close()">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+</div>

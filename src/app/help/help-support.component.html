@@ -1,0 +1,215 @@
+<div class="cc-page" [class.dark]="isDarkMode">
+  <div class="cc-shell">
+    <header class="cc-hero">
+      <div class="cc-hero-main">
+        <div class="cc-hero-badge"><i class="bi bi-headset"></i></div>
+        <div>
+          <h1>Customer care</h1>
+          <p>FAQ, contact channels, and a direct message to support when your facility needs help.</p>
+          <p class="cc-facility" *ngIf="facilityName">
+            <i class="bi bi-hospital"></i> {{ facilityName }}
+          </p>
+        </div>
+      </div>
+      <div class="cc-hero-meta" *ngIf="accountName">
+        <span class="cc-chip"><i class="bi bi-person"></i> {{ accountName }}</span>
+        <span class="cc-chip" *ngIf="accountRole"><i class="bi bi-shield-check"></i> {{ accountRole }}</span>
+      </div>
+    </header>
+
+    <div class="cc-layout">
+      <aside class="cc-sidebar">
+        <nav class="cc-side-nav" aria-label="Customer care sections">
+          <button
+            type="button"
+            class="cc-side-btn"
+            *ngFor="let tab of tabs"
+            [class.active]="activeSection === tab.id"
+            (click)="setSection(tab.id)">
+            <i class="bi" [ngClass]="tab.icon"></i>
+            <span>{{ tab.label }}</span>
+          </button>
+        </nav>
+
+        <div class="cc-side-links">
+          <p class="cc-side-label">Quick links</p>
+          <button type="button" class="cc-link-btn" (click)="openDocumentation()">
+            <i class="bi bi-journal-bookmark"></i> System documentation
+          </button>
+          <button type="button" class="cc-link-btn" (click)="openMessages()">
+            <i class="bi bi-chat-dots"></i> Staff messages
+          </button>
+          <a class="cc-link-btn" routerLink="/overview/main-dashboard">
+            <i class="bi bi-grid"></i> Dashboard
+          </a>
+        </div>
+      </aside>
+
+      <main class="cc-main">
+        <nav class="cc-tabs" role="tablist" aria-label="Customer care tabs">
+          <button
+            type="button"
+            class="cc-tab"
+            *ngFor="let tab of tabs"
+            [class.active]="activeSection === tab.id"
+            (click)="setSection(tab.id)">
+            <i class="bi" [ngClass]="tab.icon"></i>
+            <span>{{ tab.label }}</span>
+          </button>
+        </nav>
+
+        <div class="cc-main-body">
+          <!-- FAQ -->
+          <section class="cc-panel" *ngIf="activeSection === 'faq'">
+            <div class="cc-panel-head">
+              <h2><i class="bi bi-question-circle"></i> Frequently asked questions</h2>
+              <p>Signing in, queue, visits, pharmacy, stock, and subscriptions.</p>
+            </div>
+
+            <div class="cc-search">
+              <i class="bi bi-search"></i>
+              <input
+                type="search"
+                placeholder="Search FAQ…"
+                [(ngModel)]="faqSearch"
+                aria-label="Search frequently asked questions" />
+            </div>
+
+            <div class="cc-faq-list">
+              <article
+                class="cc-faq-item"
+                *ngFor="let item of filteredFaq"
+                [class.expanded]="expandedFaqId === item.id">
+                <button type="button" class="cc-faq-q" (click)="toggleFaq(item.id)">
+                  <span>{{ item.question }}</span>
+                  <i class="bi" [ngClass]="expandedFaqId === item.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </button>
+                <div class="cc-faq-a" *ngIf="expandedFaqId === item.id">
+                  <p>{{ item.answer }}</p>
+                </div>
+              </article>
+              <div class="cc-empty" *ngIf="filteredFaq.length === 0">
+                <i class="bi bi-search"></i>
+                <p>No questions match your search.</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Contact -->
+          <section class="cc-panel" *ngIf="activeSection === 'contact'">
+            <div class="cc-panel-head">
+              <h2><i class="bi bi-telephone"></i> Contact customer care</h2>
+              <p>Reach VMD support by phone, email, or WhatsApp during business hours.</p>
+            </div>
+
+            <div class="cc-contact-grid">
+              <a class="cc-contact-card" [href]="'tel:' + contact.phone">
+                <div class="cc-contact-icon"><i class="bi bi-telephone-fill"></i></div>
+                <h3>Phone</h3>
+                <strong>{{ contact.phone }}</strong>
+                <span>Primary support line</span>
+              </a>
+              <a class="cc-contact-card" [href]="'mailto:' + contact.email">
+                <div class="cc-contact-icon"><i class="bi bi-envelope-fill"></i></div>
+                <h3>Email</h3>
+                <strong>{{ contact.email }}</strong>
+                <span>Include facility name and username</span>
+              </a>
+              <a class="cc-contact-card" [href]="whatsAppHref()" target="_blank" rel="noopener noreferrer">
+                <div class="cc-contact-icon whatsapp"><i class="bi bi-whatsapp"></i></div>
+                <h3>WhatsApp</h3>
+                <strong>{{ contact.whatsapp }}</strong>
+                <span>Chat for urgent issues</span>
+              </a>
+              <div class="cc-contact-card static">
+                <div class="cc-contact-icon hours"><i class="bi bi-clock-fill"></i></div>
+                <h3>Hours</h3>
+                <strong>{{ contact.hours }}</strong>
+                <span>Outside hours: leave a message</span>
+              </div>
+            </div>
+
+            <div class="cc-tip">
+              <i class="bi bi-info-circle-fill"></i>
+              <div>
+                <strong>Facility administrator</strong>
+                <p>For user accounts, roles, and subscription renewal, your local Admin or MD can also help under Administration.</p>
+              </div>
+            </div>
+
+            <div class="cc-inline-actions">
+              <button type="button" class="cc-btn cc-btn-primary" (click)="setSection('message')">
+                <i class="bi bi-envelope-paper"></i> Message customer care
+              </button>
+            </div>
+          </section>
+
+          <!-- Message -->
+          <section class="cc-panel" *ngIf="activeSection === 'message'">
+            <div class="cc-panel-head">
+              <h2><i class="bi bi-envelope-paper"></i> Message customer care</h2>
+              <p>Send a support request from this app. Your username and facility are attached automatically.</p>
+            </div>
+
+            <form class="cc-form" (ngSubmit)="submitCustomerCare()" novalidate>
+              <div class="cc-user-banner" *ngIf="accountName">
+                <div class="cc-user-avatar">{{ accountInitial }}</div>
+                <div>
+                  <strong>{{ accountName }}</strong>
+                  <p>
+                    <span *ngIf="accountEmail">{{ accountEmail }}</span>
+                    <span *ngIf="accountRole"> · {{ accountRole }}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div class="cc-form-grid">
+                <label class="cc-field">
+                  <span>Category</span>
+                  <select name="careCategory" [(ngModel)]="careForm.category" [disabled]="careSubmitting">
+                    <option *ngFor="let c of careCategories" [value]="c.value">{{ c.label }}</option>
+                  </select>
+                </label>
+                <label class="cc-field">
+                  <span>Subject <em>*</em></span>
+                  <input
+                    type="text"
+                    name="careSubject"
+                    [(ngModel)]="careForm.subject"
+                    placeholder="e.g. Cannot open patient visit"
+                    [disabled]="careSubmitting" />
+                </label>
+                <label class="cc-field cc-field-full">
+                  <span>Your message <em>*</em></span>
+                  <textarea
+                    name="careMessage"
+                    rows="7"
+                    [(ngModel)]="careForm.message"
+                    placeholder="Describe what happened, what you expected, and any error messages you saw…"
+                    [disabled]="careSubmitting"></textarea>
+                </label>
+              </div>
+
+              <p class="cc-alert success" *ngIf="careSuccess">
+                <i class="bi bi-check-circle-fill"></i> {{ careSuccess }}
+              </p>
+              <p class="cc-alert error" *ngIf="careError">
+                <i class="bi bi-exclamation-triangle-fill"></i> {{ careError }}
+              </p>
+
+              <div class="cc-form-actions">
+                <button type="submit" class="cc-btn cc-btn-primary" [disabled]="careSubmitting">
+                  <i class="bi bi-send-fill"></i>
+                  {{ careSubmitting ? 'Sending…' : 'Send to customer care' }}
+                </button>
+                <button type="button" class="cc-btn cc-btn-ghost" (click)="setSection('contact')" [disabled]="careSubmitting">
+                  View phone &amp; email
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>

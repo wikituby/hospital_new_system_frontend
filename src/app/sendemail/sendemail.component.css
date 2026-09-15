@@ -1,0 +1,29 @@
+.login-brand-row {
+  gap: 10px;
+}
+
+.login-brand-logo {
+  height: 64px;
+  width: auto;
+  max-width: 80px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.login-brand-title {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #5181da;
+}
+
+.login-brand-subtitle {
+  color: #727777;
+  margin-left: 7px;
+}
+
+.login-side-image {
+  border-radius: 1rem 0 0 1rem;
+  margin-left: 30px;
+  margin-top: 50px;
+}

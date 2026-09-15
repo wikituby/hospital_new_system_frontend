@@ -1,0 +1,3611 @@
+/* Fill overview content area below app header */
+:host {
+  display: block;
+  height: calc(100vh - var(--app-header-height, 56px));
+  max-height: calc(100vh - var(--app-header-height, 56px));
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.otc-dispensary-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 12px 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f0f4ff 0%, #f8fafc 120px, #f8fafc 100%);
+  gap: 0;
+}
+
+/* Main workspace card */
+.otc-workspace-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.otc-dispensary-page .otc-tabs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 8px 12px 6px;
+  border-bottom: 1px solid #eef2f7;
+  background: #fafbfc;
+}
+
+/* Segmented tabs */
+.otc-segment-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: #eef2f7;
+  border-radius: 10px;
+}
+
+.otc-segment-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+
+.otc-segment-tab i {
+  font-size: 14px;
+}
+
+.otc-segment-tab:hover:not(.active) {
+  color: #334155;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.otc-segment-tab.active {
+  background: #fff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+.otc-dispensary-page .otc-tabs-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 0;
+}
+
+.otc-dispensary-page .otc-prescribing-switch-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.otc-dispensary-page .otc-prescribing-switch.form-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 0;
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+.otc-dispensary-page .otc-prescribing-switch .form-check-input {
+  cursor: pointer;
+  width: 2.2em;
+  min-width: 2.2em;
+  height: 1.15em;
+  margin: 0 !important;
+  float: none;
+  background-position: left center;
+  background-size: contain;
+}
+
+.otc-dispensary-page.dark .otc-prescribing-switch-wrap {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.otc-dispensary-page .otc-prescribing-row--simple .form-group.col-md-2 {
+  flex: 2.2 1 0;
+}
+
+.otc-dispensary-page .otc-main-tabs {
+  flex-shrink: 0;
+}
+
+.otc-dispensary-page .otc-main-tabs .nav-item {
+  margin-bottom: -1px;
+}
+
+.otc-dispensary-page .otc-tab-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border: none;
+  border-radius: 0;
+  padding: 8px 12px 12px;
+  margin-top: 0;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.otc-dispensary-page .otc-tab-content > .tab-pane {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 0;
+}
+
+.otc-dispensary-page .otc-tab-content > .tab-pane:not(.active) {
+  display: none !important;
+}
+
+.otc-dispensary-page .otc-tab-content > .tab-pane.active {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.otc-dispensary-page .otc-tab-content > .tab-pane.otc-rx-tab-v2.active,
+.otc-dispensary-page .otc-tab-content > .tab-pane.otc-rx-modern-tab.active {
+  display: block !important;
+  overflow: hidden !important;
+  min-height: 0;
+  height: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Form + cart (scrollable) + payment pinned at bottom */
+.otc-dispensary-page .tab-pane.otc-counter-sale-layout.active {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  gap: 4px;
+}
+
+.otc-dispensary-page .otc-sale-form-card {
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+  position: relative;
+  z-index: 4;
+  padding: 8px 10px 6px;
+  margin-bottom: 0;
+  background: #fafbfc;
+  border: 1px solid #e8edf4;
+  border-radius: 10px;
+}
+
+.otc-dispensary-page .otc-cart-scroll {
+  grid-row: 2;
+  min-height: 0;
+  max-height: 100%;
+  height: auto;
+  overflow-y: auto;
+  margin: 0;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.otc-dispensary-page .otc-cart-scroll--prescribing {
+  overflow-x: auto;
+}
+
+.otc-dispensary-page .otc-cart-scroll--simple {
+  overflow-x: hidden;
+}
+
+.otc-dispensary-page.dark .otc-cart-scroll {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+.otc-dispensary-page .otc-cart-table-wrap {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.otc-dispensary-page .otc-cart-table {
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  margin-bottom: 0;
+}
+
+/* All pharmacy tables — always span full container width */
+.otc-dispensary-page .otc-orders-table,
+.otc-dispensary-page .otc-rx-queue-table,
+.otc-dispensary-page .otc-rx-table {
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  margin-bottom: 0;
+}
+
+.otc-dispensary-page .otc-cart-table-wrap,
+.otc-dispensary-page .otc-rx-queue-table-wrap,
+.otc-dispensary-page .otc-rx-table-wrap,
+.otc-dispensary-page .otc-sales-history-table-wrap {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.otc-dispensary-page .otc-cart-table .itemdata {
+  font-size: smaller;
+  padding: 6px;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.otc-dispensary-page .otc-cart-table .otc-cart-given-cell {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.otc-dispensary-page .otc-cart-table .otc-cart-treatment-cell {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.otc-dispensary-page .otc-cart-table .otc-cart-action-cell {
+  padding: 6px;
+  white-space: nowrap;
+}
+
+.otc-dispensary-page .otc-cart-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.otc-dispensary-page .otc-cart-table thead th::before,
+.otc-dispensary-page .otc-cart-table thead th::after {
+  content: none !important;
+  display: none !important;
+  border: none !important;
+}
+
+.otc-dispensary-page .otc-cart-table thead th.otc-cart-given-head {
+  width: 3.25rem;
+  min-width: 3.25rem;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+  white-space: nowrap;
+}
+
+.otc-dispensary-page .otc-cart-table-wrap .otc-cart-table.otc-modern-table thead th {
+  padding-top: 7px !important;
+  padding-bottom: 7px !important;
+}
+
+.otc-dispensary-page .otc-cart-table-wrap .otc-cart-table.otc-modern-table tbody td {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+
+.otc-dispensary-page .otc-cart-table-wrap .otc-cart-table .itemdata {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.otc-dispensary-page .otc-cart-table-wrap .otc-cart-table .otc-cart-action-cell {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.otc-dispensary-page .otc-cart-scroll--prescribing .otc-cart-table-wrap {
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
+  overflow: visible;
+}
+
+.otc-dispensary-page .otc-cart-scroll--simple .otc-cart-table-wrap {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.otc-dispensary-page .otc-cart-table.otc-cart-table--prescribing {
+  table-layout: auto;
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
+}
+
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.otc-dispensary-page .otc-cart-table.otc-cart-table--prescribing .itemdata {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple .itemdata {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple .otc-cart-treatment-cell {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+  min-width: 0;
+}
+
+.otc-dispensary-page .otc-cart-table.otc-cart-table--prescribing .otc-cart-given-cell,
+.otc-dispensary-page .otc-cart-table.otc-cart-table--prescribing .otc-cart-action-cell,
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple .otc-cart-given-cell,
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple .otc-cart-action-cell {
+  white-space: nowrap;
+}
+
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple td.itemdata:not(.otc-cart-treatment-cell):not(.otc-cart-action-cell) {
+  white-space: nowrap;
+}
+
+.otc-dispensary-page .otc-cart-table.otc-cart-table--prescribing thead th {
+  white-space: nowrap;
+}
+
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple thead th {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple thead th:nth-child(1),
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple thead th:nth-child(2),
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple thead th:nth-child(4),
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple thead th:nth-child(5),
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple thead th:nth-child(6),
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple thead th:nth-child(7),
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple thead th:nth-child(8),
+.otc-dispensary-page .otc-cart-table.otc-cart-table--simple thead th:nth-child(9) {
+  white-space: nowrap;
+}
+
+/* Counter sale cart — with prescribing fields; auto column widths from content */
+.otc-cart-table--prescribing col.otc-cart-col-sn { width: auto; }
+.otc-cart-table--prescribing col.otc-cart-col-given { width: auto; }
+.otc-cart-table--prescribing col.otc-cart-col-dosage { width: auto; }
+.otc-cart-table--prescribing col.otc-cart-col-frequency { width: auto; }
+.otc-cart-table--prescribing col.otc-cart-col-duration { width: auto; }
+.otc-cart-table--prescribing col.otc-cart-col-qty { width: auto; }
+.otc-cart-table--prescribing col.otc-cart-col-cost { width: auto; }
+.otc-cart-table--prescribing col.otc-cart-col-sell { width: auto; }
+.otc-cart-table--prescribing col.otc-cart-col-tt-cost { width: auto; }
+.otc-cart-table--prescribing col.otc-cart-col-tt-sell { width: auto; }
+.otc-cart-table--prescribing col.otc-cart-col-action { width: auto; }
+
+/* Counter sale cart — simple mode; compact fixed cols, treatment fills remainder */
+.otc-cart-table--simple col.otc-cart-col-sn { width: 2.25rem; }
+.otc-cart-table--simple col.otc-cart-col-given { width: 3.25rem; }
+.otc-cart-table--simple col.otc-cart-col-treatment { width: auto; }
+.otc-cart-table--simple col.otc-cart-col-qty { width: 3rem; }
+.otc-cart-table--simple col.otc-cart-col-cost { width: 3.5rem; }
+.otc-cart-table--simple col.otc-cart-col-sell { width: 3.5rem; }
+.otc-cart-table--simple col.otc-cart-col-tt-cost { width: 4rem; }
+.otc-cart-table--simple col.otc-cart-col-tt-sell { width: 4rem; }
+.otc-cart-table--simple col.otc-cart-col-action { width: 4.25rem; }
+
+.otc-cart-table col.otc-cart-col-treatment,
+.otc-cart-table .otc-cart-treatment-cell {
+  width: auto;
+  min-width: 0;
+}
+
+.otc-cart-table--prescribing col.otc-cart-col-treatment,
+.otc-cart-table--prescribing .otc-cart-treatment-cell {
+  min-width: 10rem;
+}
+
+.otc-dispensary-page .otc-rx-queue-table-wrap .otc-cart-table thead th,
+.otc-dispensary-page .otc-rx-table-wrap .otc-cart-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+.otc-dispensary-page .otc-cart-empty {
+  margin: 0;
+}
+
+.otc-dispensary-page .otc-payment-footer {
+  grid-row: 3;
+  margin-bottom: 0;
+  padding: 10px 18px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.06);
+  z-index: 3;
+  align-self: stretch;
+  flex-shrink: 0;
+}
+
+.otc-dispensary-page .otc-payment-footer .form-group {
+  margin-bottom: 4px;
+}
+
+.otc-dispensary-page .otc-payment-footer .otc-complete-field {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.otc-dispensary-page .otc-payment-footer .otc-complete-btn {
+  padding: 0.375rem 0.375rem;
+  line-height: 1.5;
+  height: calc(1.5em + 0.75rem + 2px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.otc-receipt-modal-open {
+  overflow: hidden;
+}
+
+.otc-dispensary-page.dark {
+  background: linear-gradient(180deg, #0f172a 0%, #0f172a 120px, #0f172a 100%);
+  color: #e2e8f0;
+}
+
+.otc-dispensary-page.dark .otc-workspace-card {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+}
+
+.otc-dispensary-page.dark .otc-tabs-header {
+  background: #172033;
+  border-bottom-color: #334155;
+}
+
+.otc-dispensary-page.dark .otc-segment-tabs {
+  background: #0f172a;
+}
+
+.otc-dispensary-page.dark .otc-segment-tab {
+  color: #94a3b8;
+}
+
+.otc-dispensary-page.dark .otc-segment-tab.active {
+  background: #334155;
+  color: #93c5fd;
+  box-shadow: none;
+}
+
+.otc-dispensary-page.dark .otc-tab-content {
+  background: #1e293b;
+}
+
+.otc-dispensary-page.dark .otc-sale-form-card {
+  background: #172033;
+  border-color: #334155;
+}
+
+/* Stock metric chips */
+.otc-stock-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+
+.otc-metric-chip {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.otc-metric-chip--accent {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.otc-metric-chip--sell {
+  border-color: #bbf7d0;
+  background: #ecfdf5;
+}
+
+.otc-metric-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.otc-metric-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.otc-metric-chip--accent .otc-metric-value {
+  color: #1d4ed8;
+}
+
+.otc-metric-chip--sell .otc-metric-value {
+  color: #15803d;
+}
+
+.otc-unit-sell-model-field {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  --bs-btn-padding-y: 0;
+  --bs-btn-padding-x: 0;
+  --bs-btn-font-size: 13px;
+}
+
+.otc-unit-sell-model-field app-unit-selling-model-picker {
+  display: inline-flex;
+  width: auto;
+  max-width: 100%;
+}
+
+.otc-unit-sell-model-field ::ng-deep .usm-picker--compact {
+  width: auto;
+  max-width: 100%;
+}
+
+.otc-unit-sell-model-field ::ng-deep .usm-picker--compact .usm-item-dropdown {
+  width: auto;
+  max-width: 100%;
+}
+
+.otc-unit-sell-model-field ::ng-deep .usm-picker--compact .usm-item-dropdown-toggle,
+.otc-unit-sell-model-field ::ng-deep .usm-picker--compact .usm-item-dropdown-toggle.btn,
+.otc-unit-sell-model-field ::ng-deep .usm-picker--compact .usm-item-dropdown-toggle.btn-sm,
+.otc-unit-sell-model-field ::ng-deep .usm-picker--compact .usm-item-dropdown-toggle.dropdown-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: auto;
+  max-width: 100%;
+  min-height: auto !important;
+  height: auto;
+  padding: 6px 12px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  gap: 6px;
+  box-shadow: none !important;
+  background: #fff;
+  color: #0f172a;
+  white-space: nowrap;
+  transition: border-color 0.15s ease;
+}
+
+.otc-unit-sell-model-field ::ng-deep .usm-picker--compact .usm-item-dropdown-toggle:hover,
+.otc-unit-sell-model-field ::ng-deep .usm-picker--compact .usm-item-dropdown-toggle:focus {
+  background: #fff;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.otc-unit-sell-model-field ::ng-deep .usm-picker--compact .usm-chip-label {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.otc-unit-sell-model-field ::ng-deep .usm-picker--compact .usm-item-dropdown-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  color: #0f172a;
+}
+
+.otc-unit-sell-model-field ::ng-deep .usm-picker--compact .usm-item-dropdown-toggle::after {
+  margin-left: 2px;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.otc-unit-sell-model-field ::ng-deep .usm-picker--compact .usm-item-dropdown-menu {
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: min(320px, 92vw) !important;
+  left: 0 !important;
+  right: auto !important;
+}
+
+.otc-dispensary-page.dark .otc-metric-chip {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+.otc-dispensary-page.dark .otc-metric-value {
+  color: #f1f5f9;
+}
+
+/* Buttons */
+.otc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+
+.otc-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.otc-btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.otc-btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+.otc-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+}
+
+.otc-btn-secondary {
+  background: #fff;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.otc-btn-secondary:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.otc-btn-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.otc-btn-success:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.otc-btn-ghost-danger {
+  background: #fff;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.otc-btn-ghost-danger:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.otc-btn-icon {
+  background: #fff;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  padding: 6px 10px;
+}
+
+.otc-btn-icon:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #2563eb;
+}
+
+.otc-dispensary-page.dark .otc-btn-secondary,
+.otc-dispensary-page.dark .otc-btn-icon,
+.otc-dispensary-page.dark .otc-btn-ghost-danger {
+  background: #334155;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+/* Status banner */
+.otc-status-banner {
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.otc-status-banner p {
+  margin: 0;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Toolbar */
+.otc-toolbar {
+  margin-bottom: 12px;
+}
+
+.otc-toolbar-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.otc-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.otc-filter-field--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.otc-filter-field--search {
+  flex: 1 1 180px;
+  min-width: 0;
+  width: auto;
+}
+
+.otc-filter-field--inline .otc-filter-label {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.otc-filter-field--inline .otc-filter-date {
+  width: auto;
+  min-width: 132px;
+}
+
+.otc-filter-field--inline .otc-filter-src-select {
+  width: auto;
+  min-width: 88px;
+}
+
+.otc-filter-field--inline .otc-filter-staff-select {
+  width: auto;
+  min-width: 130px;
+  max-width: 180px;
+}
+
+.otc-orders-staff-cell {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.otc-search-input-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+}
+
+.otc-search-input-wrap .otc-search-input {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  min-width: 0;
+  padding-right: 36px;
+}
+
+.otc-search-input-icon {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: end;
+  margin-right: 10px;
+  color: #94a3b8;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.otc-filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin: 0;
+}
+
+.otc-filter-input {
+  border-radius: 8px !important;
+  border-color: #e2e8f0 !important;
+}
+
+.otc-dispensary-page.dark .otc-search-input-icon {
+  color: #64748b;
+}
+
+@media (max-width: 768px) {
+  .otc-toolbar-filters {
+    align-items: stretch;
+  }
+
+  .otc-filter-field--search {
+    flex: 1 1 100%;
+    order: 3;
+  }
+}
+
+/* Modern tables */
+.otc-dispensary-page .otc-modern-table {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 12px !important;
+  overflow: hidden;
+  background-color: #fff !important;
+  border-color: #e2e8f0 !important;
+  margin-bottom: 0;
+}
+
+.otc-dispensary-page .otc-modern-table thead tr {
+  background-color: #f8fafc !important;
+}
+
+.otc-dispensary-page .otc-modern-table thead th {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 8px !important;
+}
+
+.otc-dispensary-page .otc-modern-table tbody td {
+  border-color: #eef2f7 !important;
+  font-size: 11px !important;
+  padding: 8px !important;
+  vertical-align: middle;
+  background-color: #fff !important;
+}
+
+.otc-dispensary-page .otc-modern-table tbody tr:hover td {
+  background-color: #f8fafc !important;
+}
+
+.otc-dispensary-page .otc-cart-table-wrap,
+.otc-dispensary-page .otc-rx-table-wrap {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.otc-dispensary-page .otc-rx-queue-table-wrap {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.otc-dispensary-page.dark .otc-modern-table {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+}
+
+.otc-dispensary-page.dark .otc-modern-table thead tr,
+.otc-dispensary-page.dark .otc-modern-table thead th {
+  background-color: #334155 !important;
+  border-color: #475569 !important;
+  color: #cbd5e1 !important;
+}
+
+.otc-dispensary-page.dark .otc-modern-table tbody td {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #e2e8f0 !important;
+}
+
+.otc-dispensary-page.dark .otc-modern-table tbody tr:hover td {
+  background-color: #334155 !important;
+}
+
+.otc-dispensary-page.dark .otc-cart-table-wrap,
+.otc-dispensary-page.dark .otc-rx-queue-table-wrap,
+.otc-dispensary-page.dark .otc-rx-table-wrap {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+/* Form controls */
+.otc-dispensary-page .form-control,
+.otc-dispensary-page .form-control-sm {
+  border-radius: 8px;
+  border-color: #e2e8f0;
+}
+
+.otc-dispensary-page .form-control:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.otc-dispensary-page .form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.otc-dispensary-page .otc-item-dropdown-toggle {
+  border-radius: 8px !important;
+  border-color: #e2e8f0 !important;
+  background: #fff;
+}
+
+.otc-dispensary-page .otc-cart-empty {
+  padding: 32px 16px;
+  font-size: 14px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.otc-dispensary-page.dark .otc-payment-footer {
+  background: linear-gradient(180deg, #1e293b 0%, #172033 100%) !important;
+  border-color: #475569;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Drug picker + Add / Clear — always one row */
+.otc-dispensary-page .dropdown-menu {
+  width: 100%;
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.otc-dispensary-page .form-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -8px;
+  margin-left: -8px;
+}
+
+.otc-dispensary-page .form-group {
+  padding-right: 8px;
+  padding-left: 8px;
+  margin-bottom: 8px;
+}
+
+.otc-dispensary-page .otc-item-field-label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: #475569;
+}
+
+.otc-dispensary-page .otc-item-select-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content max-content max-content;
+  gap: 6px;
+  align-items: center;
+  margin-right: 0;
+  margin-bottom: 0;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+.otc-dispensary-page .otc-item-select-row.otc-item-select-row--simple {
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
+}
+
+.otc-dispensary-page .otc-item-select-row .otc-item-field,
+.otc-dispensary-page .otc-item-select-row .otc-add-field,
+.otc-dispensary-page .otc-item-select-row .otc-clear-field,
+.otc-dispensary-page .otc-item-select-row .otc-standard-dose-field {
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.otc-dispensary-page .otc-item-select-row .otc-item-dropdown-toggle {
+  min-height: 32px;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.otc-dispensary-page .otc-item-select-row .otc-item-field {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.otc-dispensary-page .otc-item-dropdown {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.otc-dispensary-page .otc-item-dropdown .dropdown-menu {
+  width: 100%;
+  min-width: 280px;
+  z-index: 1060;
+}
+
+.otc-dispensary-page .otc-item-dropdown-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+}
+
+.otc-dispensary-page .otc-item-dropdown-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.otc-pharmacy-item-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid #e9e9e9;
+  border-radius: 5px;
+  text-align: left;
+  font-size: 12px;
+  padding: 8px 10px;
+  white-space: normal;
+}
+
+.otc-pharmacy-item-option__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.otc-pharmacy-item-option__stock {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2563eb;
+  white-space: nowrap;
+}
+
+.otc-dispensary-page .otc-item-dropdown .dropdown-menu .dropdown-item {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.otc-dispensary-page .otc-item-dropdown .dropdown-menu .dropdown-item.otc-stock-batch-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+}
+
+.otc-stock-batch-option-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+}
+
+.otc-stock-batch-option-name {
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.otc-stock-batch-option-batch {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.otc-stock-batch-option-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.otc-stock-batch-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+}
+
+.otc-stock-batch-badge--store {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.otc-stock-batch-badge--qty {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  padding: 3px 9px;
+  line-height: 1.35;
+}
+
+.otc-dispensary-page.dark .otc-stock-batch-option-batch {
+  color: #94a3b8;
+}
+
+.otc-dispensary-page.dark .otc-stock-batch-badge--store {
+  background: #312e81;
+  color: #c7d2fe;
+}
+
+.otc-dispensary-page.dark .otc-stock-batch-badge--qty {
+  background: #334155;
+  color: #cbd5e1;
+}
+
+.otc-stock-item-card {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid #e8edf4;
+  border-left: 3px solid #64748b;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.otc-stock-item-card--oos {
+  border-left-color: #f87171;
+  background: #fafbfc;
+}
+
+.otc-stock-item-group-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #334155;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.otc-stock-item-card-batches {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.otc-stock-item-group-title {
+  line-height: 1.3;
+}
+
+.otc-stock-out-badge {
+  background: #fee2e2;
+  color: #b91c1c;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.otc-stock-item-oos-note {
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 11px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.otc-dispensary-page.dark .otc-stock-item-card {
+  background: #1e293b;
+  border-color: #475569;
+  border-left-color: #94a3b8;
+}
+
+.otc-dispensary-page.dark .otc-stock-item-card--oos {
+  border-left-color: #f87171;
+  background: #172033;
+}
+
+.otc-dispensary-page.dark .otc-stock-item-group-header {
+  color: #e2e8f0;
+  border-bottom-color: #475569;
+}
+
+.otc-dispensary-page.dark .otc-stock-out-badge {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.otc-dispensary-page.dark .otc-stock-item-oos-note {
+  color: #64748b;
+}
+
+.otc-stock-batch-line {
+  flex: 1 1 160px;
+  min-width: 140px;
+  max-width: 100%;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid #e8edf4;
+  border-left: 2px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.otc-stock-batch-line-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.otc-stock-batch-line-label {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  line-height: 1.3;
+}
+
+.otc-stock-batch-line-pricing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.otc-stock-batch-price {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.otc-stock-batch-price--cost {
+  color: #0f766e;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.otc-stock-batch-price--sell {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.otc-stock-batch-expiry {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.otc-stock-batch-expiry--danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.otc-stock-batch-expiry--warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.otc-stock-batch-expiry--safe {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.otc-stock-batch-expiry--unknown {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.otc-stock-batch-line-stores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.otc-stock-store-pick {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 3px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.otc-stock-store-pick-label {
+  display: inline-block;
+  max-width: 100%;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #3730a3;
+  white-space: normal;
+  word-break: break-word;
+  text-align: left;
+}
+
+.otc-stock-store-pick:hover {
+  border-color: #cbd5e1;
+  background: #fff;
+}
+
+.otc-stock-store-pick--selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
+}
+
+.otc-stock-store-pick--selected .otc-stock-store-pick-label {
+  color: #1d4ed8;
+}
+
+.otc-stock-store-pick--empty {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.otc-stock-store-pick:disabled {
+  pointer-events: none;
+}
+
+.otc-dispensary-page.dark .otc-stock-batch-line {
+  background: #1e293b;
+  border-color: #475569;
+  border-left-color: #64748b;
+}
+
+.otc-dispensary-page.dark .otc-stock-batch-line-label {
+  color: #cbd5e1;
+}
+
+.otc-dispensary-page.dark .otc-stock-batch-price--cost {
+  color: #6ee7b7;
+  background: #064e3b;
+  border-color: #047857;
+}
+
+.otc-dispensary-page.dark .otc-stock-batch-price--sell {
+  color: #93c5fd;
+  background: #1e3a8a;
+  border-color: #2563eb;
+}
+
+.otc-dispensary-page.dark .otc-stock-batch-expiry--danger {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.otc-dispensary-page.dark .otc-stock-batch-expiry--warning {
+  background: #78350f;
+  color: #fde68a;
+}
+
+.otc-dispensary-page.dark .otc-stock-batch-expiry--safe {
+  background: #14532d;
+  color: #bbf7d0;
+}
+
+.otc-dispensary-page.dark .otc-stock-batch-expiry--unknown {
+  background: #334155;
+  color: #cbd5e1;
+}
+
+.otc-dispensary-page.dark .otc-stock-store-pick:hover {
+  border-color: #64748b;
+  background: #334155;
+}
+
+.otc-dispensary-page.dark .otc-stock-store-pick--selected {
+  border-color: #60a5fa;
+  background: #1e3a8a;
+  box-shadow: none;
+}
+
+.otc-dispensary-page.dark .otc-stock-store-pick--selected .otc-stock-store-pick-label {
+  color: #bfdbfe;
+}
+
+.otc-dispensary-page .otc-item-select-row .otc-add-field,
+.otc-dispensary-page .otc-item-select-row .otc-clear-field,
+.otc-dispensary-page .otc-item-select-row .otc-standard-dose-field {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: none;
+  padding-left: 4px;
+  padding-right: 4px;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.otc-dispensary-page .otc-item-select-row .otc-clear-field {
+  padding-left: 10px;
+}
+
+.otc-dispensary-page .otc-item-select-row .otc-add-field .btn,
+.otc-dispensary-page .otc-item-select-row .otc-clear-field .btn {
+  white-space: nowrap;
+}
+
+/* Dosage → Route row: tighter gaps, single line, gap before right edge of card */
+.otc-dispensary-page .otc-prescribing-row {
+  flex-wrap: nowrap;
+  margin-right: 0;
+  margin-left: -4px;
+  margin-top: 4px;
+}
+
+.otc-dispensary-page .otc-prescribing-row .form-group {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+  padding-right: 4px;
+  padding-left: 4px;
+  margin-bottom: 4px;
+}
+
+.otc-dispensary-page .otc-prescribing-row .form-group.col-md-2 {
+  flex: 1.6 1 0;
+}
+
+.otc-dispensary-page .otc-prescribing-row .form-label {
+  margin-bottom: 0.2rem;
+}
+
+.otc-dispensary-page .otc-prescribing-row .form-control {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .otc-dispensary-page .otc-item-select-row {
+    flex-wrap: wrap;
+  }
+
+  .otc-dispensary-page .otc-item-select-row .otc-item-field {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 1200px) {
+  .otc-dispensary-page
+    .form-row:not(.otc-prescribing-row):not(.otc-item-select-row)
+    .form-group.col-md-1,
+  .otc-dispensary-page
+    .form-row:not(.otc-prescribing-row):not(.otc-item-select-row)
+    .form-group.col-md-2,
+  .otc-dispensary-page
+    .form-row:not(.otc-prescribing-row):not(.otc-item-select-row)
+    .form-group.col-md-3 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}
+
+.otc-cart-visit-banner {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: #ecfdf5;
+  border: 1px solid #86efac;
+  font-size: 13px;
+}
+
+.otc-cart-visit-banner--pulse {
+  animation: otc-cart-visit-pulse 1.2s ease-in-out 2;
+}
+
+.otc-cart-scroll--highlight {
+  outline: 2px solid #22c55e;
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+@keyframes otc-cart-visit-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.25);
+  }
+}
+
+.otc-dispensary-page.dark .otc-cart-visit-banner {
+  background: #14532d;
+  border-color: #166534;
+  color: #dcfce7;
+}
+
+.otc-given-radio-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  cursor: pointer;
+}
+
+.otc-given-radio {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid #64748b;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.otc-given-radio::after {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: #16a34a;
+  transform: scale(0);
+}
+
+.otc-given-radio:checked {
+  border-color: #16a34a;
+}
+
+.otc-given-radio:checked::after {
+  transform: scale(1);
+}
+
+.otc-given-radio:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.otc-dispensary-page.dark .otc-given-radio {
+  background: #0f172a;
+  border-color: #94a3b8;
+}
+
+.otc-dispensary-page.dark .otc-given-radio:checked {
+  border-color: #4ade80;
+}
+
+.otc-dispensary-page.dark .otc-given-radio::after {
+  background: #4ade80;
+}
+
+.otc-rx-qty-input::-webkit-outer-spin-button,
+.otc-rx-qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.otc-rx-qty-input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.otc-cart-row-not-given td {
+  opacity: 0.72;
+}
+
+.otc-rx-visit-header {
+  font-size: 13px;
+  width: 100%;
+}
+
+.otc-doctor-prescriptions .hint {
+  font-size: 0.85rem;
+}
+
+/* Items sold tab — toolbar + scrollable table + summary footer */
+.otc-dispensary-page .tab-pane.otc-sold-tab-layout.active {
+  display: flex !important;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.otc-sales-history {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.otc-sales-history-toolbar {
+  flex-shrink: 0;
+}
+
+.otc-sales-history > .text-danger,
+.otc-sales-history > .text-muted {
+  flex-shrink: 0;
+}
+
+.otc-sales-history-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 8px;
+  width: 100%;
+}
+
+.otc-sales-history-table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: auto;
+  overflow: auto;
+  margin-bottom: 0;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.otc-sales-history-table-wrap .otc-orders-table {
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  margin-bottom: 0;
+}
+
+.otc-orders-table col.otc-orders-col-sn { width: 4%; }
+.otc-orders-table col.otc-orders-col-order { width: 14%; }
+.otc-orders-table col.otc-orders-col-date { width: 17%; }
+.otc-orders-table col.otc-orders-col-src { width: 6%; }
+.otc-orders-table col.otc-orders-col-staff { width: 11%; }
+.otc-orders-table col.otc-orders-col-items { width: 6%; }
+.otc-orders-table col.otc-orders-col-cost { width: 12%; }
+.otc-orders-table col.otc-orders-col-sell { width: 12%; }
+.otc-orders-table col.otc-orders-col-details { width: 7%; }
+/* summary col fills remainder */
+.otc-orders-table col.otc-orders-col-summary,
+.otc-orders-table .otc-orders-summary-cell {
+  width: auto;
+  min-width: 0;
+}
+
+.otc-sales-history-table-wrap .otc-orders-table th,
+.otc-sales-history-table-wrap .otc-orders-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-wrap: break-word;
+}
+
+.otc-sales-history-table-wrap .otc-orders-table .itemdata {
+  font-size: smaller;
+  padding: 6px;
+  vertical-align: middle;
+}
+
+.otc-sales-history-table-wrap .otc-orders-table .otc-orders-order-no {
+  font-weight: 600;
+}
+
+.otc-sales-history-table-wrap .otc-orders-table .otc-orders-summary-cell {
+  white-space: nowrap;
+  line-height: 1.35;
+}
+
+.otc-sales-history-table-wrap .otc-orders-table .otc-orders-summary-text {
+  display: inline;
+  white-space: nowrap;
+}
+
+.otc-sales-history-table-wrap .otc-orders-table .otc-date-cell {
+  font-size: 11px;
+  padding: 4px 6px;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.otc-sales-history-table-wrap .otc-orders-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+.otc-sales-history-table-wrap .otc-orders-table thead th::before,
+.otc-sales-history-table-wrap .otc-orders-table thead th::after,
+.otc-receipt-print .otc-receipt-table thead th::before,
+.otc-receipt-print .otc-receipt-table thead th::after,
+.otc-order-details-modal table thead th::before,
+.otc-order-details-modal table thead th::after,
+.otc-dispensary-page .otc-rx-queue-table thead th::before,
+.otc-dispensary-page .otc-rx-queue-table thead th::after {
+  content: none !important;
+  display: none !important;
+  border: none !important;
+}
+
+.otc-dispensary-page.dark .otc-sales-history-table-wrap {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+.otc-sales-history-empty {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.otc-dispensary-page.dark .otc-sales-history-empty {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+.otc-sales-history-footer {
+  flex-shrink: 0;
+  margin-top: 0;
+  padding: 14px 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: none;
+  z-index: 3;
+}
+
+.otc-sales-summary-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 28px;
+}
+
+.otc-sales-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 100px;
+}
+
+.otc-sales-summary-item--profit {
+  padding-left: 20px;
+  border-left: 2px solid #86efac;
+}
+
+.otc-sales-summary-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.otc-sales-summary-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.otc-sales-summary-value--sell {
+  color: #1d4ed8;
+}
+
+.otc-sales-summary-value--positive {
+  color: #15803d;
+}
+
+.otc-sales-summary-value--negative {
+  color: #b91c1c;
+}
+
+.otc-sales-summary-hint {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.otc-dispensary-page.dark .otc-sales-history-footer {
+  background: #1e293b;
+  border-color: #475569;
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.otc-dispensary-page.dark .otc-sales-summary-value {
+  color: #f1f5f9;
+}
+
+.otc-dispensary-page.dark .otc-sales-summary-value--sell {
+  color: #93c5fd;
+}
+
+.otc-dispensary-page.dark .otc-sales-summary-item--profit {
+  border-left-color: #166534;
+}
+
+/* Doctor prescriptions tab — queue + lines + payment */
+.otc-dispensary-page .tab-pane.otc-rx-tab-layout.show,
+.otc-dispensary-page .tab-pane.otc-rx-tab-layout.active {
+  display: flex !important;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.otc-doctor-prescriptions {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+  padding-top: 4px;
+  box-sizing: border-box;
+}
+
+.otc-doctor-prescriptions > .text-danger,
+.otc-doctor-prescriptions > .text-muted,
+.otc-doctor-prescriptions > .otc-rx-lines-header,
+.otc-doctor-prescriptions > .text-muted.small {
+  flex-shrink: 0;
+}
+
+.otc-rx-queue-table-wrap {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  border-radius: 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background-color: transparent;
+}
+
+.otc-doctor-prescriptions:has(.otc-rx-lines-panel) .otc-rx-queue-table-wrap {
+  flex: 0 1 auto;
+  max-height: min(38%, 240px);
+  min-height: 6.5rem;
+}
+
+.otc-rx-queue-table {
+  display: table;
+  width: 100%;
+  min-width: 100%;
+  table-layout: fixed;
+  margin-bottom: 0;
+  cursor: default;
+}
+
+.otc-rx-queue-table col.otc-rx-queue-col-visit {
+  width: 12%;
+}
+
+.otc-rx-queue-table col.otc-rx-queue-col-date {
+  width: 22%;
+}
+
+.otc-rx-queue-table col.otc-rx-queue-col-lines {
+  width: 8%;
+}
+
+.otc-rx-queue-table col.otc-rx-queue-col-status {
+  width: 10%;
+}
+
+.otc-rx-queue-table col.otc-rx-queue-col-action {
+  width: 24%;
+}
+
+.otc-rx-queue-table th.otc-rx-queue-col-visit {
+  width: 12%;
+}
+
+.otc-rx-queue-table th.otc-rx-queue-col-date {
+  width: 22%;
+}
+
+.otc-rx-queue-table th.otc-rx-queue-col-lines {
+  width: 8%;
+  text-align: center;
+}
+
+.otc-rx-queue-table th.otc-rx-queue-col-status {
+  width: 10%;
+  text-align: center;
+}
+
+.otc-rx-queue-table th.otc-rx-queue-col-action {
+  width: 24%;
+  text-align: center;
+}
+
+.otc-rx-queue-status-cell {
+  vertical-align: middle;
+}
+
+.otc-rx-order-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.otc-rx-order-status--pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.otc-rx-order-status--done {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.otc-dispensary-page.dark .otc-rx-order-status--pending {
+  background-color: rgba(245, 158, 11, 0.22);
+  color: #fcd34d;
+}
+
+.otc-dispensary-page.dark .otc-rx-order-status--done {
+  background-color: rgba(16, 185, 129, 0.22);
+  color: #6ee7b7;
+}
+
+.otc-rx-queue-action-cell {
+  text-align: center;
+  vertical-align: middle;
+  overflow: visible !important;
+  position: relative;
+  white-space: nowrap;
+}
+
+.otc-rx-queue-date-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.otc-rx-queue-inline-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.otc-rx-queue-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.otc-rx-queue-action-btn i {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+/* patient col fills remainder */
+.otc-rx-queue-table col.otc-rx-queue-col-patient,
+.otc-rx-queue-table td:first-child {
+  width: auto;
+  min-width: 0;
+}
+
+.otc-rx-queue-row {
+  cursor: pointer;
+}
+
+.otc-rx-queue-row:hover td {
+  background-color: #f1f5f9 !important;
+}
+
+.otc-rx-queue-row--selected td {
+  background-color: #eff6ff !important;
+  font-weight: 500;
+}
+
+.otc-dispensary-page.dark .otc-rx-queue-table-wrap,
+.otc-dispensary-page.dark .otc-rx-queue-table {
+  background-color: transparent;
+}
+
+.otc-dispensary-page.dark .otc-rx-queue-row:hover td {
+  background-color: #334155;
+}
+
+.otc-dispensary-page.dark .otc-rx-queue-row--selected td {
+  background-color: #1e3a8a !important;
+}
+
+.otc-rx-lines-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.otc-rx-lines-header {
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.otc-rx-lines-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.otc-rx-payment-footer {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+
+.otc-rx-table-wrap {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  border-radius: 12px;
+  overflow-x: auto;
+  background-color: transparent;
+}
+
+.otc-rx-table.otc-cart-table--prescribing {
+  min-width: 100%;
+}
+
+.otc-dispensary-page .otc-rx-table.otc-cart-table thead th.otc-cart-given-head,
+.otc-dispensary-page .otc-rx-table.otc-cart-table col.otc-cart-col-given,
+.otc-dispensary-page .otc-rx-table.otc-cart-table td.otc-cart-given-cell {
+  width: 7.25rem;
+  min-width: 7.25rem;
+  max-width: none;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.otc-rx-table.otc-cart-table--prescribing col.otc-cart-col-sn { width: 3%; }
+.otc-rx-table.otc-cart-table--prescribing col.otc-cart-col-dosage { width: 8%; }
+.otc-rx-table.otc-cart-table--prescribing col.otc-cart-col-frequency { width: 7%; }
+.otc-rx-table.otc-cart-table--prescribing col.otc-cart-col-duration { width: 7%; }
+.otc-rx-table.otc-cart-table--prescribing col.otc-cart-col-qty { width: 6.5%; }
+.otc-rx-table.otc-cart-table--prescribing col.otc-cart-col-cost,
+.otc-rx-table.otc-cart-table--prescribing col.otc-cart-col-sell { width: 5.5%; }
+.otc-rx-table.otc-cart-table--prescribing col.otc-cart-col-tt-cost,
+.otc-rx-table.otc-cart-table--prescribing col.otc-cart-col-tt-sell { width: 6%; }
+.otc-rx-table.otc-cart-table--prescribing col.otc-cart-col-treatment {
+  width: 34%;
+}
+
+.otc-rx-table.otc-cart-table--prescribing .otc-cart-treatment-cell {
+  width: 34%;
+  max-width: none;
+  min-width: 12rem;
+}
+
+.otc-rx-qty-cell {
+  vertical-align: middle;
+}
+
+.otc-rx-qty-input {
+  width: 100%;
+  min-width: 56px;
+  max-width: 88px;
+  padding: 2px 6px;
+  font-size: smaller;
+  text-align: center;
+}
+
+.otc-rx-qty-hint {
+  display: block;
+  font-size: 10px;
+  line-height: 1.25;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.otc-rx-sundry-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #065f46;
+  background: #d1fae5;
+  vertical-align: middle;
+}
+
+.otc-rx-queue-table th,
+.otc-rx-queue-table td,
+.otc-rx-table th,
+.otc-rx-table td {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.otc-dispensary-page.dark .otc-rx-table-wrap,
+.otc-dispensary-page.dark .otc-rx-queue-table-wrap {
+  background-color: #1e293b;
+}
+
+.otc-dispensary-page.dark .otc-rx-table.otc-cart-table,
+.otc-dispensary-page.dark .otc-rx-queue-table.otc-cart-table {
+  background-color: #1e293b !important;
+}
+
+.otc-dispensary-page.dark .otc-rx-table.otc-cart-table thead tr,
+.otc-dispensary-page.dark .otc-rx-queue-table.otc-cart-table thead tr {
+  background-color: #334155 !important;
+}
+
+.otc-dispensary-page.dark .otc-rx-table.otc-cart-table thead th,
+.otc-dispensary-page.dark .otc-rx-queue-table.otc-cart-table thead th {
+  background-color: #334155 !important;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+.otc-dispensary-page.dark .otc-rx-table.otc-cart-table td,
+.otc-dispensary-page.dark .otc-rx-queue-table.otc-cart-table td {
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+.sale-source-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+.sale-source-otc {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.sale-source-rx {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.dark .sale-source-otc {
+  background: #1e3a8a;
+  color: #93c5fd;
+}
+
+.dark .sale-source-rx {
+  background: #14532d;
+  color: #86efac;
+}
+
+.otc-order-details-btn {
+  color: #2563eb;
+  text-decoration: none;
+  line-height: 1;
+}
+
+.otc-order-details-btn:hover {
+  color: #1d4ed8;
+}
+
+.otc-order-details-meta {
+  font-size: 13px;
+  color: #475569;
+}
+
+.otc-order-lines-scroll {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.otc-order-details-modal .modal-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.otc-delete-sold-line-modal {
+  width: min(480px, 92vw);
+  max-height: none;
+  overflow: visible;
+}
+
+.otc-delete-sold-line-message {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.otc-delete-sold-line-note {
+  margin: 0 0 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.otc-dispensary-page.dark .otc-delete-sold-line-message {
+  color: #e2e8f0;
+}
+
+.otc-dispensary-page.dark .otc-delete-sold-line-note {
+  color: #94a3b8;
+}
+
+.otc-sales-history .otc-history-drug-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+}
+
+.otc-sales-history .otc-history-drug-search .form-control {
+  min-width: 0;
+  width: 100%;
+}
+
+.otc-sales-history tfoot td {
+  border-top: 2px solid #94a3b8;
+  font-weight: 700;
+}
+
+.otc-receipt-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10500;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.otc-receipt-modal.show {
+  display: block !important;
+}
+
+.otc-receipt-modal + .modal-backdrop.show {
+  position: fixed;
+  inset: 0;
+  z-index: 10499;
+}
+
+.otc-receipt-modal .otc-receipt-dialog {
+  width: 100%;
+  max-width: 520px;
+  margin: 1rem auto;
+  max-height: min(72vh, 640px);
+}
+
+.otc-receipt-modal .otc-receipt-dialog .modal-content.otc-receipt-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: min(72vh, 640px);
+  overflow: hidden;
+}
+
+.otc-receipt-modal .otc-receipt-dialog .modal-header {
+  flex-shrink: 0;
+}
+
+.otc-receipt-modal .otc-receipt-dialog .modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  background: #f8fafc;
+}
+
+.otc-receipt-modal .otc-receipt-dialog .modal-footer {
+  flex-shrink: 0;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  padding: 0.65rem 1rem;
+  border-top: 1px solid #dee2e6;
+  background: #fff;
+}
+
+.otc-receipt-print {
+  width: 100%;
+  padding: 1rem 1.15rem 1.15rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #111;
+}
+
+.otc-receipt-print .otc-receipt-letterhead {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.otc-receipt-print .otc-receipt-logo {
+  max-width: 120px;
+  max-height: 72px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 6px;
+}
+
+.otc-receipt-print .otc-receipt-facility {
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 4px;
+}
+
+.otc-receipt-print .otc-receipt-meta {
+  text-align: center;
+  font-size: 12px;
+  margin: 0 0 6px;
+  color: #444;
+}
+
+.otc-receipt-print .otc-receipt-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+}
+
+.otc-receipt-print.otc-receipt-print--simple .otc-receipt-table th:first-child,
+.otc-receipt-print.otc-receipt-print--simple .otc-receipt-table td:first-child {
+  width: 55%;
+}
+
+.otc-receipt-print .otc-receipt-table th,
+.otc-receipt-print .otc-receipt-table td {
+  padding: 4px 2px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: top;
+}
+
+.otc-receipt-print .otc-receipt-table th {
+  font-size: 11px;
+  border-bottom: 1px solid #333;
+}
+
+.otc-receipt-print .otc-receipt-table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.otc-receipt-print .otc-receipt-totals {
+  border-top: 1px dashed #333;
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.otc-receipt-print .otc-receipt-totals div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 3px 0;
+}
+
+.otc-receipt-print .otc-receipt-notes {
+  font-size: 11px;
+  margin: 8px 0 0;
+  color: #555;
+}
+
+.otc-receipt-print .otc-receipt-thanks {
+  text-align: center;
+  margin: 12px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.otc-dispensary-page.dark .otc-receipt-print {
+  color: #e2e8f0;
+}
+
+.otc-dispensary-page.dark .otc-receipt-print .otc-receipt-meta {
+  color: #94a3b8;
+}
+
+.otc-dispensary-page.dark .otc-receipt-print .otc-receipt-table th,
+.otc-dispensary-page.dark .otc-receipt-print .otc-receipt-table td {
+  border-bottom-color: #334155;
+}
+
+/* Queue patient modal — matches patient visit queue layout */
+.otc-queue-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100003;
+  padding: 20px;
+}
+
+.otc-queue-modal {
+  width: min(860px, 96vw);
+  max-height: 90vh;
+  overflow: auto;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22);
+  padding: 16px 18px 14px;
+}
+
+.otc-queue-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.otc-queue-modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.otc-queue-patient-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.otc-queue-patient-value {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.otc-queue-error {
+  color: #dc2626;
+  margin: 8px 0;
+}
+
+.otc-queue-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.otc-queue-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.otc-queue-form-grid select,
+.otc-queue-form-grid textarea {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14px;
+  background: #ffffff;
+}
+
+.otc-queue-form-grid .full {
+  grid-column: 1 / -1;
+}
+
+.otc-queue-checkboxes {
+  display: flex;
+  gap: 22px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.otc-queue-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.otc-queue-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.otc-dispensary-page.dark .otc-queue-modal {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+.otc-dispensary-page.dark .otc-queue-form-grid label {
+  color: #e2e8f0;
+}
+
+.otc-dispensary-page.dark .otc-queue-form-grid select,
+.otc-dispensary-page.dark .otc-queue-form-grid textarea {
+  background: #0f172a;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+/* Delete sold line confirm — same overlay/modal shell as queue patient */
+.otc-delete-sold-line-modal {
+  width: min(480px, 96vw);
+}
+
+.otc-delete-sold-line-message {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #0f172a;
+}
+
+.otc-delete-sold-line-note {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.otc-dispensary-page.dark .otc-delete-sold-line-message {
+  color: #e2e8f0;
+}
+
+.otc-dispensary-page.dark .otc-delete-sold-line-note {
+  color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .otc-dispensary-page {
+    padding: 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    min-width: 0;
+  }
+
+  .otc-dispensary-page .otc-tabs-header,
+  .otc-segment-tabs {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .otc-segment-tab {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .otc-dispensary-page .form-row.otc-prescribing-row,
+  .otc-dispensary-page .otc-item-select-row {
+    flex-wrap: wrap;
+  }
+
+  .otc-dispensary-page .otc-prescribing-row .form-group,
+  .otc-dispensary-page .otc-prescribing-row .form-group.col-md-2,
+  .otc-dispensary-page .otc-item-select-row .otc-item-field {
+    flex: 1 1 100%;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .otc-dispensary-page .otc-cart-table {
+    min-width: 640px;
+  }
+}
+
+/* Prescriptions tab v2 — two separate tables, scrollable pane (fixes collapsed/hidden tables) */
+.otc-dispensary-page .otc-tab-content > .tab-pane.otc-rx-tab-v2.show,
+.otc-dispensary-page .otc-tab-content > .tab-pane.otc-rx-tab-v2.active,
+.otc-dispensary-page .otc-tab-content > .tab-pane.otc-rx-modern-tab.active {
+  display: block !important;
+  overflow: hidden !important;
+  min-height: 0;
+  height: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.otc-rx-tab-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-height: min-content;
+  overflow: visible;
+  padding-bottom: 16px;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
+
+.otc-rx-v2-section {
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.otc-rx-v2-section-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #1e293b;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+
+.otc-rx-v2-section-title--sub {
+  font-size: 0.875rem;
+  margin-bottom: 6px;
+}
+
+.otc-rx-v2-section-subtitle {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.otc-rx-v2-table-shell {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow-x: auto;
+  overflow-y: visible;
+  background: #fff;
+  min-height: 4rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.otc-rx-v2-visits-table,
+.otc-rx-v2-drugs-table,
+.otc-rx-v2-sundries-table {
+  width: 100%;
+  margin-bottom: 0 !important;
+  table-layout: auto;
+}
+
+.otc-rx-v2-visits-table thead th,
+.otc-rx-v2-drugs-table thead th,
+.otc-rx-v2-sundries-table thead th {
+  background: #f8fafc;
+  font-weight: 600;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.otc-rx-v2-visits-table td,
+.otc-rx-v2-drugs-table td,
+.otc-rx-v2-sundries-table td {
+  vertical-align: middle;
+  font-size: 0.85rem;
+}
+
+.otc-rx-v2-patient {
+  min-width: 140px;
+}
+
+.otc-rx-v2-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.otc-rx-v2-row-selected td {
+  background-color: #eff6ff;
+}
+
+.otc-rx-v2-row-expanded td {
+  background-color: #eff6ff;
+  border-bottom: none !important;
+}
+
+.otc-rx-v2-detail-row td {
+  padding: 0 !important;
+  border-top: none !important;
+  background: #f8fbff;
+}
+
+.otc-rx-v2-detail-cell {
+  vertical-align: top;
+}
+
+.otc-rx-v2-detail-panel {
+  padding: 12px;
+  border-top: 2px solid #3b82f6;
+}
+
+.otc-rx-v2-detail-panel-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1e40af;
+  margin-bottom: 10px;
+}
+
+.otc-dispensary-page.dark .otc-rx-v2-detail-row td {
+  background: #0f172a;
+}
+
+.otc-dispensary-page.dark .otc-rx-v2-detail-panel {
+  border-top-color: #3b82f6;
+}
+
+.otc-dispensary-page.dark .otc-rx-v2-detail-panel-title {
+  color: #93c5fd;
+}
+
+.otc-rx-v2-visit-row {
+  cursor: pointer;
+}
+
+.otc-rx-v2-visit-row:hover td {
+  background-color: #f1f5f9;
+}
+
+.otc-rx-v2-banner {
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #fff;
+}
+
+.otc-rx-v2-drugs {
+  min-height: 12rem;
+  padding: 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #f8fbff;
+}
+
+.otc-rx-v2-drugs-shell {
+  min-height: 8rem;
+}
+
+.otc-dispensary-page.dark .otc-rx-v2-drugs {
+  border-color: #1e3a5f;
+  background: #0f172a;
+}
+
+.otc-dispensary-page.dark .otc-rx-v2-section-title {
+  color: #f1f5f9;
+}
+
+.otc-dispensary-page.dark .otc-rx-v2-section-subtitle {
+  color: #94a3b8;
+}
+
+.otc-dispensary-page.dark .otc-rx-v2-table-shell {
+  border-color: #334155;
+  background: #0f172a;
+}
+
+.otc-dispensary-page.dark .otc-rx-v2-visits-table thead th,
+.otc-dispensary-page.dark .otc-rx-v2-drugs-table thead th,
+.otc-dispensary-page.dark .otc-rx-v2-sundries-table thead th {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+.otc-dispensary-page.dark .otc-rx-v2-row-selected td {
+  background-color: #1e3a5f;
+}
+
+/* Prescriptions tab — modern split-panel studio UI */
+.rx-studio {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+  padding: 4px 2px 8px;
+  pointer-events: auto;
+}
+
+.rx-studio-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.rx-studio-toolbar-left { min-width: 0; }
+
+.rx-studio-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.rx-studio-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.rx-studio-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rx-studio-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: min(100%, 260px);
+  padding: 0 12px;
+  height: 38px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #64748b;
+}
+
+.rx-studio-search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 0.875rem;
+  color: #0f172a;
+}
+
+.rx-studio-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.rx-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-left-width: 4px;
+}
+
+.rx-stat-card--pending { border-left-color: #f59e0b; }
+.rx-stat-card--lines { border-left-color: #3b82f6; }
+.rx-stat-card--selected { border-left-color: #10b981; }
+
+.rx-stat-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.rx-stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.rx-stat-value--text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rx-studio-alert {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.rx-studio-alert--error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.rx-studio-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px 16px;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.rx-studio-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #dbeafe;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: rx-spin 0.8s linear infinite;
+}
+
+@keyframes rx-spin { to { transform: rotate(360deg); } }
+.rx-spin { animation: rx-spin 0.8s linear infinite; }
+
+.rx-studio-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.rx-studio-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rx-visit-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.rx-visit-card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.08);
+}
+
+.rx-visit-card--active {
+  border-color: #3b82f6;
+  background: linear-gradient(180deg, #eff6ff 0%, #fff 100%);
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.12);
+}
+
+.rx-visit-card--done { opacity: 0.82; }
+
+.rx-visit-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.rx-visit-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 700;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.rx-visit-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.rx-visit-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.rx-visit-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rx-visit-queue-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.rx-visit-queue-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.rx-visit-queue-btn i {
+  font-size: 0.85rem;
+}
+
+.otc-dispensary-page.dark .rx-visit-queue-btn {
+  background: #1e3a5f;
+  border-color: #3b82f6;
+  color: #93c5fd;
+}
+
+.otc-dispensary-page.dark .rx-visit-queue-btn:hover {
+  background: #1e40af;
+}
+
+.rx-visit-visit { font-size: 0.78rem; color: #64748b; }
+
+.rx-visit-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.rx-visit-badge--lg { font-size: 0.75rem; padding: 5px 10px; }
+
+.rx-visit-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.rx-visit-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rx-visit-lines {
+  font-weight: 600;
+  color: #3b82f6;
+  white-space: nowrap;
+}
+
+.rx-studio-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rx-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.rx-detail-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.rx-detail-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.rx-detail-dot { margin: 0 4px; }
+
+.rx-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rx-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rx-detail-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rx-detail-section-head-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.rx-detail-section-head h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.rx-detail-inline-meta {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: #64748b;
+  min-width: 0;
+}
+
+.rx-detail-inline-name {
+  font-weight: 600;
+  color: #334155;
+}
+
+.rx-detail-dot {
+  color: #94a3b8;
+}
+
+.rx-visit-badge--inline {
+  margin-left: 2px;
+}
+
+.rx-detail-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.rx-detail-muted {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.rx-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fafbfc;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rx-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.rx-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.rx-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: middle;
+  color: #0f172a;
+}
+
+.rx-table tbody tr:hover td { background: #f8fafc; }
+
+.rx-checkout {
+  margin-top: auto;
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+
+.rx-checkout-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.rx-checkout-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  min-width: 0;
+}
+
+.rx-checkout-field span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.rx-checkout-field strong {
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.rx-checkout-field--wide { grid-column: span 2; }
+
+.rx-checkout-input {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.875rem;
+  color: #0f172a;
+}
+
+.rx-checkout-submit { height: 38px; align-self: end; }
+
+.rx-checkout-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.rx-checkout-actions .rx-checkout-submit {
+  flex: 1 1 220px;
+  height: auto;
+  min-height: 42px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+  padding: 8px 12px;
+}
+
+.rx-studio-btn--secondary {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.rx-studio-btn--secondary:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.rx-studio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease, background 0.15s ease;
+}
+
+.rx-studio-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.rx-studio-btn--ghost {
+  background: #fff;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+.rx-studio-btn--ghost:hover:not(:disabled) { background: #f8fafc; }
+
+.rx-studio-btn--primary { background: #3b82f6; color: #fff; }
+.rx-studio-btn--primary:hover:not(:disabled) { filter: brightness(0.96); }
+.rx-studio-btn--success { background: #10b981; color: #fff; }
+.rx-studio-btn--success:hover:not(:disabled) { filter: brightness(0.96); }
+
+.rx-studio-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 16px;
+  text-align: center;
+  color: #64748b;
+}
+
+.rx-studio-empty i { font-size: 2rem; color: #94a3b8; }
+.rx-studio-empty--compact { padding: 20px 12px; }
+.rx-studio-empty--detail { flex: 1; min-height: 280px; }
+.rx-studio-empty--detail h3 { margin: 0; font-size: 1rem; color: #334155; }
+.rx-studio-empty--detail p { margin: 0; max-width: 320px; font-size: 0.875rem; }
+
+.otc-dispensary-page.dark .rx-studio-title,
+.otc-dispensary-page.dark .rx-detail-title,
+.otc-dispensary-page.dark .rx-stat-value,
+.otc-dispensary-page.dark .rx-visit-name,
+.otc-dispensary-page.dark .rx-table tbody td,
+.otc-dispensary-page.dark .rx-checkout-field strong { color: #f1f5f9; }
+
+.otc-dispensary-page.dark .rx-studio-subtitle,
+.otc-dispensary-page.dark .rx-detail-subtitle,
+.otc-dispensary-page.dark .rx-stat-label,
+.otc-dispensary-page.dark .rx-detail-muted,
+.otc-dispensary-page.dark .rx-visit-visit,
+.otc-dispensary-page.dark .rx-visit-card-bottom,
+.otc-dispensary-page.dark .rx-studio-empty { color: #94a3b8; }
+
+.otc-dispensary-page.dark .rx-studio-search,
+.otc-dispensary-page.dark .rx-stat-card,
+.otc-dispensary-page.dark .rx-visit-card,
+.otc-dispensary-page.dark .rx-studio-detail,
+.otc-dispensary-page.dark .rx-table-wrap,
+.otc-dispensary-page.dark .rx-checkout-input {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.otc-dispensary-page.dark .rx-studio-search-input { color: #f1f5f9; }
+
+.otc-dispensary-page.dark .rx-visit-card--active {
+  background: linear-gradient(180deg, #1e3a5f 0%, #0f172a 100%);
+  border-color: #3b82f6;
+}
+
+.otc-dispensary-page.dark .rx-visit-avatar {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+
+.otc-dispensary-page.dark .rx-table thead th {
+  background: #1e293b;
+  color: #cbd5e1;
+  border-bottom-color: #334155;
+}
+
+.otc-dispensary-page.dark .rx-table tbody td { border-bottom-color: #334155; }
+
+.otc-dispensary-page.dark .rx-checkout {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-color: #334155;
+}
+
+.otc-dispensary-page.dark .rx-studio-btn--ghost {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+@media (max-width: 992px) {
+  .rx-studio-layout {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .rx-studio-queue { max-height: 240px; flex-shrink: 0; }
+  .rx-checkout-grid { grid-template-columns: 1fr 1fr; }
+  .rx-checkout-field--wide,
+  .rx-checkout-submit { grid-column: span 2; }
+}
+
+@media (max-width: 576px) {
+  .rx-checkout-grid { grid-template-columns: 1fr; }
+  .rx-checkout-field--wide,
+  .rx-checkout-submit { grid-column: span 1; }
+}

@@ -1,0 +1,129 @@
+<div class="expense-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div>
+      <h1><i class="bi bi-folder2-open"></i> Expense Categories</h1>
+      <p class="subtitle">Organize hospital spending with clear category groups.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="loadCategories()" [disabled]="isLoading">
+        <i class="bi bi-arrow-repeat"></i> Refresh
+      </button>
+      <button class="btn-primary" (click)="openCreateModal()">
+        <i class="bi bi-folder-plus"></i> New Category
+      </button>
+    </div>
+  </div>
+
+  <div class="breadcrumb-row">
+    <a routerLink="/overview/expenses"><i class="bi bi-receipt"></i> Expenses</a>
+    <span class="sep">/</span>
+    <a routerLink="/overview/expense-accounts"><i class="bi bi-wallet2"></i> Accounts</a>
+    <span class="sep">/</span>
+    <span class="current"><i class="bi bi-folder2-open"></i> Categories</span>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card accent-blue">
+      <i class="bi bi-folder"></i>
+      <div>
+        <div class="stat-value">{{ categories.length }}</div>
+        <div class="stat-label">Total Categories</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="alert success" *ngIf="responseMessage">{{ responseMessage }}</p>
+  <p class="alert error" *ngIf="responseError">{{ responseError }}</p>
+
+  <div class="surface">
+    <div class="surface-head">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Search by name or description..." />
+      </div>
+      <div class="count-pill">{{ filteredCategories.length }} found</div>
+    </div>
+
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading categories...</p>
+    </div>
+
+    <div *ngIf="!isLoading" class="table-wrap">
+      <table class="data-table" *ngIf="filteredCategories.length; else emptyState">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Category Name</th>
+            <th>Description</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of filteredCategories; let i = index">
+            <td class="mono">{{ item.id }}</td>
+            <td class="cell-name">{{ item.categoryName }}</td>
+            <td class="cell-desc">{{ item.description || '—' }}</td>
+            <td>{{ formatDate(item.dateOfCategoryCreation) }}</td>
+            <td class="actions-cell">
+              <button class="btn-icon edit" title="Edit" (click)="openEditModal(item)">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button class="btn-icon danger" title="Delete" (click)="confirmDelete(item)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #emptyState>
+        <div class="empty-state">
+          <i class="bi bi-folder"></i>
+          <p>No expense categories found. Create one to get started.</p>
+          <button class="btn-primary" (click)="openCreateModal()">Create first category</button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>
+
+<!-- Create / Edit Category Modal -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="closeModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3><i class="bi bi-folder-plus"></i> {{ editingCategory ? 'Edit Category' : 'New Expense Category' }}</h3>
+      <button class="modal-close" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="form-grid">
+      <div class="form-field">
+        <label>Category Name</label>
+        <input class="form-control" type="text" [(ngModel)]="categoryForm.categoryName" placeholder="e.g. Utilities, Transport" />
+      </div>
+      <div class="form-field">
+        <label>Description (optional)</label>
+        <textarea class="form-control" rows="3" [(ngModel)]="categoryForm.description" placeholder="Brief description of this category"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="closeModal()" [disabled]="isSaving">Cancel</button>
+      <button class="btn-primary" (click)="saveCategory()" [disabled]="isSaving">
+        {{ isSaving ? 'Saving...' : (editingCategory ? 'Update Category' : 'Save Category') }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" *ngIf="showDeleteConfirm" (click)="closeDeleteModal()">
+  <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+    <h3>Delete category?</h3>
+    <p class="delete-desc">This will permanently remove <strong>{{ deleteTarget?.categoryName }}</strong>. Any accounts under this category may also be affected.</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="closeDeleteModal()" [disabled]="isSaving">Cancel</button>
+      <button class="btn-danger" (click)="deleteCategory()" [disabled]="isSaving">
+        {{ isSaving ? 'Deleting...' : 'Delete' }}
+      </button>
+    </div>
+  </div>
+</div>

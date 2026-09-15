@@ -1,0 +1,291 @@
+<!-- Delete Confirmation Modal -->
+<div class="delete-confirm-modal-overlay" *ngIf="showDeleteConfirmModal" (click)="closeDeleteConfirmModal()">
+  <div class="delete-confirm-modal-container" (click)="$event.stopPropagation()">
+    <div class="delete-confirm-modal">
+      <div class="delete-confirm-modal-header">
+        <div class="delete-confirm-icon">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <h2 class="delete-confirm-title">Delete Store</h2>
+        <button type="button" class="delete-confirm-close" (click)="closeDeleteConfirmModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="delete-confirm-modal-body">
+        <p class="delete-confirm-message">
+          Are you sure you want to delete <strong>"{{ storeToDelete?.name || 'this store' }}"</strong>?
+        </p>
+        <p class="delete-confirm-warning">
+          <i class="bi bi-info-circle"></i>
+          This action cannot be undone. All data associated with this store will be permanently deleted.
+        </p>
+      </div>
+
+      <div class="delete-confirm-modal-actions">
+        <button type="button" 
+                class="delete-confirm-btn-cancel" 
+                (click)="closeDeleteConfirmModal()"
+                [disabled]="isButtonDisabled">
+          Cancel
+        </button>
+        <button type="button" 
+                class="delete-confirm-btn-delete" 
+                (click)="confirmDelete()"
+                [disabled]="isButtonDisabled">
+          <i class="bi bi-trash"></i>
+          Delete Store
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Store Modal -->
+<div class="store-modal-overlay" id="storeModal" *ngIf="!isCollapsedNewStore">
+  <div class="store-modal-container">
+    <div class="store-modal">
+      <div class="store-modal-header">
+        <h2 class="store-modal-title">
+          <i class="bi" [ngClass]="isEditingStore ? 'bi-pencil-square' : 'bi-shop'"></i>
+          {{ saveButtonStatus }}
+        </h2>
+        <button type="button" class="store-modal-close" (click)="closeStoreModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="store-modal-body">
+        <form #storeForm="ngForm" (ngSubmit)="saveStore(storeForm.value)">
+          <div class="store-form-grid">
+            <div class="store-form-field full-width">
+              <label for="name" class="store-form-label">
+                Store Name <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     [(ngModel)]="currentStore.name" 
+                     name="name" 
+                     class="store-form-input" 
+                     id="name" 
+                     placeholder="Enter store name" 
+                     required>
+            </div>
+
+            <div class="store-form-field full-width">
+              <label for="location" class="store-form-label">
+                Location <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     [(ngModel)]="currentStore.location" 
+                     name="location" 
+                     class="store-form-input" 
+                     id="location" 
+                     placeholder="Enter store location">
+            </div>
+
+            <div class="store-form-field full-width">
+              <label for="description" class="store-form-label">Description</label>
+              <textarea [(ngModel)]="currentStore.description" 
+                        name="description" 
+                        class="store-form-textarea" 
+                        id="description" 
+                        placeholder="Additional notes or description about the store"
+                        rows="3"></textarea>
+            </div>
+
+            <div class="store-form-field full-width">
+              <label class="store-form-label">
+                <input type="checkbox" 
+                       [(ngModel)]="currentStore.defaultStatus" 
+                       name="defaultStatus" 
+                       id="defaultStatus"
+                       class="store-form-checkbox">
+                <span class="checkbox-label">Set as Default Store</span>
+              </label>
+              <p class="checkbox-hint">When enabled, this store will be set as the default store and all other stores will be set to non-default.</p>
+            </div>
+          </div>
+
+          <div *ngIf="showDivAddToDataBaseNewStore" class="store-form-message" [ngClass]="{'success': responseColor === 'rgb(11, 155, 112)', 'error': responseColor === 'rgb(238, 16, 16)'}">
+            <i class="bi" [ngClass]="responseColor === 'rgb(11, 155, 112)' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>
+            {{ responseMessage }}
+          </div>
+
+          <div *ngIf="showDivUpdatedLoaderNewStore" class="store-form-loading">
+            <div class="store-loader"></div>
+            <p>{{ isEditingStore ? 'Updating store...' : 'Saving store...' }}</p>
+          </div>
+
+          <div class="store-modal-actions">
+            <button type="button" 
+                    class="store-btn-secondary" 
+                    (click)="closeStoreModal()"
+                    [disabled]="isButtonDisabled">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="store-btn-primary" 
+                    [disabled]="isButtonDisabled">
+              <span *ngIf="!showDivUpdatedLoaderNewStore">
+                <i class="bi bi-save"></i>
+                {{ saveButtonStatus }}
+              </span>
+              <span *ngIf="showDivUpdatedLoaderNewStore" class="button-loading">
+                <span class="spinner-small"></span>
+                {{ isEditingStore ? 'Updating...' : 'Saving...' }}
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="store-management-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-shop"></i>
+        Store Management
+      </h2>
+      <p class="page-subtitle">Manage your stores and locations</p>
+    </div>
+    
+    <div class="header-right">
+      <button class="add-store-btn" 
+              type="button"
+              (click)="openStoreModal()">
+        <i class="bi bi-plus-circle-fill"></i>
+        Add New Store
+      </button>
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" 
+               [(ngModel)]="searchQuery" 
+               placeholder="Search stores...">
+      </div>
+      
+      <select class="filter-select" [(ngModel)]="selectedColumn">
+        <option value="all">All Fields</option>
+        <option value="name">Store Name</option>
+        <option value="location">Location</option>
+        <option value="description">Description</option>
+        <option value="defaultStatus">Status</option>
+      </select>
+
+      <div class="dropdown">
+        <button class="action-btn" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-download"></i>
+          Export
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li (click)="exportToExcel()" class="dropdown-item">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+          </li>
+          <li (click)="downloadPdf()" class="dropdown-item">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="bi bi-shop"></i>
+      </div>
+      <div class="stat-info">
+        <div class="stat-value">{{ storeList.length }}</div>
+        <div class="stat-label">Total Stores</div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isLoadingService" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading stores data...</p>
+  </div>
+
+  <div *ngIf="showDivUpdatedOut" class="alert" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div class="table-container" *ngIf="!isLoadingService">
+    <div class="table-wrapper" #htmlData>
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>SN</th>
+            <th>Store Name</th>
+            <th>Location</th>
+            <th>Description</th>
+            <th>Default Status</th>
+            <th>Creation Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let store of filteredStoreList | paginate: { itemsPerPage: itemsPerPage, currentPage: page }; let i = index">
+            <td>
+              <span class="shelf-number">{{ i + 1 }}</span>
+            </td>
+            <td>
+              <div class="item-details">
+                <div class="item-title">{{ store.name || 'N/A' }}</div>
+              </div>
+            </td>
+            <td>
+              <span class="location-text">{{ store.location || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="description-text">{{ store.description || 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="{'active': store.defaultStatus === 'true' || store.defaultStatus === true, 'inactive': store.defaultStatus !== 'true' && store.defaultStatus !== true}">
+                {{ (store.defaultStatus === 'true' || store.defaultStatus === true) ? 'Default' : 'Not Default' }}
+              </span>
+            </td>
+            <td>
+              <span class="date-text">{{ store.creationDate || 'N/A' }}</span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon edit" title="Edit Store" (click)="editStore(store)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn-icon delete" title="Delete Store" (click)="deleteStore(store)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredStoreList.length === 0">
+            <td colspan="7" class="no-data">
+              <i class="bi bi-inbox"></i>
+              <p>No stores found</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-wrapper">
+      <div class="pagination-info">
+        Showing {{ (page - 1) * itemsPerPage + 1 }} - {{ page * itemsPerPage > filteredStoreList.length ? filteredStoreList.length : page * itemsPerPage }} of {{ filteredStoreList.length }} stores
+      </div>
+      <pagination-controls (pageChange)="page = $event"></pagination-controls>
+      <div class="pagination-size">
+        <select [(ngModel)]="itemsPerPage" class="page-size-select">
+          <option [ngValue]="10">10 per page</option>
+          <option [ngValue]="15">15 per page</option>
+          <option [ngValue]="25">25 per page</option>
+          <option [ngValue]="50">50 per page</option>
+          <option [ngValue]="100">100 per page</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>

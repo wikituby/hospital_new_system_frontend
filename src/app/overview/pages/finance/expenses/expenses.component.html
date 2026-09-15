@@ -1,0 +1,424 @@
+<div class="expenses-component-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-receipt"></i>
+        Expense Management
+      </h1>
+      <p class="page-subtitle">
+        Configure categories and accounts, then record hospital expenses
+      </p>
+    </div>
+    <div class="header-right">
+      <button class="btn-secondary" (click)="loadAll()" [disabled]="isLoading">
+        <i class="bi bi-arrow-repeat"></i>
+        Refresh
+      </button>
+      <button class="btn-secondary" *ngIf="activeTab === 'categories'" (click)="openCategoryModal()">
+        <i class="bi bi-folder-plus"></i>
+        New Category
+      </button>
+      <button class="btn-secondary" *ngIf="activeTab === 'accounts'" (click)="openAccountModal()">
+        <i class="bi bi-wallet2"></i>
+        New Account
+      </button>
+      <button class="btn-primary" *ngIf="activeTab === 'transactions'" (click)="openTransactionModal()">
+        <i class="bi bi-plus-circle"></i>
+        New Expense
+      </button>
+    </div>
+  </div>
+
+  <p class="setup-hint">
+    <i class="bi bi-info-circle"></i>
+    Setup order: <strong>Categories</strong> → <strong>Accounts</strong> → <strong>Transactions</strong>
+  </p>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon"><i class="bi bi-calendar-month"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ formatAmount(thisMonthTotal) }}</div>
+        <div class="stat-label">This Month</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon"><i class="bi bi-receipt-cutoff"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ totalTransactions }}</div>
+        <div class="stat-label">Transactions</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon"><i class="bi bi-folder"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ categories.length }}</div>
+        <div class="stat-label">Categories</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon"><i class="bi bi-wallet2"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{ accounts.length }}</div>
+        <div class="stat-label">Accounts</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'transactions'" (click)="setTab('transactions')">
+      Transactions
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'categories'" (click)="setTab('categories')">
+      Categories
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'accounts'" (click)="setTab('accounts')">
+      Accounts
+    </button>
+  </div>
+
+  <p class="alert success" *ngIf="responseMessage">{{ responseMessage }}</p>
+  <p class="alert error" *ngIf="responseError">{{ responseError }}</p>
+
+  <div class="filters-section">
+    <div class="filters-row">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          [placeholder]="activeTab === 'transactions' ? 'Search reference, account, receiver…' : 'Search…'"
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="currentPage = 1">
+      </div>
+      <ng-container *ngIf="activeTab === 'transactions'">
+        <select class="filter-select filter-select-account" [(ngModel)]="accountFilter" (ngModelChange)="currentPage = 1">
+          <option value="">All Accounts</option>
+          <option *ngFor="let acc of accounts" [value]="acc.id">{{ acc.accountName }}</option>
+        </select>
+        <input type="date" class="filter-select filter-select-date" [(ngModel)]="dateFilter" (ngModelChange)="currentPage = 1">
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-header">
+      <h3 class="table-title">
+        <ng-container [ngSwitch]="activeTab">
+          <span *ngSwitchCase="'transactions'">Expense Transactions</span>
+          <span *ngSwitchCase="'categories'">Expense Categories</span>
+          <span *ngSwitchCase="'accounts'">Expense Accounts</span>
+        </ng-container>
+      </h3>
+    </div>
+
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading expenses…</p>
+    </div>
+
+    <!-- Transactions -->
+    <div class="table-container" *ngIf="!isLoading && activeTab === 'transactions'">
+      <table class="data-table" *ngIf="filteredTransactions.length; else emptyTransactions">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Account</th>
+            <th>Amount</th>
+            <th>Receiver</th>
+            <th>Recorded By</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginatedTransactions">
+            <td><div class="item-id">{{ item.referenceNumber || item.id }}</div></td>
+            <td>
+              <div class="item-name">{{ item.expenseAccountName }}</div>
+              <div class="item-desc" *ngIf="item.description">{{ item.description }}</div>
+            </td>
+            <td class="amount-cell">{{ formatAmount(item.amountTransacted) }}</td>
+            <td>{{ item.receiver || '—' }}</td>
+            <td>{{ item.userName || '—' }}</td>
+            <td>{{ formatDate(item.dateOfExpenseTransaction) }}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon danger" title="Delete" (click)="confirmDelete(item)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #emptyTransactions>
+        <div class="empty-state">
+          <i class="bi bi-receipt"></i>
+          <p>No expense transactions yet.</p>
+          <button class="btn-primary" (click)="openTransactionModal()">Record first expense</button>
+        </div>
+      </ng-template>
+
+      <div class="pagination" *ngIf="filteredTransactions.length > itemsPerPage">
+        <button class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="table-container" *ngIf="!isLoading && activeTab === 'categories'">
+      <table class="data-table" *ngIf="filteredCategories.length; else emptyCategories">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of filteredCategories">
+            <td><div class="item-id">{{ item.id }}</div></td>
+            <td><div class="item-name">{{ item.categoryName }}</div></td>
+            <td>{{ item.description || '—' }}</td>
+            <td>{{ formatDate(item.dateOfCategoryCreation) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #emptyCategories>
+        <div class="empty-state">
+          <i class="bi bi-folder"></i>
+          <p>No expense categories yet. Create categories like Utilities, Salaries, or Supplies.</p>
+          <button class="btn-primary" (click)="openCategoryModal()">Create category</button>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- Accounts -->
+    <div class="table-container" *ngIf="!isLoading && activeTab === 'accounts'">
+      <div class="accounts-help-panel">
+        <h4><i class="bi bi-wallet2"></i> How to create expense accounts</h4>
+        <ol>
+          <li>Open the <strong>Categories</strong> tab and create at least one expense category (e.g. Utilities, Transport).</li>
+          <li>Return to <strong>Accounts</strong> and click <strong>New Account</strong>.</li>
+          <li>Choose a category, enter the account name (e.g. Electricity, Fuel), and optional description.</li>
+          <li>Click <strong>Save Account</strong> — the account appears in this list and can be used when recording expenses.</li>
+        </ol>
+        <p class="accounts-help-note">
+          <i class="bi bi-lightning"></i>
+          While recording an expense, you can also search accounts or create a new one from the expense account dropdown (first row: search + New account).
+        </p>
+      </div>
+      <table class="data-table" *ngIf="filteredAccounts.length; else emptyAccounts">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Account</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of filteredAccounts">
+            <td><div class="item-id">{{ item.id }}</div></td>
+            <td><div class="item-name">{{ item.accountName }}</div></td>
+            <td>{{ item.expenseCategoryName || '—' }}</td>
+            <td>{{ item.description || '—' }}</td>
+            <td>{{ formatDate(item.dateOfAccountCreation) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #emptyAccounts>
+        <div class="empty-state">
+          <i class="bi bi-wallet2"></i>
+          <p>No expense accounts yet. Add accounts under a category before recording expenses.</p>
+          <button class="btn-primary" (click)="openAccountModal()">Create account</button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>
+
+<!-- New expense -->
+<div class="modal-overlay" *ngIf="showTransactionModal" (click)="closeModals()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <h3>Record Expense</h3>
+    <div class="form-grid">
+      <div class="form-field full-width">
+        <label id="expenseAccountLabel">Expense account</label>
+        <div class="exp-account-picker" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="exp-account-picker-trigger"
+            [class.open]="expenseAccountDropdownOpen"
+            [attr.aria-expanded]="expenseAccountDropdownOpen"
+            aria-labelledby="expenseAccountLabel"
+            (click)="toggleExpenseAccountDropdown($event)">
+            <i class="bi bi-chevron-down exp-account-picker-caret" aria-hidden="true"></i>
+            <span class="exp-account-picker-value" [class.placeholder]="transactionForm.expenseAccountId == null">
+              {{ selectedExpenseAccountLabel }}
+            </span>
+          </button>
+
+          <div class="exp-account-picker-menu" *ngIf="expenseAccountDropdownOpen" role="listbox">
+            <div class="exp-account-picker-toolbar">
+              <div class="exp-account-picker-search-wrap">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input
+                  type="text"
+                  class="exp-account-picker-search"
+                  placeholder="Search accounts…"
+                  [(ngModel)]="expenseAccountSearch"
+                  name="expenseAccountSearch"
+                  (click)="$event.stopPropagation()" />
+              </div>
+              <button
+                type="button"
+                class="exp-account-picker-new-btn"
+                (click)="openQuickAccountInPicker($event)"
+                [disabled]="isSaving">
+                <i class="bi bi-plus-lg"></i>
+                New account
+              </button>
+            </div>
+
+            <div class="exp-account-quick-form" *ngIf="showQuickAccountInPicker" (click)="$event.stopPropagation()">
+              <p class="exp-account-quick-title">New expense account</p>
+              <div class="exp-account-quick-row">
+                <select class="form-control form-control-sm" [(ngModel)]="quickAccountForm.categoryId" name="quickCategoryId">
+                  <option [ngValue]="null" disabled>Category</option>
+                  <option *ngFor="let cat of categories" [ngValue]="cat.id">{{ cat.categoryName }}</option>
+                </select>
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="quickAccountForm.accountName"
+                  name="quickAccountName"
+                  placeholder="Account name" />
+              </div>
+              <div class="exp-account-quick-actions">
+                <button type="button" class="btn-text" (click)="cancelQuickAccountInPicker($event)">Cancel</button>
+                <button
+                  type="button"
+                  class="btn-primary btn-sm"
+                  (click)="saveQuickAccountFromPicker($event)"
+                  [disabled]="isSaving">
+                  {{ isSaving ? 'Saving…' : 'Create & select' }}
+                </button>
+              </div>
+            </div>
+
+            <ul class="exp-account-picker-list">
+              <li
+                *ngFor="let acc of filteredAccountsForPicker"
+                class="exp-account-picker-item"
+                [class.selected]="transactionForm.expenseAccountId === acc.id"
+                role="option"
+                (click)="selectExpenseAccount(acc, $event)">
+                <span class="exp-account-picker-item-name">{{ acc.accountName }}</span>
+                <span class="exp-account-picker-item-cat">{{ acc.expenseCategoryName || '—' }}</span>
+              </li>
+              <li
+                class="exp-account-picker-empty"
+                *ngIf="!filteredAccountsForPicker.length && !showQuickAccountInPicker">
+                <span *ngIf="accounts.length === 0">No accounts yet — use <strong>New account</strong> above.</span>
+                <span *ngIf="accounts.length > 0">No accounts match your search.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="amountTransacted">Amount</label>
+        <input id="amountTransacted" type="number" min="0" step="0.01" class="form-control" [(ngModel)]="transactionForm.amountTransacted">
+      </div>
+      <div class="form-field">
+        <label for="receiver">Paid to / Receiver</label>
+        <input id="receiver" type="text" class="form-control" [(ngModel)]="transactionForm.receiver" placeholder="Vendor or payee">
+      </div>
+      <div class="form-field full-width">
+        <label for="description">Description</label>
+        <textarea id="description" rows="3" class="form-control" [(ngModel)]="transactionForm.description" placeholder="What was this expense for?"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closeModals()" [disabled]="isSaving">Cancel</button>
+      <button type="button" class="btn-primary" (click)="saveTransaction()" [disabled]="isSaving">
+        {{ isSaving ? 'Saving…' : 'Save Expense' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- New category -->
+<div class="modal-overlay" *ngIf="showCategoryModal" (click)="closeModals()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <h3>New Expense Category</h3>
+    <div class="form-grid">
+      <div class="form-field full-width">
+        <label for="categoryName">Category name</label>
+        <input id="categoryName" type="text" class="form-control" [(ngModel)]="categoryForm.categoryName" placeholder="e.g. Operational Expenses">
+      </div>
+      <div class="form-field full-width">
+        <label for="categoryDescription">Description</label>
+        <textarea id="categoryDescription" rows="3" class="form-control" [(ngModel)]="categoryForm.description"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closeModals()" [disabled]="isSaving">Cancel</button>
+      <button type="button" class="btn-primary" (click)="saveCategory()" [disabled]="isSaving">
+        {{ isSaving ? 'Saving…' : 'Save Category' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- New account -->
+<div class="modal-overlay" *ngIf="showAccountModal" (click)="closeModals()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <h3>New Expense Account</h3>
+    <div class="form-grid">
+      <div class="form-field full-width">
+        <label for="categoryId">Category</label>
+        <select id="categoryId" class="form-control" [(ngModel)]="accountForm.categoryId">
+          <option [ngValue]="null" disabled>Select category</option>
+          <option *ngFor="let cat of categories" [ngValue]="cat.id">{{ cat.categoryName }}</option>
+        </select>
+      </div>
+      <div class="form-field full-width">
+        <label for="accountName">Account name</label>
+        <input id="accountName" type="text" class="form-control" [(ngModel)]="accountForm.accountName" placeholder="e.g. Office Supplies">
+      </div>
+      <div class="form-field full-width">
+        <label for="accountDescription">Description</label>
+        <textarea id="accountDescription" rows="3" class="form-control" [(ngModel)]="accountForm.description"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closeModals()" [disabled]="isSaving">Cancel</button>
+      <button type="button" class="btn-primary" (click)="saveAccount()" [disabled]="isSaving">
+        {{ isSaving ? 'Saving…' : 'Save Account' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm -->
+<div class="modal-overlay" *ngIf="showDeleteConfirm" (click)="closeModals()">
+  <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+    <h3>Delete expense?</h3>
+    <p>This will permanently remove the transaction for <strong>{{ deleteTarget?.referenceNumber || deleteTarget?.expenseAccountName }}</strong>.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="closeModals()" [disabled]="isSaving">Cancel</button>
+      <button type="button" class="btn-danger" (click)="deleteTransaction()" [disabled]="isSaving">
+        {{ isSaving ? 'Deleting…' : 'Delete' }}
+      </button>
+    </div>
+  </div>
+</div>

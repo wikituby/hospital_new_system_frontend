@@ -1,0 +1,666 @@
+<div class="user-management-component-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-people"></i>
+        User Management & Roles
+      </h1>
+      <p class="page-subtitle">Manage system users, roles, and account status</p>
+    </div>
+    <div class="header-right">
+      <button class="btn-secondary" (click)="refreshList()" [disabled]="isLoading">
+        <i class="bi bi-arrow-clockwise"></i>
+        Refresh
+      </button>
+      <button class="btn-primary" (click)="openCreateModal()">
+        <i class="bi bi-person-plus"></i>
+        Add New User
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="responseMessage" class="feedback-banner" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        placeholder="Search by username, email, role, or contact..."
+        [(ngModel)]="searchQuery"
+        (input)="onFilterChange()">
+    </div>
+    <div class="filter-group">
+      <select class="filter-select" [(ngModel)]="roleFilter" (change)="onFilterChange()">
+        <option value="">All Roles</option>
+        <option *ngFor="let role of rolesList" [value]="role">{{ role }}</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="statusFilter" (change)="onFilterChange()">
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+        <option value="onleave">On Leave</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading users...</p>
+    </div>
+
+    <div class="table-container" *ngIf="!isLoading">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Contact</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of paginatedItems; let i = index">
+            <td><div class="row-number">{{ (currentPage - 1) * itemsPerPage + i + 1 }}</div></td>
+            <td>
+              <div class="user-cell">
+                <img
+                  *ngIf="getProfilePic(user) as pic"
+                  [src]="pic"
+                  alt=""
+                  class="user-table-avatar user-table-avatar-img">
+                <div
+                  *ngIf="!getProfilePic(user)"
+                  class="user-table-avatar"
+                  [style.background-color]="getAvatarColor(user)">
+                  {{ getUserInitials(user) }}
+                </div>
+                <div class="user-cell-info">
+                  <div class="item-name">{{ formatDisplayName(user.username) }}</div>
+                </div>
+              </div>
+            </td>
+            <td>{{ user.email || 'N/A' }}</td>
+            <td>
+              <div class="um-role-badges">
+                <span class="role-badge" title="Primary role">{{ user.role || 'N/A' }}</span>
+                <span
+                  class="role-badge role-badge--secondary"
+                  *ngFor="let secondary of secondaryRolesOf(user)"
+                  title="Secondary role">
+                  {{ secondary }}
+                </span>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [class]="'status-' + getUserStatus(user)">
+                {{ getUserStatus(user) | titlecase }}
+              </span>
+            </td>
+            <td>{{ user.contact || 'N/A' }}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon" (click)="openEditModal(user)" title="Edit role & status">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="paginatedItems.length === 0">
+            <td colspan="7" class="empty-state">No users found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination" *ngIf="!isLoading && totalPages > 1">
+      <button class="page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+      <button class="page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="user-modal-overlay" *ngIf="showCreateModal" [class.dark]="isDarkMode" (click)="closeCreateModal()">
+  <div class="user-modal-container" (click)="$event.stopPropagation()">
+    <div class="user-modal" [class.dark]="isDarkMode">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title">
+          <i class="bi bi-person-plus"></i>
+          Add New User
+        </h3>
+        <button type="button" class="user-modal-close" (click)="closeCreateModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <form #createUserForm="ngForm" (ngSubmit)="saveNewUser(createUserForm)" class="user-modal-form">
+        <div class="user-modal-body">
+          <p class="user-modal-subtitle">Create a new account with a default password you can share with the user.</p>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label>Username</label>
+              <input type="text" name="username" [(ngModel)]="createForm.username" placeholder="Enter username" required>
+            </div>
+            <div class="form-field">
+              <label>Email</label>
+              <input type="email" name="email" [(ngModel)]="createForm.email" placeholder="name@example.com" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label>Initial password</label>
+              <input type="text" name="password" [(ngModel)]="createForm.password" class="password-visible" required>
+              <p class="field-hint">Visible by default so you can copy and share it with the new user.</p>
+            </div>
+            <div class="form-field">
+              <label>Contact</label>
+              <input type="tel" name="contact" [(ngModel)]="createForm.contact" placeholder="Starts with 256" maxlength="12" pattern="256[0-9]{9}" inputmode="numeric">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label id="createUserRoleLabel">Primary role <span class="text-danger">*</span></label>
+              <div class="um-role-picker" data-context="create" (click)="$event.stopPropagation()">
+                <button
+                  type="button"
+                  class="um-field-picker-trigger um-role-picker-trigger"
+                  [class.open]="isRolePickerOpen('create')"
+                  [class.drop-up]="rolePickerDropUp.create"
+                  [attr.aria-expanded]="isRolePickerOpen('create')"
+                  aria-labelledby="createUserRoleLabel"
+                  (click)="toggleRolePicker('create', $event)">
+                  <i class="bi bi-chevron-down um-field-picker-caret um-role-picker-caret" aria-hidden="true"></i>
+                  <span class="um-field-picker-value um-role-picker-value" [class.placeholder]="!createForm.role?.trim()">
+                    {{ selectedRoleLabel('create') }}
+                  </span>
+                </button>
+                <div
+                  class="um-field-picker-menu um-role-picker-menu"
+                  *ngIf="isRolePickerOpen('create')"
+                  role="listbox"
+                  [ngStyle]="rolePickerMenuStyle['create']">
+                  <div class="um-role-picker-toolbar">
+                    <div class="um-role-picker-search-wrap">
+                      <i class="bi bi-search" aria-hidden="true"></i>
+                      <input
+                        type="text"
+                        class="um-role-picker-search"
+                        placeholder="Search roles…"
+                        [(ngModel)]="rolePickerSearch"
+                        name="createRolePickerSearch"
+                        (click)="$event.stopPropagation()" />
+                    </div>
+                    <button type="button" class="um-role-picker-new-btn" (click)="openNewRoleModal('create', $event)">
+                      <i class="bi bi-plus-lg"></i>
+                      New role
+                    </button>
+                  </div>
+                  <ul class="um-role-picker-list">
+                    <li class="um-role-picker-empty" *ngIf="rolesLoading">
+                      Loading roles…
+                    </li>
+                    <li *ngIf="roleSearchHasNoExactMatch && !rolesLoading">
+                      <button
+                        type="button"
+                        class="um-role-picker-item um-role-picker-item--custom"
+                        (click)="useSearchTextAsRole('create', $event)">
+                        Use &ldquo;{{ rolePickerSearch.trim() }}&rdquo; as role
+                      </button>
+                    </li>
+                    <li *ngFor="let role of filteredRolesForPicker" class="um-role-picker-row" [hidden]="rolesLoading">
+                      <button
+                        type="button"
+                        class="um-role-picker-item"
+                        [class.selected]="createForm.role === role"
+                        (click)="selectRole('create', role, $event)">
+                        {{ role }}
+                      </button>
+                      <div class="um-role-picker-actions" role="group" aria-label="Role actions">
+                        <button
+                          type="button"
+                          class="um-role-picker-icon-btn"
+                          title="Edit role"
+                          aria-label="Edit role {{ role }}"
+                          (click)="openEditRoleModal(role, 'create', $event)">
+                          <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="um-role-picker-icon-btn um-role-picker-icon-btn--danger"
+                          title="Delete role"
+                          aria-label="Delete role {{ role }}"
+                          (click)="deleteRole(role, 'create', $event)">
+                          <i class="bi bi-trash" aria-hidden="true"></i>
+                        </button>
+                      </div>
+                    </li>
+                    <li class="um-role-picker-empty" *ngIf="!rolesLoading && !filteredRolesForPicker.length && !roleSearchHasNoExactMatch">
+                      No roles match. Use <strong>New role</strong> above.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <input type="hidden" name="role" [(ngModel)]="createForm.role" required />
+            </div>
+            <div class="form-field">
+              <label>Secondary roles</label>
+              <p class="um-field-hint">Optional. Login opens the primary role page; secondary roles still grant access.</p>
+              <div class="um-secondary-roles" *ngIf="rolesList.length">
+                <label
+                  class="um-secondary-role-chip"
+                  *ngFor="let role of rolesList"
+                  [class.disabled]="createForm.role?.toLowerCase() === role.toLowerCase()"
+                  [class.selected]="isSecondaryRoleSelected('create', role)">
+                  <input
+                    type="checkbox"
+                    [checked]="isSecondaryRoleSelected('create', role)"
+                    [disabled]="createForm.role?.toLowerCase() === role.toLowerCase()"
+                    (change)="toggleSecondaryRole('create', role)" />
+                  <span>{{ role }}</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-field">
+              <label id="createUserStatusLabel">Status <span class="text-danger">*</span></label>
+              <div class="um-status-picker" data-context="create" (click)="$event.stopPropagation()">
+                <button
+                  type="button"
+                  class="um-field-picker-trigger um-status-picker-trigger"
+                  [class.open]="isStatusPickerOpen('create')"
+                  [class.drop-up]="statusPickerDropUp.create"
+                  [attr.aria-expanded]="isStatusPickerOpen('create')"
+                  aria-labelledby="createUserStatusLabel"
+                  (click)="toggleStatusPicker('create', $event)">
+                  <i class="bi bi-chevron-down um-field-picker-caret um-status-picker-caret" aria-hidden="true"></i>
+                  <span class="um-field-picker-value um-status-picker-value">
+                    {{ selectedStatusLabel('create') }}
+                  </span>
+                </button>
+                <div
+                  class="um-field-picker-menu um-status-picker-menu"
+                  *ngIf="isStatusPickerOpen('create')"
+                  role="listbox"
+                  [ngStyle]="statusPickerMenuStyle['create']">
+                  <ul class="um-field-picker-list um-status-picker-list">
+                    <li *ngFor="let option of statusOptions">
+                      <button
+                        type="button"
+                        class="um-field-picker-item um-status-picker-item"
+                        [class.selected]="createForm.status === option.value"
+                        (click)="selectStatus('create', option.value, $event)">
+                        {{ option.label }}
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <input type="hidden" name="status" [(ngModel)]="createForm.status" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="user-modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeCreateModal()" [disabled]="isCreating">
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="isCreating || createUserForm.invalid">
+            <i class="bi bi-check-lg" *ngIf="!isCreating"></i>
+            <span *ngIf="!isCreating">Create User</span>
+            <span *ngIf="isCreating">Creating...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="user-modal-overlay" *ngIf="showEditModal" [class.dark]="isDarkMode" (click)="closeEditModal()">
+  <div class="user-modal-container user-modal-container-wide" (click)="$event.stopPropagation()">
+    <div class="user-modal" [class.dark]="isDarkMode">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title">
+          <i class="bi bi-pencil-square"></i>
+          Edit User
+        </h3>
+        <button type="button" class="user-modal-close" (click)="closeEditModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <form #editUserForm="ngForm" (ngSubmit)="saveUserChanges(editUserForm)" class="user-modal-form">
+        <div class="user-modal-body">
+        <div class="form-row">
+          <div class="form-field">
+            <label>Username</label>
+            <input type="text" name="username" [(ngModel)]="editForm.username" required>
+          </div>
+          <div class="form-field">
+            <label>Email</label>
+            <input type="email" name="email" [(ngModel)]="editForm.email" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label id="editUserRoleLabel">Primary role <span class="text-danger">*</span></label>
+            <div class="um-role-picker" data-context="edit" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                class="um-field-picker-trigger um-role-picker-trigger"
+                [class.open]="isRolePickerOpen('edit')"
+                [class.drop-up]="rolePickerDropUp.edit"
+                [attr.aria-expanded]="isRolePickerOpen('edit')"
+                aria-labelledby="editUserRoleLabel"
+                (click)="toggleRolePicker('edit', $event)">
+                <i class="bi bi-chevron-down um-field-picker-caret um-role-picker-caret" aria-hidden="true"></i>
+                <span class="um-field-picker-value um-role-picker-value" [class.placeholder]="!editForm.role?.trim()">
+                  {{ selectedRoleLabel('edit') }}
+                </span>
+              </button>
+              <div
+                class="um-field-picker-menu um-role-picker-menu"
+                *ngIf="isRolePickerOpen('edit')"
+                role="listbox"
+                [ngStyle]="rolePickerMenuStyle['edit']">
+                <div class="um-role-picker-toolbar">
+                  <div class="um-role-picker-search-wrap">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input
+                      type="text"
+                      class="um-role-picker-search"
+                      placeholder="Search roles…"
+                      [(ngModel)]="rolePickerSearch"
+                      name="editRolePickerSearch"
+                      (click)="$event.stopPropagation()" />
+                  </div>
+                  <button type="button" class="um-role-picker-new-btn" (click)="openNewRoleModal('edit', $event)">
+                    <i class="bi bi-plus-lg"></i>
+                    New role
+                  </button>
+                </div>
+                <ul class="um-role-picker-list">
+                  <li class="um-role-picker-empty" *ngIf="rolesLoading">
+                    Loading roles…
+                  </li>
+                  <li *ngIf="roleSearchHasNoExactMatch && !rolesLoading">
+                    <button
+                      type="button"
+                      class="um-role-picker-item um-role-picker-item--custom"
+                      (click)="useSearchTextAsRole('edit', $event)">
+                      Use &ldquo;{{ rolePickerSearch.trim() }}&rdquo; as role
+                    </button>
+                  </li>
+                  <li *ngFor="let role of filteredRolesForPicker" class="um-role-picker-row" [hidden]="rolesLoading">
+                    <button
+                      type="button"
+                      class="um-role-picker-item"
+                      [class.selected]="editForm.role === role"
+                      (click)="selectRole('edit', role, $event)">
+                      {{ role }}
+                    </button>
+                    <div class="um-role-picker-actions" role="group" aria-label="Role actions">
+                      <button
+                        type="button"
+                        class="um-role-picker-icon-btn"
+                        title="Edit role"
+                        aria-label="Edit role {{ role }}"
+                        (click)="openEditRoleModal(role, 'edit', $event)">
+                        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="um-role-picker-icon-btn um-role-picker-icon-btn--danger"
+                        title="Delete role"
+                        aria-label="Delete role {{ role }}"
+                        (click)="deleteRole(role, 'edit', $event)">
+                        <i class="bi bi-trash" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  </li>
+                  <li class="um-role-picker-empty" *ngIf="!rolesLoading && !filteredRolesForPicker.length && !roleSearchHasNoExactMatch">
+                    No roles match. Use <strong>New role</strong> above.
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <input type="hidden" name="role" [(ngModel)]="editForm.role" required />
+          </div>
+          <div class="form-field">
+            <label>Secondary roles</label>
+            <p class="um-field-hint">Optional. Login opens the primary role page; secondary roles still grant access.</p>
+            <div class="um-secondary-roles" *ngIf="rolesList.length">
+              <label
+                class="um-secondary-role-chip"
+                *ngFor="let role of rolesList"
+                [class.disabled]="editForm.role?.toLowerCase() === role.toLowerCase()"
+                [class.selected]="isSecondaryRoleSelected('edit', role)">
+                <input
+                  type="checkbox"
+                  [checked]="isSecondaryRoleSelected('edit', role)"
+                  [disabled]="editForm.role?.toLowerCase() === role.toLowerCase()"
+                  (change)="toggleSecondaryRole('edit', role)" />
+                <span>{{ role }}</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-field">
+            <label id="editUserStatusLabel">Status <span class="text-danger">*</span></label>
+            <div class="um-status-picker" data-context="edit" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                class="um-field-picker-trigger um-status-picker-trigger"
+                [class.open]="isStatusPickerOpen('edit')"
+                [class.drop-up]="statusPickerDropUp.edit"
+                [attr.aria-expanded]="isStatusPickerOpen('edit')"
+                aria-labelledby="editUserStatusLabel"
+                (click)="toggleStatusPicker('edit', $event)">
+                <i class="bi bi-chevron-down um-field-picker-caret um-status-picker-caret" aria-hidden="true"></i>
+                <span class="um-field-picker-value um-status-picker-value">
+                  {{ selectedStatusLabel('edit') }}
+                </span>
+              </button>
+              <div
+                class="um-field-picker-menu um-status-picker-menu"
+                *ngIf="isStatusPickerOpen('edit')"
+                role="listbox"
+                [ngStyle]="statusPickerMenuStyle['edit']">
+                <ul class="um-field-picker-list um-status-picker-list">
+                  <li *ngFor="let option of statusOptions">
+                    <button
+                      type="button"
+                      class="um-field-picker-item um-status-picker-item"
+                      [class.selected]="editForm.status === option.value"
+                      (click)="selectStatus('edit', option.value, $event)">
+                      {{ option.label }}
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <input type="hidden" name="status" [(ngModel)]="editForm.status" required />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label>Contact</label>
+          <input type="tel" name="contact" [(ngModel)]="editForm.contact" placeholder="Starts with 256" maxlength="12" pattern="256[0-9]{9}" inputmode="numeric">
+        </div>
+
+        <div class="assignment-section">
+          <div class="assignment-head">
+            <label class="assignment-title">Assigned departments &amp; rooms</label>
+            <span class="assignment-summary">
+              {{ assignedDepartmentCount }} dept(s), {{ assignedRoomCount }} room(s)
+            </span>
+          </div>
+          <p class="assignment-hint">
+            Select which hospital departments and rooms this user can see in the patient queue.
+            Leave empty to fall back to role-based access from Hospital Directory Setup.
+          </p>
+
+          <div class="assignment-list" *ngIf="hospitalModules.length; else noDepartmentsTpl">
+            <div class="assignment-dept" *ngFor="let module of hospitalModules">
+              <label class="assignment-dept-label">
+                <input
+                  type="checkbox"
+                  [checked]="isModuleAssigned(module.id)"
+                  (change)="toggleModuleAssignment(module.id, $any($event.target).checked)" />
+                <span class="assignment-dept-name">{{ module.name }}</span>
+                <span class="assignment-dept-code" *ngIf="module.code">{{ module.code }}</span>
+              </label>
+              <div class="assignment-rooms" *ngIf="clinicsForModule(module.id).length">
+                <label class="assignment-room" *ngFor="let room of clinicsForModule(module.id)">
+                  <input
+                    type="checkbox"
+                    [checked]="isClinicAssigned(room.id)"
+                    (change)="toggleClinicAssignment(room.id, $any($event.target).checked)" />
+                  <span>{{ room.name }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <ng-template #noDepartmentsTpl>
+            <p class="assignment-empty">No departments configured yet. Add them under Hospital Directory Setup.</p>
+          </ng-template>
+        </div>
+
+        <p class="inactive-note" *ngIf="editForm.status === 'inactive'">
+          Inactive users will not be able to log in until their status is set back to active.
+        </p>
+      </div>
+
+      <div class="user-modal-footer">
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="resetPassword()"
+          [disabled]="isSaving || isResettingPassword">
+          <span *ngIf="!isResettingPassword">Reset password</span>
+          <span *ngIf="isResettingPassword">Resetting...</span>
+        </button>
+        <button type="button" class="btn-secondary" (click)="closeEditModal()" [disabled]="isSaving || isResettingPassword">
+          Cancel
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="isSaving || isResettingPassword || editUserForm.invalid">
+          <i class="bi bi-check-lg" *ngIf="!isSaving"></i>
+          <span *ngIf="!isSaving">Save Changes</span>
+          <span *ngIf="isSaving">Saving...</span>
+        </button>
+      </div>
+    </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add new role (stacked above create/edit user modals) -->
+<div
+  class="user-modal-overlay um-new-role-overlay"
+  *ngIf="showNewRoleModal"
+  [class.dark]="isDarkMode"
+  (click)="closeNewRoleModal()">
+  <div class="user-modal-container um-new-role-container" (click)="$event.stopPropagation()">
+    <div class="user-modal um-new-role-modal" [class.dark]="isDarkMode">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title">
+          <i class="bi bi-person-badge"></i>
+          Add new role
+        </h3>
+        <button type="button" class="user-modal-close" (click)="closeNewRoleModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <form #newRoleForm="ngForm" (ngSubmit)="saveNewRoleFromModal()" class="user-modal-form">
+        <div class="user-modal-body">
+          <p class="user-modal-subtitle">
+            Enter a role name. It will be added to the list and selected for this user.
+          </p>
+          <div class="form-field">
+            <label for="newRoleNameInput">Role name <span class="text-danger">*</span></label>
+            <input
+              id="newRoleNameInput"
+              type="text"
+              name="newRoleName"
+              [(ngModel)]="newRoleName"
+              placeholder="e.g. pharmacist, lab technician"
+              required
+              autofocus />
+          </div>
+        </div>
+        <div class="user-modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeNewRoleModal()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="!newRoleName?.trim() || isRoleActionInProgress">
+            <i class="bi bi-check-lg" *ngIf="!isRoleActionInProgress"></i>
+            <span *ngIf="!isRoleActionInProgress">Add &amp; select</span>
+            <span *ngIf="isRoleActionInProgress">Saving...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit role (stacked above create/edit user modals) -->
+<div
+  class="user-modal-overlay um-new-role-overlay"
+  *ngIf="showEditRoleModal"
+  [class.dark]="isDarkMode"
+  (click)="closeEditRoleModal()">
+  <div class="user-modal-container um-new-role-container" (click)="$event.stopPropagation()">
+    <div class="user-modal um-new-role-modal" [class.dark]="isDarkMode">
+      <div class="user-modal-header">
+        <h3 class="user-modal-title">
+          <i class="bi bi-pencil-square"></i>
+          Edit role
+        </h3>
+        <button type="button" class="user-modal-close" (click)="closeEditRoleModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <form #editRoleForm="ngForm" (ngSubmit)="saveEditRoleFromModal()" class="user-modal-form">
+        <div class="user-modal-body">
+          <p class="user-modal-subtitle" *ngIf="editRoleOriginalName">
+            Rename <strong>{{ editRoleOriginalName }}</strong>. Users with this role will be updated automatically.
+          </p>
+          <div class="form-field">
+            <label for="editRoleNameInput">Role name <span class="text-danger">*</span></label>
+            <input
+              id="editRoleNameInput"
+              type="text"
+              name="editRoleName"
+              [(ngModel)]="editRoleNewName"
+              placeholder="Role name"
+              required
+              autofocus />
+          </div>
+        </div>
+        <div class="user-modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeEditRoleModal()" [disabled]="isRoleActionInProgress">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn-primary"
+            [disabled]="!editRoleNewName?.trim() || isRoleActionInProgress">
+            <i class="bi bi-check-lg" *ngIf="!isRoleActionInProgress"></i>
+            <span *ngIf="!isRoleActionInProgress">Save role</span>
+            <span *ngIf="isRoleActionInProgress">Saving...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

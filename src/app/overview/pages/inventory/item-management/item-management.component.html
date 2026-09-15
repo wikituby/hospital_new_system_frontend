@@ -1,0 +1,174 @@
+<div class="item-management-page" [class.dark]="isDarkMode">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-box-seam"></i>
+        Item Management
+      </h1>
+      <p class="page-subtitle">Manage inventory items, categories, and specifications</p>
+    </div>
+    <div class="header-right">
+      <button class="btn-primary" (click)="addItem()">
+        <i class="bi bi-plus-circle"></i>
+        Add New Item
+      </button>
+      <button class="btn-secondary" (click)="importItems()">
+        <i class="bi bi-upload"></i>
+        Import Items
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card stat-total">
+      <div class="stat-icon"><i class="bi bi-box"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{totalItems}}</div>
+        <div class="stat-label">Total Items</div>
+      </div>
+    </div>
+    <div class="stat-card stat-active">
+      <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{activeItems}}</div>
+        <div class="stat-label">Active Items</div>
+      </div>
+    </div>
+    <div class="stat-card stat-categories">
+      <div class="stat-icon"><i class="bi bi-tags"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{totalCategories}}</div>
+        <div class="stat-label">Categories</div>
+      </div>
+    </div>
+    <div class="stat-card stat-low-stock">
+      <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">{{lowStockCount}}</div>
+        <div class="stat-label">Low Stock Items</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" placeholder="Search by item name, code, or category..." [(ngModel)]="searchQuery">
+    </div>
+    <div class="filter-group">
+      <select class="filter-select" [(ngModel)]="categoryFilter">
+        <option value="">All Categories</option>
+        <option value="medication">Medication</option>
+        <option value="equipment">Equipment</option>
+        <option value="consumables">Consumables</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="statusFilter">
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+        <option value="discontinued">Discontinued</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="stockFilter">
+        <option value="">All Stock Levels</option>
+        <option value="in-stock">In Stock</option>
+        <option value="low-stock">Low Stock</option>
+        <option value="out-of-stock">Out of Stock</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Items Table -->
+  <div class="table-section">
+    <div class="table-header">
+      <h3 class="table-title">Items</h3>
+      <div class="table-actions">
+        <button class="btn-sm btn-secondary">
+          <i class="bi bi-download"></i>
+          Export
+        </button>
+        <button class="btn-sm btn-secondary">
+          <i class="bi bi-funnel"></i>
+          More Filters
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Item Code</th>
+            <th>Item Name</th>
+            <th>Category</th>
+            <th>Unit</th>
+            <th>Stock Level</th>
+            <th>Unit Price</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of filteredItems">
+            <td>
+              <div class="item-code">{{item.code}}</div>
+            </td>
+            <td>
+              <div class="item-name-cell">
+                <div class="item-name">{{item.name}}</div>
+                <div class="item-description">{{item.description}}</div>
+              </div>
+            </td>
+            <td>
+              <span class="category-badge">{{item.category}}</span>
+            </td>
+            <td>
+              <div class="unit-cell">{{item.unit}}</div>
+            </td>
+            <td>
+              <div class="stock-cell">
+                <div class="stock-level">{{item.stockLevel}}</div>
+                <div class="stock-indicator" [class]="getStockClass(item.stockLevel, item.reorderLevel)">
+                  {{getStockStatus(item.stockLevel, item.reorderLevel)}}
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="price-cell">${{item.unitPrice | number:'1.2-2'}}</div>
+            </td>
+            <td>
+              <span class="status-badge" [class]="'status-' + item.status">
+                {{item.status | titlecase}}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon" (click)="viewItem(item)" title="View">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn-icon" (click)="editItem(item)" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn-icon" (click)="deleteItem(item)" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <button class="page-btn" [disabled]="currentPage === 1">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <span class="page-info">Page {{currentPage}} of {{totalPages}}</span>
+      <button class="page-btn" [disabled]="currentPage === totalPages">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>

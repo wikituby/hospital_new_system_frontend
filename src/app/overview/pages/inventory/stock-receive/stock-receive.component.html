@@ -1,0 +1,920 @@
+<!-- Add Supplier Modal -->
+<div class="supplier-modal-overlay" id="supplierModal" *ngIf="!isCollapsedNewSupplier">
+  <div class="supplier-modal-container">
+    <div class="supplier-modal">
+      <div class="supplier-modal-header">
+        <h2 class="supplier-modal-title">
+          <i class="bi bi-person-plus-fill"></i>
+          Add New Supplier
+        </h2>
+        <button type="button" class="supplier-modal-close" (click)="closeSupplierModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="supplier-modal-body">
+        <form #supplierForm="ngForm" (ngSubmit)="saveSupplier(supplierForm)">
+          <div class="supplier-form-grid">
+            <div class="supplier-form-field full-width">
+              <label for="supplierName" class="supplier-form-label">
+                Supplier Name <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     [(ngModel)]="currentSupplier.supplierName" 
+                     name="supplierName" 
+                     class="supplier-form-input" 
+                     id="supplierName" 
+                     placeholder="Enter supplier name" 
+                     required>
+            </div>
+
+            <div class="supplier-form-field">
+              <label for="abbreviation" class="supplier-form-label">Abbreviation</label>
+              <input type="text" 
+                     [(ngModel)]="currentSupplier.abbreviation" 
+                     name="abbreviation" 
+                     class="supplier-form-input" 
+                     id="abbreviation" 
+                     placeholder="e.g., ABC Corp">
+            </div>
+
+            <div class="supplier-form-field">
+              <label for="contact" class="supplier-form-label">
+                Contact <span class="required">*</span>
+              </label>
+              <input type="tel" 
+                     [(ngModel)]="currentSupplier.contact" 
+                     name="contact" 
+                     class="supplier-form-input" 
+                     id="contact" 
+                     placeholder="Starts with 256"
+                     maxlength="12"
+                     pattern="256[0-9]{9}"
+                     inputmode="numeric" 
+                     required>
+            </div>
+
+            <div class="supplier-form-field">
+              <label for="emailAddress" class="supplier-form-label">Email Address</label>
+              <input type="email" 
+                     [(ngModel)]="currentSupplier.emailAddress" 
+                     name="emailAddress" 
+                     class="supplier-form-input" 
+                     id="emailAddress" 
+                     placeholder="supplier@example.com">
+            </div>
+
+            <div class="supplier-form-field">
+              <label for="webSiteAddress" class="supplier-form-label">Website Address</label>
+              <input type="url" 
+                     [(ngModel)]="currentSupplier.webSiteAddress" 
+                     name="webSiteAddress" 
+                     class="supplier-form-input" 
+                     id="webSiteAddress" 
+                     placeholder="https://www.example.com">
+            </div>
+
+            <div class="supplier-form-field full-width">
+              <label for="physicalAddress" class="supplier-form-label">Physical Address</label>
+              <input type="text" 
+                     [(ngModel)]="currentSupplier.physicalAddress" 
+                     name="physicalAddress" 
+                     class="supplier-form-input" 
+                     id="physicalAddress" 
+                     placeholder="Street address, City, Country">
+            </div>
+
+            <div class="supplier-form-field full-width">
+              <label for="description" class="supplier-form-label">Description</label>
+              <textarea [(ngModel)]="currentSupplier.description" 
+                        name="description" 
+                        class="supplier-form-textarea" 
+                        id="description" 
+                        placeholder="Additional notes or description about the supplier"
+                        rows="3"></textarea>
+            </div>
+          </div>
+
+          <div *ngIf="showDivAddToDataBaseNewSupplier" class="supplier-form-message" [ngClass]="{'success': responseColor === 'rgb(11, 155, 112)', 'error': responseColor === 'rgb(238, 16, 16)'}">
+            <i class="bi" [ngClass]="responseColor === 'rgb(11, 155, 112)' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>
+            {{ responseMessage }}
+          </div>
+
+          <div *ngIf="showDivUpdatedLoaderNewSupplier" class="supplier-form-loading">
+            <div class="supplier-loader"></div>
+            <p>Saving supplier...</p>
+          </div>
+
+          <div class="supplier-modal-actions">
+            <button type="button" 
+                    class="supplier-btn-secondary" 
+                    (click)="closeSupplierModal()"
+                    [disabled]="isButtonDisabledSupplier">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="supplier-btn-primary" 
+                    [disabled]="isButtonDisabledSupplier">
+              <span *ngIf="!showDivUpdatedLoaderNewSupplier">
+                <i class="bi bi-save"></i>
+                Add Supplier
+              </span>
+              <span *ngIf="showDivUpdatedLoaderNewSupplier" class="button-loading">
+                <span class="spinner-small"></span>
+                Saving...
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="delete-confirm-modal-overlay" *ngIf="showDeleteConfirmModal" (click)="cancelDeleteStockReceive()">
+  <div class="delete-confirm-modal-container" (click)="$event.stopPropagation()">
+    <div class="delete-confirm-modal">
+      <div class="delete-confirm-modal-header">
+        <div class="delete-confirm-icon">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <h2 class="delete-confirm-title">Delete Stock Receive</h2>
+        <button type="button" class="delete-confirm-close" (click)="cancelDeleteStockReceive()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="delete-confirm-modal-body">
+        <p class="delete-confirm-message">
+          Are you sure you want to delete this stock receive record?
+        </p>
+        <p class="delete-confirm-warning">
+          <i class="bi bi-info-circle"></i>
+          This action cannot be undone. All data associated with this record will be permanently deleted.
+        </p>
+      </div>
+
+      <div class="delete-confirm-modal-actions">
+        <button type="button" 
+                class="delete-confirm-btn-cancel" 
+                (click)="cancelDeleteStockReceive()"
+                [disabled]="isButtonDisabled">
+          Cancel
+        </button>
+        <button type="button" 
+                class="delete-confirm-btn-delete" 
+                (click)="confirmDeleteStockReceive()"
+                [disabled]="isButtonDisabled">
+          <i class="bi bi-trash"></i>
+          Delete Record
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Store Modal -->
+<div class="store-modal-overlay" id="storeModal" *ngIf="!isCollapsedNewStore">
+  <div class="store-modal-container">
+    <div class="store-modal">
+      <div class="store-modal-header">
+        <h2 class="store-modal-title">
+          <i class="bi bi-shop"></i>
+          Add New Store
+        </h2>
+        <button type="button" class="store-modal-close" (click)="closeStoreModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="store-modal-body">
+        <form #storeForm="ngForm" (ngSubmit)="saveStore(storeForm)">
+          <div class="store-form-grid">
+            <div class="store-form-field full-width">
+              <label for="storeName" class="store-form-label">
+                Store Name <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     [(ngModel)]="currentStore.name" 
+                     name="name" 
+                     class="store-form-input" 
+                     id="storeName" 
+                     placeholder="Enter store name" 
+                     required>
+            </div>
+
+            <div class="store-form-field full-width">
+              <label for="storeLocation" class="store-form-label">
+                Location <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     [(ngModel)]="currentStore.location" 
+                     name="location" 
+                     class="store-form-input" 
+                     id="storeLocation" 
+                     placeholder="Enter store location"
+                     required>
+            </div>
+
+            <div class="store-form-field full-width">
+              <label for="storeDescription" class="store-form-label">Description</label>
+              <textarea [(ngModel)]="currentStore.description" 
+                        name="description" 
+                        class="store-form-textarea" 
+                        id="storeDescription" 
+                        placeholder="Additional notes or description about the store"
+                        rows="3"></textarea>
+            </div>
+          </div>
+
+          <div *ngIf="showDivAddToDataBaseNewStore" class="store-form-message" [ngClass]="{'success': responseColor === 'rgb(11, 155, 112)', 'error': responseColor === 'rgb(238, 16, 16)'}">
+            <i class="bi" [ngClass]="responseColor === 'rgb(11, 155, 112)' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>
+            {{ responseMessage }}
+          </div>
+
+          <div *ngIf="showDivUpdatedLoaderNewStore" class="store-form-loading">
+            <div class="store-loader"></div>
+            <p>Saving store...</p>
+          </div>
+
+          <div class="store-modal-actions">
+            <button type="button" 
+                    class="store-btn-secondary" 
+                    (click)="closeStoreModal()"
+                    [disabled]="isButtonDisabledStore">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="store-btn-primary" 
+                    [disabled]="isButtonDisabledStore">
+              <span *ngIf="!showDivUpdatedLoaderNewStore">
+                <i class="bi bi-save"></i>
+                Add Store
+              </span>
+              <span *ngIf="showDivUpdatedLoaderNewStore" class="button-loading">
+                <span class="spinner-small"></span>
+                Saving...
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Stock Item Modal -->
+<div class="stock-item-new-modal-overlay" id="stockItemNewModal" *ngIf="!isCollapsedNewStockItem">
+  <div class="stock-item-new-modal-container">
+    <div class="stock-item-new-modal">
+      <div class="stock-item-new-modal-header">
+        <h2 class="stock-item-new-modal-title">
+          <i class="bi bi-cart-plus-fill"></i>
+          Add New Stock Item
+        </h2>
+        <button type="button" class="stock-item-new-modal-close" (click)="closeStockItemModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="stock-item-new-modal-body">
+        <div class="stock-item-new-info-message">
+          <i class="bi bi-info-circle"></i>
+          <p>Stock items require detailed information including brand, formulation, ingredients, and more. For a complete stock item creation experience, please use the <strong>Consumable Items</strong> management page.</p>
+        </div>
+
+        <div class="stock-item-new-modal-actions">
+          <button type="button" 
+                  class="stock-item-new-btn-secondary" 
+                  (click)="closeStockItemModal()">
+            Cancel
+          </button>
+          <button type="button" 
+                  class="stock-item-new-btn-primary" 
+                  (click)="navigateToConsumableItems()">
+            <i class="bi bi-box-arrow-up-right"></i>
+            Go to Consumable Items
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stock Receive Details Modal -->
+<div class="details-modal-overlay" *ngIf="showDetailsModal" (click)="closeDetailsModal()">
+  <div class="details-modal-container" (click)="$event.stopPropagation()">
+    <div class="details-modal">
+      <div class="details-modal-header">
+        <h2 class="details-modal-title">
+          <i class="bi bi-info-circle"></i>
+          Stock Receive Details
+        </h2>
+        <button type="button" class="details-modal-close" (click)="closeDetailsModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="details-modal-body" *ngIf="selectedStockReceiveDetails">
+        <div class="details-grid">
+          <div class="details-row"><div class="details-label">Stock Item:</div><div class="details-value">{{ selectedStockReceiveDetails.stockItemName || 'N/A' }}</div></div>
+          <div class="details-row"><div class="details-label">Store:</div><div class="details-value">{{ selectedStockReceiveDetails.storeName || 'N/A' }}</div></div>
+          <div class="details-row"><div class="details-label">Supplier:</div><div class="details-value">{{ selectedStockReceiveDetails.supplierName || 'N/A' }}</div></div>
+          <div class="details-row"><div class="details-label">INV NO:</div><div class="details-value">{{ selectedStockReceiveDetails.invoiceNumber || 'N/A' }}</div></div>
+          <div class="details-row"><div class="details-label">Batch NO:</div><div class="details-value">{{ selectedStockReceiveDetails.batchNumber || 'N/A' }}</div></div>
+          <div class="details-row"><div class="details-label">Qty Received:</div><div class="details-value">{{ selectedStockReceiveDetails.quantityReceived || 'N/A' }}</div></div>
+          <div class="details-row"><div class="details-label">Qty Available:</div><div class="details-value">{{ selectedStockReceiveDetails.quantityAvailable != null ? selectedStockReceiveDetails.quantityAvailable : 'N/A' }}</div></div>
+          <div class="details-row"><div class="details-label">New Qty:</div><div class="details-value">{{ selectedStockReceiveDetails.newQuantity != null ? selectedStockReceiveDetails.newQuantity : 'N/A' }}</div></div>
+          <div class="details-row"><div class="details-label">Unit Cost:</div><div class="details-value">{{ formatMoneyDisplay(selectedStockReceiveDetails.unitCostPrice) }}</div></div>
+          <div class="details-row"><div class="details-label">Total Cost:</div><div class="details-value">{{ formatMoneyDisplay(selectedStockReceiveDetails.totalCostPrice) }}</div></div>
+          <div class="details-row"><div class="details-label">Receive Date:</div><div class="details-value">{{ selectedStockReceiveDetails.receiveDate || 'N/A' }}</div></div>
+          <div class="details-row"><div class="details-label">Expiry Date:</div><div class="details-value">{{ selectedStockReceiveDetails.expiryDate || 'N/A' }}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Stock Receive Modal -->
+<div class="stock-item-modal-overlay" id="stockReceiveModal" *ngIf="!isCollapsedNewStockReceive">
+  <div class="stock-item-modal-container">
+    <div class="stock-item-modal">
+      <div class="stock-item-modal-header">
+        <h2 class="stock-item-modal-title">
+          <i class="bi" [ngClass]="isEditingStockReceive ? 'bi-pencil-square' : 'bi-box-arrow-in-down'"></i>
+          {{ saveButtonStatus }}
+        </h2>
+        <button type="button" class="stock-item-modal-close" (click)="closeStockReceiveModal()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="stock-item-modal-body">
+        <div *ngIf="showDivAddToDataBaseNewStockReceive" 
+             class="stock-item-form-message stock-item-form-message--modal" 
+             [ngClass]="responseColor === 'rgb(11, 155, 112)' ? 'success' : 'error'">
+          <i class="bi" [ngClass]="responseColor === 'rgb(11, 155, 112)' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+          <div>
+            <div>{{ responseMessage }}</div>
+            <ul class="stock-receive-missing-fields" *ngIf="stockReceiveMissingFields.length">
+              <li *ngFor="let field of stockReceiveMissingFields">{{ field }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <form #stockReceiveForm="ngForm" (ngSubmit)="saveStockReceive(stockReceiveForm)">
+          <div class="stock-item-form-grid">
+            <!-- Stock Item Dropdown -->
+            <div class="stock-item-form-field full-width">
+              <label for="stockItemId" class="stock-item-form-label">
+                Stock Item <span class="required">*</span>
+                <span class="stock-item-previous-pricing"
+                      *ngIf="selectedStockItemPreviousPricing">
+                  · Previous — Unit cost: {{ formatMoneyDisplay(selectedStockItemPreviousPricing.unitCost) }},
+                  Unit sell: {{ formatMoneyDisplay(selectedStockItemPreviousPricing.unitSell) }},
+                  Profit margin: {{ formatMoneyDisplay(selectedStockItemPreviousPricing.profitMargin) }}
+                </span>
+              </label>
+              <div class="stock-item-dropdown-wrapper">
+                <div class="stock-item-dropdown-input" 
+                     (click)="toggleStockItemDropdown()"
+                     [class.open]="isStockItemDropdownOpen">
+                  <span class="stock-item-selected-text" *ngIf="currentStockItemName && currentStockItemName !== 'Select stock item'; else stockItemPlaceholder">
+                    {{ currentStockItemName }}
+                  </span>
+                  <ng-template #stockItemPlaceholder>
+                    <span class="stock-item-placeholder">Select stock item</span>
+                  </ng-template>
+                  <i class="bi" [ngClass]="isStockItemDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </div>
+                
+                <div class="stock-item-dropdown-menu" *ngIf="isStockItemDropdownOpen" (click)="$event.stopPropagation()">
+                  <div class="stock-item-search-container">
+                    <i class="bi bi-search"></i>
+                    <input type="text" 
+                           class="stock-item-search-input" 
+                           placeholder="Search stock items..." 
+                           [ngModel]="stockItemSearchQuery"
+                           (ngModelChange)="stockItemSearchQuery = $event"
+                           [ngModelOptions]="{standalone: true}"
+                           (input)="filterStockItems()"
+                           (click)="$event.stopPropagation()">
+                    <button type="button" class="stock-item-add-button" (click)="navigateToConsumableItems($event)">
+                      <i class="bi bi-plus-circle"></i>
+                      Add New
+                    </button>
+                  </div>
+                  
+                  <div class="stock-item-list-container">
+                    <div class="stock-item-item" 
+                         *ngFor="let item of filteredStockItemList">
+                      <div class="stock-item-item-content" (click)="selectStockItem(item)">
+                        <div class="stock-item-name">{{ item.stockItemName || item.name }}</div>
+                      </div>
+                    </div>
+                    <div class="stock-item-no-results" *ngIf="filteredStockItemList.length === 0">
+                      <i class="bi bi-inbox"></i>
+                      <p>No stock items found</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" 
+                     [ngModel]="currentStockReceive.stockItemId || currentStockItemId" 
+                     (ngModelChange)="currentStockReceive.stockItemId = $event"
+                     name="stockItemId"
+                     required>
+            </div>
+
+            <!-- Store Dropdown -->
+            <div class="stock-item-form-field">
+              <label for="storeId" class="stock-item-form-label">
+                Store <span class="required">*</span>
+              </label>
+              <div class="store-dropdown-wrapper">
+                <div class="store-dropdown-input" 
+                     (click)="toggleStoreDropdown()"
+                     [class.open]="isStoreDropdownOpen">
+                  <span class="store-selected-text" *ngIf="currentStoreName && currentStoreName !== 'Select store'; else storePlaceholder">
+                    {{ currentStoreName }}
+                  </span>
+                  <ng-template #storePlaceholder>
+                    <span class="store-placeholder">Select store</span>
+                  </ng-template>
+                  <i class="bi" [ngClass]="isStoreDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </div>
+                
+                <div class="store-dropdown-menu" *ngIf="isStoreDropdownOpen" (click)="$event.stopPropagation()">
+                  <div class="store-search-container">
+                    <i class="bi bi-search"></i>
+                    <input type="text" 
+                           class="store-search-input" 
+                           placeholder="Search stores..." 
+                           [ngModel]="storeSearchQuery"
+                           (ngModelChange)="storeSearchQuery = $event"
+                           [ngModelOptions]="{standalone: true}"
+                           (input)="filterStores()"
+                           (click)="$event.stopPropagation()">
+                    <button type="button" class="store-add-button" (click)="openStoreModal()">
+                      <i class="bi bi-plus-circle"></i>
+                      Add New
+                    </button>
+                  </div>
+                  
+                  <div class="store-list-container">
+                    <div class="store-item" 
+                         *ngFor="let store of filteredStoreList">
+                      <div class="store-item-content" (click)="selectStore(store)">
+                        <div class="store-name">{{ store.name }}</div>
+                        <div class="store-location" *ngIf="store.location">{{ store.location }}</div>
+                      </div>
+                    </div>
+                    <div class="store-no-results" *ngIf="filteredStoreList.length === 0">
+                      <i class="bi bi-inbox"></i>
+                      <p>No stores found</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" 
+                     [ngModel]="currentStockReceive.storeId || currentStoreId" 
+                     (ngModelChange)="currentStockReceive.storeId = $event"
+                     name="storeId"
+                     required>
+            </div>
+
+            <!-- Supplier Dropdown -->
+            <div class="stock-item-form-field">
+              <label for="supplierId" class="stock-item-form-label">
+                Supplier <span class="required">*</span>
+              </label>
+              <div class="supplier-dropdown-wrapper">
+                <div class="supplier-dropdown-input" 
+                     (click)="toggleSupplierDropdown()"
+                     [class.open]="isSupplierDropdownOpen">
+                  <span class="supplier-selected-text" *ngIf="currentSupplierName && currentSupplierName !== 'Select supplier'; else supplierPlaceholder">
+                    {{ currentSupplierName }}
+                  </span>
+                  <ng-template #supplierPlaceholder>
+                    <span class="supplier-placeholder">Select supplier</span>
+                  </ng-template>
+                  <i class="bi" [ngClass]="isSupplierDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </div>
+                
+                <div class="supplier-dropdown-menu" *ngIf="isSupplierDropdownOpen" (click)="$event.stopPropagation()">
+                  <div class="supplier-search-container">
+                    <i class="bi bi-search"></i>
+                    <input type="text" 
+                           class="supplier-search-input" 
+                           placeholder="Search suppliers..." 
+                           [ngModel]="supplierSearchQuery"
+                           (ngModelChange)="supplierSearchQuery = $event"
+                           [ngModelOptions]="{standalone: true}"
+                           (input)="filterSuppliers()"
+                           (click)="$event.stopPropagation()">
+                    <button type="button" class="supplier-add-button" (click)="openSupplierModal()">
+                      <i class="bi bi-plus-circle"></i>
+                      Add New
+                    </button>
+                  </div>
+                  
+                  <div class="supplier-list-container">
+                    <div class="supplier-item" 
+                         *ngFor="let supplier of filteredSupplierList; trackBy: trackBySupplierId">
+                      <div class="supplier-item-content" (click)="selectSupplier(supplier)">
+                        <div class="supplier-name">{{ supplier.supplierName || supplier.name || supplier.companyName || 'Unknown Supplier' }}</div>
+                        <div class="supplier-contact" *ngIf="supplier.contact || supplier.phone || supplier.phoneNumber || supplier.emailAddress || supplier.email">
+                          {{ supplier.contact || supplier.phone || supplier.phoneNumber || supplier.emailAddress || supplier.email }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="supplier-no-results" *ngIf="filteredSupplierList.length === 0">
+                      <i class="bi bi-inbox"></i>
+                      <p>No suppliers found</p>
+                      <p class="supplier-loading-hint" *ngIf="supplierList.length === 0">Loading suppliers...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" 
+                     [ngModel]="currentStockReceive.supplierId || currentSupplierId" 
+                     (ngModelChange)="currentStockReceive.supplierId = $event"
+                     name="supplierId"
+                     required>
+            </div>
+
+            <!-- Quantity, cost, margin, and unit sell -->
+            <div class="five-column-wrapper">
+              <div class="stock-item-form-field">
+                <label for="quantityReceived" class="stock-item-form-label">
+                  Quantity Received <span class="required">*</span>
+                </label>
+                <input type="number" 
+                       [ngModel]="currentStockReceive.quantityReceived" 
+                       (ngModelChange)="onQuantityReceivedChange($event)"
+                       name="quantityReceived" 
+                       class="stock-item-form-input" 
+                       id="quantityReceived" 
+                       placeholder="Enter quantity" 
+                       required
+                       min="1">
+              </div>
+
+              <div class="stock-item-form-field">
+                <label for="totalCostPrice" class="stock-item-form-label">
+                  Total Cost Price <span class="required">*</span>
+                </label>
+                <input type="number" 
+                       [ngModel]="currentStockReceive.totalCostPrice" 
+                       (ngModelChange)="onTotalCostPriceChange($event)"
+                       (blur)="onTotalCostPriceBlur()"
+                       name="totalCostPrice" 
+                       class="stock-item-form-input" 
+                       id="totalCostPrice" 
+                       placeholder="Enter total cost" 
+                       required
+                       step="1"
+                       min="0">
+              </div>
+
+              <div class="stock-item-form-field">
+                <label for="unitCostPrice" class="stock-item-form-label">
+                  Unit Cost Price <span class="required">*</span>
+                </label>
+                <input type="number" 
+                       [ngModel]="currentStockReceive.unitCostPrice" 
+                       (ngModelChange)="onUnitCostPriceChange($event)"
+                       (blur)="onUnitCostPriceBlur()"
+                       name="unitCostPrice" 
+                       class="stock-item-form-input" 
+                       id="unitCostPrice" 
+                       placeholder="Enter unit cost" 
+                       required
+                       step="1"
+                       min="0">
+              </div>
+
+              <div class="stock-item-form-field stock-item-form-field--wide">
+                <app-unit-selling-model-picker
+                  [stockItemId]="currentStockReceive.stockItemId"
+                  [unitCostPrice]="currentStockReceive.unitCostPrice"
+                  [(selectedModelId)]="selectedUnitSellingModelId"
+                  (selectedModelChange)="onUnitSellingModelSelected($event)"
+                  (unitSellingPriceChange)="onUnitSellingModelPriceChange($event)">
+                </app-unit-selling-model-picker>
+              </div>
+            </div>
+
+            <!-- Receive Date and Expiry Date on same line -->
+            <div class="stock-item-form-field">
+              <label for="receiveDate" class="stock-item-form-label">Receive Date</label>
+              <input type="date" 
+                     [ngModel]="receiveDate" 
+                     (ngModelChange)="receiveDate = $event"
+                     name="receiveDate" 
+                     class="stock-item-form-input" 
+                     id="receiveDate">
+            </div>
+
+            <div class="stock-item-form-field">
+              <label for="expiryDate" class="stock-item-form-label">Expiry Date</label>
+              <input type="date" 
+                     [ngModel]="expiryDate" 
+                     (ngModelChange)="expiryDate = $event"
+                     name="expiryDate" 
+                     class="stock-item-form-input" 
+                     id="expiryDate">
+            </div>
+
+            <!-- Batch Number, Packaging, and Invoice Number on same line -->
+            <div class="three-column-wrapper">
+              <div class="stock-item-form-field">
+                <label for="batchNumber" class="stock-item-form-label">Batch Number</label>
+                <input type="text" 
+                       [ngModel]="currentStockReceive.batchNumber" 
+                       (ngModelChange)="currentStockReceive.batchNumber = $event"
+                       name="batchNumber" 
+                       class="stock-item-form-input" 
+                       id="batchNumber" 
+                       placeholder="Enter batch number">
+              </div>
+
+              <div class="stock-item-form-field">
+                <label for="packaging" class="stock-item-form-label">Packaging</label>
+                <input type="text" 
+                       [ngModel]="currentStockReceive.packaging" 
+                       (ngModelChange)="currentStockReceive.packaging = $event"
+                       name="packaging" 
+                       class="stock-item-form-input" 
+                       id="packaging" 
+                       placeholder="Enter packaging">
+              </div>
+
+              <div class="stock-item-form-field">
+                <label for="invoiceNumber" class="stock-item-form-label">Invoice Number</label>
+                <input type="text" 
+                       [ngModel]="currentStockReceive.invoiceNumber" 
+                       (ngModelChange)="currentStockReceive.invoiceNumber = $event"
+                       name="invoiceNumber" 
+                       class="stock-item-form-input" 
+                       id="invoiceNumber" 
+                       placeholder="Enter invoice number">
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="stock-item-form-field full-width">
+              <label for="notes" class="stock-item-form-label">Notes</label>
+              <textarea [ngModel]="currentStockReceive.notes" 
+                        (ngModelChange)="currentStockReceive.notes = $event"
+                        name="notes" 
+                        class="stock-item-form-textarea" 
+                        id="notes" 
+                        placeholder="Additional notes"
+                        rows="3"></textarea>
+            </div>
+          </div>
+
+          <div
+            *ngIf="showDivAddToDataBaseNewStockReceive && stockReceiveMissingFields.length"
+            class="stock-item-form-message stock-item-form-message--modal stock-item-form-message--inline-error error">
+            <i class="bi bi-exclamation-circle-fill"></i>
+            <div>
+              <strong>Check these fields:</strong>
+              {{ stockReceiveMissingFields.join(', ') }}
+            </div>
+          </div>
+
+          <div class="stock-item-modal-actions">
+            <button type="button" 
+                    class="stock-item-btn-secondary" 
+                    (click)="closeStockReceiveModal()"
+                    [disabled]="isButtonDisabled">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="stock-item-btn-primary" 
+                    [disabled]="isButtonDisabled || showDivUpdatedLoaderNewStockReceive">
+              <span *ngIf="!showDivUpdatedLoaderNewStockReceive">
+                <i class="bi" [ngClass]="isEditingStockReceive ? 'bi-check-lg' : 'bi-plus-lg'"></i>
+                {{ isEditingStockReceive ? 'Update' : 'Save' }}
+              </span>
+              <span *ngIf="showDivUpdatedLoaderNewStockReceive" class="button-loading">
+                <span class="spinner-small"></span>
+                {{ isEditingStockReceive ? 'Updating...' : 'Saving...' }}
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Page Content -->
+<div class="stock-receive-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-box-arrow-in-down"></i>
+        Stock Receive
+        <span class="page-title-info-wrapper">
+          <i class="bi bi-info-circle page-title-info-icon" 
+             [attr.aria-label]="'Record and manage stock received from suppliers'"></i>
+          <span class="page-title-info-tooltip">Record and manage stock received from suppliers</span>
+        </span>
+      </h2>
+      <nav class="breadcrumb-nav" aria-label="breadcrumb">
+        <ol class="breadcrumb-list">
+          <li class="breadcrumb-item">
+            <a href="#" class="breadcrumb-link">Home</a>
+          </li>
+          <li class="breadcrumb-separator">
+            <i class="bi bi-chevron-right"></i>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="#" class="breadcrumb-link">Inventory</a>
+          </li>
+          <li class="breadcrumb-separator">
+            <i class="bi bi-chevron-right"></i>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Stock Receive
+          </li>
+        </ol>
+      </nav>
+    </div>
+    <div class="header-right">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" 
+               [ngModel]="searchQuery" 
+               (ngModelChange)="searchQuery = $event"
+               placeholder="Search stock receives..." 
+               class="search-input">
+      </div>
+      <button class="add-stock-item-btn" (click)="openStockReceiveModal()">
+        <i class="bi bi-plus-circle"></i>
+        Receive New Stock
+      </button>
+    </div>
+  </div>
+
+  <!-- Response Message -->
+  <div *ngIf="showDivUpdatedOut" 
+       class="alert" 
+       [style.background-color]="responseColor"
+       [style.color]="responseColor === 'rgb(11, 155, 112)' ? 'white' : 'white'">
+    {{ responseMessage }}
+  </div>
+
+  <!-- Search and Filter Section -->
+  <div class="table-controls" *ngIf="!isLoadingService">
+    <div class="search-filter-container">
+      <select class="filter-select" 
+              [ngModel]="selectedColumn" 
+              (ngModelChange)="selectedColumn = $event">
+        <option value="all">All Fields</option>
+        <option value="stockItemName">Stock Item</option>
+        <option value="storeName">Store</option>
+        <option value="batchNumber">BATCH NO</option>
+        <option value="supplierName">Supplier</option>
+        <option value="invoiceNumber">Invoice Number</option>
+      </select>
+      <div class="date-filter-container">
+        <div class="date-filter-group">
+          <label for="filterStartDate" class="date-filter-label">
+            <i class="bi bi-calendar3"></i>
+            From Date
+          </label>
+          <input type="date" 
+                 id="filterStartDate"
+                 class="date-filter-input"
+                 [ngModel]="filterStartDate" 
+                 (ngModelChange)="filterStartDate = $event">
+        </div>
+        <div class="date-filter-group">
+          <label for="filterEndDate" class="date-filter-label">
+            <i class="bi bi-calendar3"></i>
+            To Date
+          </label>
+          <input type="date" 
+                 id="filterEndDate"
+                 class="date-filter-input"
+                 [ngModel]="filterEndDate" 
+                 (ngModelChange)="filterEndDate = $event">
+        </div>
+        <button type="button" 
+                class="date-filter-clear-btn"
+                (click)="clearDateFilters()"
+                *ngIf="filterStartDate || filterEndDate"
+                title="Clear date filters">
+          <i class="bi bi-x-circle"></i>
+          Clear
+        </button>
+      </div>
+      <select class="page-size-select" 
+              [ngModel]="itemsPerPage" 
+              (ngModelChange)="itemsPerPage = $event">
+        <option [value]="10">10 per page</option>
+        <option [value]="15">15 per page</option>
+        <option [value]="20">20 per page</option>
+        <option [value]="50">50 per page</option>
+        <option [value]="100">100 per page</option>
+      </select>
+      <div class="dropdown">
+        <button class="action-btn" type="button" (click)="buttonClickIconChange()" data-bs-toggle="dropdown">
+          <i class="bi bi-save"></i>
+          Export
+          <i [ngClass]="iconChange"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" (click)="exportToExcel()" style="cursor: pointer;">Export to Excel</a></li>
+          <li><a class="dropdown-item" (click)="downloadPdf()" style="cursor: pointer;">Export to PDF</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoadingService" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading stock receive records...</p>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container" *ngIf="!isLoadingService">
+    <div class="table-wrapper" #htmlData>
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>SN</th>
+            <th class="stock-item-column">Stock Item</th>
+            <th class="store-column">Store</th>
+            <th>QTY RCVD</th>
+            <th>QTY AVAIL</th>
+            <th>New QTY</th>
+            <th>Unit Cost</th>
+            <th>Total Cost</th>
+            <th>Receive Date</th>
+            <th>Expiry Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let receive of filteredStockReceiveList | paginate: { itemsPerPage: itemsPerPage, currentPage: page }; let i = index">
+            <td>
+              <span class="shelf-number">{{ i + 1 }}</span>
+            </td>
+            <td>
+              <div class="item-details">
+                <div class="item-title" [title]="receive.stockItemName || 'N/A'">{{ receive.stockItemName || 'N/A' }}</div>
+              </div>
+            </td>
+            <td>{{ receive.storeName || 'N/A' }}</td>
+            <td>{{ receive.quantityReceived || 'N/A' }}</td>
+            <td>{{ receive.quantityAvailable != null ? receive.quantityAvailable : 'N/A' }}</td>
+            <td>{{ receive.newQuantity != null ? receive.newQuantity : 'N/A' }}</td>
+            <td>{{ formatMoneyDisplay(receive.unitCostPrice) }}</td>
+            <td>{{ formatMoneyDisplay(receive.totalCostPrice) }}</td>
+            <td>{{ receive.receiveDate || 'N/A' }}</td>
+            <td>{{ receive.expiryDate || 'N/A' }}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon" title="View Details" (click)="viewStockReceiveDetails(receive)">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn-icon edit" title="Edit Record" (click)="editStockReceive(receive)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn-icon delete" title="Delete Record" (click)="deleteStockReceive(receive)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredStockReceiveList.length === 0">
+            <td colspan="11" class="no-data">
+              <i class="bi bi-inbox"></i>
+              <p>No stock receive records found</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-wrapper" *ngIf="filteredStockReceiveList.length > 0">
+      <div class="pagination-info">
+        Showing {{ (page - 1) * itemsPerPage + 1 }} to {{ page * itemsPerPage > filteredStockReceiveList.length ? filteredStockReceiveList.length : page * itemsPerPage }} of {{ filteredStockReceiveList.length }} records
+      </div>
+      <pagination-controls 
+        (pageChange)="page = $event"
+        [maxSize]="5"
+        [directionLinks]="true"
+        [autoHide]="true"
+        [responsive]="true">
+      </pagination-controls>
+    </div>
+  </div>
+</div>

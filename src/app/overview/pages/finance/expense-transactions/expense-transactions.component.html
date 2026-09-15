@@ -1,0 +1,384 @@
+<div class="expense-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div>
+      <h1><i class="bi bi-receipt-cutoff"></i> Expense Transactions</h1>
+      <p class="subtitle">Record, search and manage all hospital expense transactions.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="loadAll()" [disabled]="isLoading">
+        <i class="bi bi-arrow-repeat"></i> Refresh
+      </button>
+      <button class="btn-primary" (click)="openTransactionModal()">
+        <i class="bi bi-plus-circle"></i> New Expense
+      </button>
+    </div>
+  </div>
+
+  <div class="breadcrumb-row">
+    <a routerLink="/overview/expenses"><i class="bi bi-receipt"></i> Expenses</a>
+    <span class="sep">/</span>
+    <a routerLink="/overview/expense-categories"><i class="bi bi-folder2-open"></i> Categories</a>
+    <span class="sep">/</span>
+    <a routerLink="/overview/expense-accounts"><i class="bi bi-wallet2"></i> Accounts</a>
+    <span class="sep">/</span>
+    <span class="current"><i class="bi bi-receipt-cutoff"></i> Transactions</span>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card accent-blue">
+      <i class="bi bi-calendar-month"></i>
+      <div>
+        <div class="stat-value">{{ formatAmount(thisMonthTotal) }}</div>
+        <div class="stat-label">This Month</div>
+      </div>
+    </div>
+    <div class="stat-card accent-green">
+      <i class="bi bi-calendar-day"></i>
+      <div>
+        <div class="stat-value">{{ formatAmount(todayTotal) }}</div>
+        <div class="stat-label">Today</div>
+      </div>
+    </div>
+    <div class="stat-card accent-purple">
+      <i class="bi bi-calendar2-minus"></i>
+      <div>
+        <div class="stat-value">{{ formatAmount(lastMonthTotal) }}</div>
+        <div class="stat-label">Last Month</div>
+      </div>
+    </div>
+    <div class="stat-card accent-purple">
+      <i class="bi bi-receipt-cutoff"></i>
+      <div>
+        <div class="stat-value">{{ transactions.length }}</div>
+        <div class="stat-label">Total Transactions</div>
+      </div>
+    </div>
+    <div class="stat-card accent-green">
+      <i class="bi bi-wallet2"></i>
+      <div>
+        <div class="stat-value">{{ accounts.length }}</div>
+        <div class="stat-label">Accounts</div>
+      </div>
+    </div>
+    <div class="stat-card accent-blue">
+      <i class="bi bi-cash-stack"></i>
+      <div>
+        <div class="stat-value">{{ formatAmount(filteredTotalAmount) }}</div>
+        <div class="stat-label">Filtered Total</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="alert success" *ngIf="responseMessage">{{ responseMessage }}</p>
+  <p class="alert error" *ngIf="responseError">{{ responseError }}</p>
+
+  <div class="surface">
+    <div class="surface-head">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="currentPage = 1" placeholder="Search reference, account, receiver..." />
+      </div>
+      <select class="filter-select" [(ngModel)]="accountFilter" (ngModelChange)="currentPage = 1">
+        <option value="">All Accounts</option>
+        <option *ngFor="let acc of accounts" [value]="acc.id">{{ acc.accountName }}</option>
+      </select>
+      <div class="date-range">
+        <label>From</label>
+        <input type="date" class="filter-select filter-date" [(ngModel)]="dateFrom" (ngModelChange)="currentPage = 1" />
+      </div>
+      <div class="date-range">
+        <label>To</label>
+        <input type="date" class="filter-select filter-date" [(ngModel)]="dateTo" (ngModelChange)="currentPage = 1" />
+      </div>
+      <button class="btn-clear" *ngIf="searchQuery || accountFilter || dateFrom || dateTo" (click)="clearFilters()">
+        <i class="bi bi-x-circle"></i> Clear
+      </button>
+      <div class="count-pill">{{ filteredTransactions.length }} found</div>
+    </div>
+
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading transactions...</p>
+    </div>
+
+    <div *ngIf="!isLoading" class="table-wrap">
+      <table class="data-table" *ngIf="filteredTransactions.length; else emptyState">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Account</th>
+            <th>Amount</th>
+            <th>Receiver</th>
+            <th>Recorded By</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginatedTransactions" [class.reversed]="item.reversed">
+            <td class="mono">{{ item.referenceNumber || item.id }}</td>
+            <td>
+              <div class="cell-name">{{ item.expenseAccountName }}</div>
+              <div class="cell-desc" *ngIf="item.description">{{ item.description }}</div>
+            </td>
+            <td class="cell-amount">{{ formatAmount(item.amountTransacted) }}</td>
+            <td>{{ item.receiver || '—' }}</td>
+            <td>{{ item.userName || '—' }}</td>
+            <td>{{ formatDate(item.dateOfExpenseTransaction) }}</td>
+            <td class="actions-cell">
+              <button class="btn-icon edit" title="Edit" (click)="openEditTransaction(item)">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button class="btn-icon warning" title="Reverse Transaction" (click)="confirmReverse(item)">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #emptyState>
+        <div class="empty-state">
+          <i class="bi bi-receipt"></i>
+          <p>No expense transactions yet.</p>
+          <button class="btn-primary" (click)="openTransactionModal()">Record first expense</button>
+        </div>
+      </ng-template>
+
+      <div class="pagination" *ngIf="filteredTransactions.length > itemsPerPage">
+        <button class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Record Expense Modal -->
+<div class="modal-overlay" *ngIf="showTransactionModal" (click)="closeModals()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3><i class="bi bi-plus-circle"></i> {{ editingTransaction ? 'Edit Expense' : 'Record Expense' }}</h3>
+      <button class="modal-close" (click)="closeModals()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="form-grid">
+      <!-- Expense Account Picker -->
+      <div class="form-field full-width">
+        <label>Expense Account</label>
+        <div class="exp-account-picker" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="exp-account-picker-trigger"
+            [class.open]="expenseAccountDropdownOpen"
+            (click)="toggleExpenseAccountDropdown($event)">
+            <i class="bi bi-chevron-down exp-caret" aria-hidden="true"></i>
+            <span [class.placeholder]="transactionForm.expenseAccountId == null">{{ selectedExpenseAccountLabel }}</span>
+          </button>
+          <div class="exp-account-picker-menu" *ngIf="expenseAccountDropdownOpen" role="listbox">
+            <div class="exp-toolbar">
+              <div class="exp-search-wrap">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Search accounts..." [(ngModel)]="expenseAccountSearch" (click)="$event.stopPropagation()" />
+              </div>
+              <button type="button" class="exp-new-btn" (click)="openQuickAccountInPicker($event)" [disabled]="isSaving">
+                <i class="bi bi-plus-lg"></i> New account
+              </button>
+            </div>
+            <ul class="exp-list">
+              <li *ngFor="let acc of filteredAccountsForPicker"
+                [class.selected]="transactionForm.expenseAccountId === acc.id"
+                (click)="selectExpenseAccount(acc, $event)">
+                <span class="exp-item-name">{{ acc.accountName }}</span>
+                <span class="exp-item-cat">{{ acc.expenseCategoryName || '—' }}</span>
+              </li>
+              <li class="exp-empty" *ngIf="!filteredAccountsForPicker.length">
+                <span *ngIf="accounts.length === 0">No accounts yet — use <strong>New account</strong> above.</span>
+                <span *ngIf="accounts.length > 0">No accounts match your search.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Client / Receiver Picker -->
+      <div class="form-field full-width">
+        <label>Paid to / Receiver (Client)</label>
+        <div class="exp-account-picker" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="exp-account-picker-trigger"
+            [class.open]="receiverDropdownOpen"
+            (click)="toggleReceiverDropdown($event)">
+            <i class="bi bi-chevron-down exp-caret" aria-hidden="true"></i>
+            <span [class.placeholder]="!transactionForm.receiver">{{ selectedReceiverLabel }}</span>
+          </button>
+          <div class="exp-account-picker-menu" *ngIf="receiverDropdownOpen" role="listbox">
+            <div class="exp-toolbar">
+              <div class="exp-search-wrap">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Search clients..." [(ngModel)]="receiverSearch" (click)="$event.stopPropagation()" />
+              </div>
+              <button type="button" class="exp-new-btn" (click)="openAddClientModal($event)" [disabled]="isSaving">
+                <i class="bi bi-plus-lg"></i> New client
+              </button>
+            </div>
+            <ul class="exp-list">
+              <li *ngFor="let c of filteredClientsForPicker"
+                [class.selected]="transactionForm.receiverId === c.id"
+                (click)="selectClient(c, $event)">
+                <span class="exp-item-name">{{ clientFullName(c) }}</span>
+                <span class="exp-item-cat">
+                  {{ c.occupation || 'No occupation' }}
+                  • Age: {{ c.patientAge ?? c.age ?? '—' }}
+                  • Group: {{ c.patientGroupName || c.patientGroup?.groupName || c.patientGroup || '—' }}
+                </span>
+              </li>
+              <li class="exp-empty" *ngIf="!filteredClientsForPicker.length">
+                <span *ngIf="clients.length === 0">No clients yet — use <strong>New client</strong> above.</span>
+                <span *ngIf="clients.length > 0">No clients match your search.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label>Amount</label>
+        <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="transactionForm.amountTransacted" />
+      </div>
+
+      <div class="form-field">
+        <label>Date &amp; Time</label>
+        <input type="datetime-local" class="form-control" [(ngModel)]="transactionForm.transactionDate" />
+      </div>
+
+      <div class="form-field full-width">
+        <label>Description / Reason</label>
+        <textarea rows="3" class="form-control" [(ngModel)]="transactionForm.description" placeholder="What was this expense for?"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="closeModals()" [disabled]="isSaving">Cancel</button>
+      <button class="btn-primary" (click)="saveTransaction()" [disabled]="isSaving">
+        {{ isSaving ? 'Saving...' : (editingTransaction ? 'Update Expense' : 'Save Expense') }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Reverse Confirm Modal -->
+<div class="modal-overlay" *ngIf="showReverseConfirm" (click)="closeModals()">
+  <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+    <h3><i class="bi bi-arrow-counterclockwise"></i> Reverse Transaction?</h3>
+    <p class="delete-desc">This will reverse the expense transaction <strong>{{ reverseTarget?.referenceNumber || reverseTarget?.expenseAccountName }}</strong> of <strong>{{ formatAmount(reverseTarget?.amountTransacted) }}</strong>. This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="closeModals()" [disabled]="isSaving">Cancel</button>
+      <button class="btn-danger" (click)="reverseTransaction()" [disabled]="isSaving">
+        {{ isSaving ? 'Reversing...' : 'Reverse' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add New Expense Account Modal -->
+<div class="modal-overlay" *ngIf="showAddAccountModal" (click)="cancelQuickAccountInPicker()">
+  <div class="modal-card modal-sm modal-registry-style" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3><i class="bi bi-wallet2"></i> New Expense Account</h3>
+      <button class="modal-close" (click)="cancelQuickAccountInPicker()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="form-grid">
+      <div class="form-field full-width">
+        <label>Category</label>
+        <select class="form-control" [(ngModel)]="quickAccountForm.categoryId">
+          <option [ngValue]="null" disabled>Select category</option>
+          <option *ngFor="let cat of categories" [ngValue]="cat.id">{{ cat.categoryName }}</option>
+        </select>
+      </div>
+      <div class="form-field full-width">
+        <label>Account Name</label>
+        <input class="form-control" type="text" [(ngModel)]="quickAccountForm.accountName" placeholder="Account name" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="cancelQuickAccountInPicker()" [disabled]="isSaving">Cancel</button>
+      <button class="btn-primary" (click)="saveQuickAccountFromPicker()" [disabled]="isSaving">
+        {{ isSaving ? 'Saving...' : 'Create & select' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add New Client Modal -->
+<div class="modal-overlay" *ngIf="showAddClientModal" (click)="closeAddClientModal()">
+  <div class="modal-card modal-client-wide modal-registry-style" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3><i class="bi bi-person-plus"></i> Add / Edit Client</h3>
+      <button class="modal-close" (click)="closeAddClientModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="form-grid">
+      <div class="form-field">
+        <label>First Name</label>
+        <input class="form-control" type="text" [(ngModel)]="newClientForm.patientFirstName" placeholder="First name" />
+      </div>
+      <div class="form-field">
+        <label>Second Name</label>
+        <input class="form-control" type="text" [(ngModel)]="newClientForm.patientSecondName" placeholder="Second name" />
+      </div>
+      <div class="form-field">
+        <label>Contact / Phone</label>
+        <input class="form-control" type="text" [(ngModel)]="newClientForm.patientContact" placeholder="Starts with 256" />
+      </div>
+      <div class="form-field">
+        <label>Gender</label>
+        <select class="form-control" [(ngModel)]="newClientForm.patientGender">
+          <option value="">Select gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Date of Birth</label>
+        <input class="form-control" type="date" [(ngModel)]="newClientForm.patientDateOfBirth" />
+      </div>
+      <div class="form-field">
+        <label>Age</label>
+        <input class="form-control" type="number" min="0" step="0.01" [(ngModel)]="newClientForm.patientAge" placeholder="Age" />
+      </div>
+      <div class="form-field">
+        <label>Occupation</label>
+        <input class="form-control" type="text" [(ngModel)]="newClientForm.occupation" placeholder="Occupation" />
+      </div>
+      <div class="form-field">
+        <label>Address</label>
+        <input class="form-control" type="text" [(ngModel)]="newClientForm.patientAddress" placeholder="Address" />
+      </div>
+      <div class="form-field full-width">
+        <label>Next of Kin Name</label>
+        <input class="form-control" type="text" [(ngModel)]="newClientForm.nextOfKinName" placeholder="Next of kin name" />
+      </div>
+      <div class="form-field">
+        <label>Next of Kin Contact</label>
+        <input class="form-control" type="text" [(ngModel)]="newClientForm.nextOfKinContact" placeholder="Starts with 256" />
+      </div>
+      <div class="form-field">
+        <label>Relationship</label>
+        <input class="form-control" type="text" [(ngModel)]="newClientForm.relationship" placeholder="Relationship" />
+      </div>
+      <div class="form-field full-width">
+        <label>Next of Kin Address</label>
+        <textarea class="form-control" rows="2" [(ngModel)]="newClientForm.nextOfKinAddress" placeholder="Next of kin address"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="closeAddClientModal()" [disabled]="isSaving">Cancel</button>
+      <button class="btn-primary" (click)="saveNewClient()" [disabled]="isSaving">
+        {{ isSaving ? 'Saving...' : 'Add Client' }}
+      </button>
+    </div>
+  </div>
+</div>

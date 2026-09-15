@@ -1,0 +1,119 @@
+<div class="shop-dose-editor">
+  <div class="shop-dose-editor__head">
+    <div>
+      <strong>Standard dosages</strong>
+      <p>These presets appear in the Standard Dosages popup when this item is chosen.</p>
+    </div>
+    <div class="shop-dose-editor__actions">
+      <button type="button" class="btn btn-outline-primary btn-sm" (click)="addRow()" [disabled]="!itemId">
+        Add dosage rule
+      </button>
+      <button type="button" class="btn btn-primary btn-sm" (click)="saveRules()" [disabled]="!itemId || saving">
+        {{ saving ? 'Saving…' : 'Save dosages' }}
+      </button>
+    </div>
+  </div>
+
+  <p class="shop-dose-editor__hint" *ngIf="!itemId">Save the item first, then add standard dosages.</p>
+  <p class="shop-dose-editor__hint" *ngIf="loading">Loading dosage rules…</p>
+  <p class="shop-dose-editor__hint" *ngIf="message">{{ message }}</p>
+
+  <div class="shop-dose-card" *ngFor="let rule of rows; let ri = index">
+    <div class="shop-dose-card__head">
+      <button type="button" class="shop-dose-card__toggle" (click)="toggleRow(ri)">
+        {{ rule.title || ('Rule ' + (ri + 1)) }}
+        <small>{{ rule.doseCalculationType }} · {{ rule.frequencyValue }} / {{ periodLabel(rule.frequencyUnit) }}</small>
+      </button>
+      <label class="shop-dose-card__active">
+        <input type="checkbox" [(ngModel)]="rule.active" [name]="'shopDoseActive_' + ri" />
+        Active
+      </label>
+      <button type="button" class="btn btn-link btn-sm text-danger p-0" (click)="removeRow(ri)">Remove</button>
+    </div>
+
+    <div class="shop-dose-card__body" *ngIf="rule.expanded">
+      <label>
+        Title
+        <input type="text" [(ngModel)]="rule.title" [name]="'shopDoseTitle_' + ri" placeholder="Adult standard dose" />
+      </label>
+      <label>
+        Match label
+        <input type="text" [(ngModel)]="rule.matchLabel" [name]="'shopDoseMatch_' + ri" placeholder="Adults" />
+      </label>
+      <label>
+        Rule label
+        <input type="text" [(ngModel)]="rule.ruleLabel" [name]="'shopDoseRule_' + ri" placeholder="500 mg TDS x 5 days" />
+      </label>
+      <label>
+        Calculation
+        <select [(ngModel)]="rule.doseCalculationType" [name]="'shopDoseType_' + ri">
+          <option *ngFor="let option of calculationTypes" [ngValue]="option.value">{{ option.label }}</option>
+        </select>
+      </label>
+      <label *ngIf="rule.doseCalculationType === 'FIXED'">
+        Fixed dose
+        <input type="number" [(ngModel)]="rule.fixedDoseValue" [name]="'shopDoseFixed_' + ri" />
+      </label>
+      <label *ngIf="rule.doseCalculationType === 'FIXED'">
+        Dose unit
+        <input type="text" [(ngModel)]="rule.fixedDoseUnit" [name]="'shopDoseFixedUnit_' + ri" />
+      </label>
+      <label *ngIf="rule.doseCalculationType !== 'FIXED'">
+        Weight dose
+        <input type="number" [(ngModel)]="rule.weightDoseValue" [name]="'shopDoseWeight_' + ri" />
+      </label>
+      <label *ngIf="rule.doseCalculationType !== 'FIXED'">
+        Weight unit
+        <input type="text" [(ngModel)]="rule.weightDoseUnit" [name]="'shopDoseWeightUnit_' + ri" />
+      </label>
+      <label>
+        Min age (years)
+        <input type="number" [(ngModel)]="rule.minAgeYears" [name]="'shopDoseMinAge_' + ri" />
+      </label>
+      <label>
+        Max age (years)
+        <input type="number" [(ngModel)]="rule.maxAgeYears" [name]="'shopDoseMaxAge_' + ri" />
+      </label>
+      <label>
+        Min weight (kg)
+        <input type="number" [(ngModel)]="rule.minWeightKg" [name]="'shopDoseMinWt_' + ri" />
+      </label>
+      <label>
+        Max weight (kg)
+        <input type="number" [(ngModel)]="rule.maxWeightKg" [name]="'shopDoseMaxWt_' + ri" />
+      </label>
+      <label>
+        Route
+        <input type="text" [(ngModel)]="rule.route" [name]="'shopDoseRoute_' + ri" />
+      </label>
+      <label>
+        Frequency
+        <input type="number" [(ngModel)]="rule.frequencyValue" [name]="'shopDoseFreq_' + ri" />
+      </label>
+      <label>
+        Freq. unit
+        <select [(ngModel)]="rule.frequencyUnit" [name]="'shopDoseFreqUnit_' + ri">
+          <option *ngFor="let unit of periodUnits" [ngValue]="unit.value">{{ unit.label }}</option>
+        </select>
+      </label>
+      <label>
+        Duration
+        <input type="number" [(ngModel)]="rule.durationValue" [name]="'shopDoseDur_' + ri" />
+      </label>
+      <label>
+        Duration unit
+        <select [(ngModel)]="rule.durationUnit" [name]="'shopDoseDurUnit_' + ri">
+          <option *ngFor="let unit of periodUnits" [ngValue]="unit.value">{{ unit.label }}</option>
+        </select>
+      </label>
+      <label class="shop-dose-card__wide">
+        Instructions
+        <textarea [(ngModel)]="rule.instructions" [name]="'shopDoseInstr_' + ri" rows="2"></textarea>
+      </label>
+      <label class="shop-dose-card__wide">
+        Warning
+        <input type="text" [(ngModel)]="rule.warning" [name]="'shopDoseWarn_' + ri" />
+      </label>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,6 @@
+<div *ngIf="showApiResolving" class="api-resolving-banner" aria-live="polite">Connecting to server…</div>
+<app-server-connection *ngIf="showServerConnection"></app-server-connection>
+<!-- Overview hosts its own header beside the sidebar (university shell). -->
+<app-header *ngIf="showGlobalHeader"></app-header>
+<router-outlet></router-outlet>
+<app-global-feedback></app-global-feedback>

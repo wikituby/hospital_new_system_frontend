@@ -1,0 +1,460 @@
+<div class="stock-tracking-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-graph-up-arrow"></i>
+        Stock Tracking
+      </h2>
+      <p class="page-subtitle">
+        Track stock movements (IN/OUT). <strong>Source</strong> shows whether the line came from a transfer,
+        adjustment, pharmacy dispense, stock receive, expiry register, etc.
+      </p>
+      <p class="page-subtitle filter-hint" *ngIf="filteredStockItemName">
+        <i class="bi bi-funnel-fill"></i>
+        Timeline for <strong>{{ filteredStockItemName }}</strong>
+        <ng-container *ngIf="filteredBatchFilterHint">
+          — <strong>{{ filteredBatchFilterHint }}</strong>
+        </ng-container>
+        <span class="filter-hint-meta"> (oldest first — receival through sell/out)</span>
+      </p>
+    </div>
+    <div class="header-right filter-toolbar filter-toolbar--picker">
+      <div class="stock-item-picker-field">
+        <label class="filter-label" for="stockItemPickerTrigger">Stock item</label>
+        <button
+          type="button"
+          id="stockItemPickerTrigger"
+          class="batch-picker-trigger stock-item-picker-trigger"
+          (click)="openStockItemPicker()"
+          [disabled]="isLoadingStockItems"
+        >
+          <span
+            class="batch-picker-trigger-label"
+            [class.placeholder]="!selectedStockItemId"
+          >
+            {{ stockItemPickerTriggerSummary }}
+          </span>
+          <span class="batch-picker-trigger-icons">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <i class="bi bi-chevron-down" aria-hidden="true"></i>
+          </span>
+        </button>
+      </div>
+      <div class="stock-batch-picker-field">
+        <label class="filter-label" for="stockBatchPickerTrigger">Stock batch</label>
+        <div class="batch-filter-trigger-row">
+          <button
+            type="button"
+            id="stockBatchPickerTrigger"
+            class="batch-picker-trigger stock-batch-picker-trigger"
+            (click)="openStockBatchPicker()"
+            [disabled]="!selectedStockItemId || isLoadingService"
+            [title]="!selectedStockItemId ? 'Choose a stock item first' : 'Filter by batch for this item'"
+          >
+            <span
+              class="batch-picker-trigger-label"
+              [class.placeholder]="!selectedStockItemId"
+            >
+              {{ stockBatchPickerTriggerSummary }}
+            </span>
+            <span class="batch-picker-trigger-icons">
+              <i class="bi bi-search" aria-hidden="true"></i>
+              <i class="bi bi-chevron-down" aria-hidden="true"></i>
+            </span>
+          </button>
+          <button
+            type="button"
+            class="filter-mini-clear"
+            *ngIf="selectedStockItemId && selectedStockBatchId"
+            (click)="clearStockBatchFilter()"
+            title="Show all batches for this item"
+            aria-label="Clear batch filter"
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="action-btn action-btn--organogram"
+        (click)="openOrganogram()"
+        title="Movement map: stores and flows from tracking data"
+      >
+        <i class="bi bi-diagram-3"></i>
+        Show organogram
+      </button>
+      <button
+        type="button"
+        class="action-btn"
+        *ngIf="selectedStockItemId"
+        (click)="clearStockItemFilter()"
+        title="Clear item and batch — show all tracking"
+      >
+        <i class="bi bi-x-lg"></i>
+        Clear filters
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="isLoadingService" class="loading-container">
+    <div class="loader"></div>
+    <p>Loading stock tracking records...</p>
+  </div>
+
+  <div class="table-container table-container--scroll" *ngIf="!isLoadingService">
+    <table class="modern-table stock-tracking-table">
+      <thead>
+        <tr>
+          <th class="col-sn">SN</th>
+          <th class="col-id">ID</th>
+          <th class="col-item-id">Item ID</th>
+          <th class="col-item-name">Stock item</th>
+          <th class="col-store">Store</th>
+          <th class="col-expiry">Expiry</th>
+          <th class="col-datetime">Date &amp; time</th>
+          <th class="col-qty">Before</th>
+          <th class="col-type">Type</th>
+          <th class="col-source">Source</th>
+          <th class="col-qty">Δ Qty</th>
+          <th class="col-qty">After</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let tracking of stockTrackingList; let i = index">
+          <td class="col-sn">{{ i + 1 }}</td>
+          <td class="col-id">{{ displayCell(tracking.id) }}</td>
+          <td class="col-item-id">{{ displayCell(tracking.stockItemId) }}</td>
+          <td class="col-item-name">
+            <span
+              class="cell-clip"
+              [title]="displayTrackingStockItemName(tracking)"
+            >{{ displayTrackingStockItemName(tracking) }}</span>
+          </td>
+          <td class="col-store">
+            <span
+              class="cell-clip"
+              [title]="displayTrackingStoreTitle(tracking)"
+            >{{ displayTrackingStore(tracking) }}</span>
+          </td>
+          <td class="col-expiry">
+            <span
+              class="cell-clip"
+              [title]="displayTrackingExpiryTitle(tracking)"
+            >{{ displayTrackingExpiry(tracking) }}</span>
+          </td>
+          <td class="col-datetime">
+            <div
+              class="cell-datetime-stack"
+              [title]="displayTrackingDateTooltip(tracking)"
+            >
+              <span class="dt-date">{{ displayTrackingDate(tracking) }}</span>
+              <ng-container *ngIf="displayTrackingTime(tracking) as timeStr">
+                <span class="dt-time">{{ timeStr }}</span>
+              </ng-container>
+            </div>
+          </td>
+          <td class="col-qty">{{ displayCell(tracking.stockBeforeTransaction) }}</td>
+          <td class="col-type">
+            <span class="badge" [ngClass]="transactionBadgeClass(tracking.transactionType)">
+              {{ displayCell(tracking.transactionType) }}
+            </span>
+          </td>
+          <td class="col-source">
+            <span
+              class="cell-clip"
+              [ngClass]="trackingSourceBadgeClass(tracking)"
+              [title]="displayTrackingSourceTooltip(tracking)"
+            >{{ displayTrackingSource(tracking) }}</span>
+          </td>
+          <td class="col-qty">{{ displayCell(tracking.quantityChanged) }}</td>
+          <td class="col-qty">{{ displayCell(tracking.stockAfterTransaction) }}</td>
+        </tr>
+        <tr *ngIf="stockTrackingList.length === 0">
+          <td colspan="12" class="no-data">
+            <i class="bi bi-inbox"></i>
+            <p>No stock tracking records found</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Searchable stock item picker (same UX as stock transfer batch picker) -->
+  <div
+    class="batch-picker-overlay"
+    *ngIf="showStockItemPicker"
+    (click)="onStockItemPickerBackdrop($event)"
+    role="presentation"
+  >
+    <div
+      class="batch-picker-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="stockItemPickerTitle"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="batch-picker-header">
+        <h3 id="stockItemPickerTitle" class="batch-picker-title">
+          <i class="bi bi-box-seam" aria-hidden="true"></i>
+          Select stock item for tracking
+        </h3>
+        <button
+          type="button"
+          class="batch-picker-close"
+          (click)="closeStockItemPicker()"
+          aria-label="Close"
+        >
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="batch-picker-search">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input
+          type="text"
+          [(ngModel)]="stockItemPickerSearch"
+          [ngModelOptions]="{ standalone: true }"
+          placeholder="Search by name or id…"
+          autocomplete="off"
+          class="batch-picker-search-input"
+        />
+      </div>
+      <div class="batch-picker-list" role="listbox">
+        <button
+          type="button"
+          class="batch-picker-row batch-picker-row--all"
+          (click)="selectStockItemPickerAll()"
+        >
+          <span class="batch-picker-row-text">
+            <strong>All stock items</strong>
+            <span class="batch-picker-row-sub">Show every tracking row</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          class="batch-picker-row"
+          *ngFor="let si of filteredStockItemsForPicker; trackBy: trackStockItemById"
+          (click)="selectStockItemFromPicker(si)"
+        >
+          <span class="batch-picker-row-text">{{ stockItemLabel(si) }}</span>
+          <span class="batch-picker-row-meta" *ngIf="si.id != null">ID {{ si.id }}</span>
+        </button>
+        <div class="batch-picker-empty" *ngIf="filteredStockItemsForPicker.length === 0 && !isLoadingStockItems">
+          <i class="bi bi-inbox"></i>
+          <p *ngIf="stockItems.length === 0">No stock items loaded yet.</p>
+          <p *ngIf="stockItems.length > 0">No items match your search.</p>
+        </div>
+        <div class="batch-picker-empty" *ngIf="isLoadingStockItems && stockItems.length === 0">
+          <div class="batch-picker-loading-spinner" aria-hidden="true"></div>
+          <p>Loading stock items…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Searchable stock batch picker (batches for selected stock item only) -->
+  <div
+    class="batch-picker-overlay"
+    *ngIf="showStockBatchPicker"
+    (click)="onStockBatchPickerBackdrop($event)"
+    role="presentation"
+  >
+    <div
+      class="batch-picker-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="stockBatchPickerTitle"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="batch-picker-header">
+        <h3 id="stockBatchPickerTitle" class="batch-picker-title">
+          <i class="bi bi-layers" aria-hidden="true"></i>
+          Select stock batch
+        </h3>
+        <button
+          type="button"
+          class="batch-picker-close"
+          (click)="closeStockBatchPicker()"
+          aria-label="Close"
+        >
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <p class="batch-picker-context" *ngIf="filteredStockItemName">
+        For <strong>{{ filteredStockItemName }}</strong>
+      </p>
+      <div class="batch-picker-search">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input
+          type="text"
+          [(ngModel)]="stockBatchPickerSearch"
+          [ngModelOptions]="{ standalone: true }"
+          placeholder="Search batch #, id, store…"
+          autocomplete="off"
+          class="batch-picker-search-input"
+        />
+      </div>
+      <div class="batch-picker-list" role="listbox">
+        <button
+          type="button"
+          class="batch-picker-row batch-picker-row--all"
+          (click)="selectStockBatchPickerAll()"
+        >
+          <span class="batch-picker-row-text">
+            <strong>All batches</strong>
+            <span class="batch-picker-row-sub">Every movement for this stock item</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          class="batch-picker-row"
+          *ngFor="let b of filteredBatchesForPicker; trackBy: trackBatchByIdForPicker"
+          (click)="selectStockBatchFromPicker(b)"
+        >
+          <span class="batch-picker-row-text">{{ getStockBatchPickerLabel(b) }}</span>
+          <span class="batch-picker-row-meta" *ngIf="b.id != null">ID {{ b.id }}</span>
+        </button>
+        <div class="batch-picker-empty" *ngIf="!selectedStockItemId">
+          <i class="bi bi-info-circle"></i>
+          <p>Select a stock item first.</p>
+        </div>
+        <div
+          class="batch-picker-empty"
+          *ngIf="selectedStockItemId && batchesForSelectedStockItem.length === 0"
+        >
+          <i class="bi bi-inbox"></i>
+          <p>No stock batches found for this item.</p>
+        </div>
+        <div
+          class="batch-picker-empty"
+          *ngIf="
+            selectedStockItemId &&
+            batchesForSelectedStockItem.length > 0 &&
+            filteredBatchesForPicker.length === 0
+          "
+        >
+          <i class="bi bi-search"></i>
+          <p>No batches match your search.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock flow organogram: movement map only (no duplicate table) -->
+  <div
+    class="organogram-overlay"
+    *ngIf="showOrganogramModal"
+    (click)="onOrganogramBackdrop($event)"
+    role="presentation"
+  >
+    <div
+      class="organogram-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="organogramDialogHeading"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="organogram-header">
+        <div>
+          <h3 id="organogramDialogHeading" class="organogram-title">
+            <i class="bi bi-diagram-3" aria-hidden="true"></i>
+            Stock flow organogram
+          </h3>
+          <p class="organogram-subtitle">
+            <strong>{{ organogramTitle }}</strong>
+            <span class="organogram-subtitle-meta" *ngIf="!filteredStockItemName">
+              — select a stock item to build the map from that item’s movements.
+            </span>
+          </p>
+        </div>
+        <button type="button" class="organogram-close" (click)="closeOrganogram()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="organogram-body organogram-body--chart-only">
+        <div class="organogram-chart-solo" aria-label="Store movement map">
+          <p class="organogram-legend organogram-legend--flow organogram-legend--solo">
+            <strong>Movement map</strong> — one arrow per movement row (same data as the table). Hover an arrow for full detail.
+          </p>
+          <p class="organogram-flow-hint" *ngIf="organogramFlowEmptyReason">
+            {{ organogramFlowEmptyReason }}
+          </p>
+          <div
+            class="organogram-svg-wrap organogram-svg-wrap--flow organogram-svg-wrap--solo"
+            *ngIf="organogramFlowNodes.length > 0"
+          >
+            <svg
+              class="store-flow-svg"
+              [attr.viewBox]="organogramFlowViewBox"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              <defs>
+                <marker
+                  id="organogramFlowArrowEnd"
+                  markerWidth="10"
+                  markerHeight="7"
+                  refX="9"
+                  refY="3.5"
+                  orient="auto"
+                >
+                  <polygon points="0 0, 10 3.5, 0 7" class="store-flow-arrowhead" />
+                </marker>
+              </defs>
+              <g class="store-flow-layer store-flow-edges">
+                <g *ngFor="let e of organogramFlowEdges; trackBy: trackOrganogramFlowEdge">
+                  <title>{{ e.fullLabel }}</title>
+                  <path
+                    class="store-flow-edge"
+                    fill="none"
+                    [attr.d]="e.pathD"
+                    marker-end="url(#organogramFlowArrowEnd)"
+                  />
+                </g>
+              </g>
+              <g class="store-flow-layer store-flow-nodes">
+                <g *ngFor="let n of organogramFlowNodes">
+                  <title>{{ n.fullLabel }}</title>
+                  <rect
+                    rx="10"
+                    ry="10"
+                    class="store-flow-rect"
+                    [class.store-flow-rect--store]="n.kind === 'store'"
+                    [class.store-flow-rect--virtual]="n.kind === 'virtual'"
+                    [attr.x]="n.x"
+                    [attr.y]="n.y"
+                    [attr.width]="n.w"
+                    [attr.height]="n.h"
+                  />
+                  <text
+                    class="store-flow-node-text"
+                    [attr.x]="n.x + n.w / 2"
+                    [attr.y]="n.y + n.h / 2 + 5"
+                    text-anchor="middle"
+                  >
+                    {{ n.label }}
+                  </text>
+                </g>
+              </g>
+              <g class="store-flow-layer store-flow-edge-labels" *ngIf="organogramFlowEdges.length">
+                <text
+                  *ngFor="let e of organogramFlowEdges; trackBy: trackOrganogramFlowEdge"
+                  class="store-flow-edge-label"
+                  [attr.x]="e.midX"
+                  [attr.y]="e.midY"
+                  text-anchor="middle"
+                >
+                  {{ e.label }}
+                </text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="organogram-footer">
+        <button type="button" class="action-btn organogram-done" (click)="closeOrganogram()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,58 @@
+<div class="system-documentation-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-journal-bookmark"></i>
+        System Documentation
+      </h1>
+      <p class="page-subtitle">
+        User guides and technical reference for this hospital management system
+      </p>
+    </div>
+  </div>
+
+  <div class="doc-layout">
+    <aside class="doc-sidebar">
+      <div class="doc-sidebar-search">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input
+          type="text"
+          class="doc-search-input"
+          placeholder="Search topics…"
+          [(ngModel)]="docSearch"
+          aria-label="Search documentation topics" />
+      </div>
+      <nav class="doc-nav" aria-label="Documentation topics">
+        <button
+          type="button"
+          class="doc-nav-item"
+          *ngFor="let entry of filteredCatalog"
+          [class.active]="selectedId === entry.id"
+          (click)="selectDocument(entry)">
+          <span class="doc-nav-title">{{ entry.title }}</span>
+          <span class="doc-nav-desc">{{ entry.description }}</span>
+        </button>
+        <p class="doc-nav-empty" *ngIf="filteredCatalog.length === 0">No topics match your search.</p>
+      </nav>
+    </aside>
+
+    <article class="doc-content-panel">
+      <header class="doc-content-header" *ngIf="activeTitle">
+        <h2>{{ activeTitle }}</h2>
+        <span class="doc-file-badge">{{ activeFile }}</span>
+      </header>
+
+      <div class="doc-loading" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Loading documentation…</p>
+      </div>
+
+      <p class="doc-error" *ngIf="loadError && !isLoading">{{ loadError }}</p>
+
+      <div
+        class="doc-markdown-body"
+        *ngIf="docHtml && !isLoading && !loadError"
+        [innerHTML]="docHtml"></div>
+    </article>
+  </div>
+</div>

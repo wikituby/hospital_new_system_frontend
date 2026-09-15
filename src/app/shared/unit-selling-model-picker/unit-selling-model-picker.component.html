@@ -1,0 +1,155 @@
+<div class="usm-picker"
+     [class.usm-picker--disabled]="disabled || !isPickerEnabled"
+     [class.usm-picker--compact]="compact && !toolbarButton"
+     [class.usm-picker--toolbar-btn]="toolbarButton">
+  <label class="usm-picker-label" *ngIf="label && !toolbarButton">{{ label }}</label>
+  <div class="dropdown usm-item-dropdown" [class.show]="dropdownOpen">
+    <button
+      #dropdownToggle
+      type="button"
+      class="btn btn-outline-primary btn-sm dropdown-toggle usm-item-dropdown-toggle"
+      [class.pv-treatment-toolbar-btn]="toolbarButton"
+      [class.pv-treatment-toolbar-btn--request]="toolbarButton"
+      (click)="toggleDropdown($event)"
+      [attr.aria-expanded]="dropdownOpen"
+      [disabled]="disabled || !isPickerEnabled">
+      <ng-container *ngIf="toolbarButton; else defaultToggleContent">
+        <i class="bi bi-tags"></i>
+        <span>{{ label || 'Unit Sell Model' }}</span>
+        <i class="bi bi-chevron-down pv-treatment-toolbar-chevron"></i>
+      </ng-container>
+      <ng-template #defaultToggleContent>
+        <span class="usm-chip-label" *ngIf="compact && label">{{ label }}</span>
+        <span class="usm-item-dropdown-label">{{ selectedLabel }}</span>
+      </ng-template>
+    </button>
+    <ul
+      #dropdownMenu
+      class="dropdown-menu custom-scrollbar pl-2 pr-2 usm-item-dropdown-menu"
+      [class.show]="dropdownOpen"
+      [class.usm-item-dropdown-menu--portaled]="dropdownMenuPortaled"
+      (click)="$event.stopPropagation()"
+      style="max-height: 400px; overflow-y: auto; width: 100%;">
+      <li class="mt-2 usm-toolbar usm-search-container">
+        <input
+          type="text"
+          class="form-control dropdown-search ml-0"
+          placeholder="Search models…"
+          [(ngModel)]="searchText"
+          (ngModelChange)="onSearchChange()"
+          style="height: 30px; font-size: 14px; width: 100%;" />
+        <button type="button" class="usm-add-btn" (click)="openAddEditor($event)">
+          <i class="bi bi-plus-lg"></i> Add new
+        </button>
+      </li>
+      <li *ngIf="loading" class="text-muted text-center p-2">Loading unit sell models…</li>
+      <ng-container *ngIf="!loading && filteredModels.length; else noModels">
+        <li
+          class="usm-stock-item-card"
+          *ngFor="let model of filteredModels"
+          [class.usm-stock-item-card--selected]="selectedModelId === model.id">
+          <div class="usm-stock-item-group-header">
+            <button type="button" class="usm-model-select-btn" (click)="selectModel(model, $event)">
+              <span class="usm-stock-item-group-title">{{ model.name | uppercase }}</span>
+              <span class="usm-model-summary">{{ modelSummary(model) }}</span>
+            </button>
+            <span class="usm-row-actions">
+              <button type="button" class="btn btn-link btn-sm p-0" title="Edit" (click)="openEditEditor(model, $event)">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button type="button" class="btn btn-link btn-sm p-0 text-danger" title="Delete" (click)="deleteModel(model, $event)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </span>
+          </div>
+        </li>
+      </ng-container>
+      <ng-template #noModels>
+        <li *ngIf="!loading" class="text-muted text-center p-2">No unit sell models yet.</li>
+      </ng-template>
+    </ul>
+  </div>
+
+  <div #editorBackdrop class="usm-editor-backdrop" *ngIf="showEditor" (click)="closeEditor()">
+    <div class="usm-editor-card" (click)="$event.stopPropagation()">
+      <div class="usm-editor-header">
+        <h4 class="usm-editor-title">{{ editingModel ? 'Edit unit sell model' : 'Add unit sell model' }}</h4>
+        <button type="button" class="usm-editor-close" (click)="closeEditor()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="usm-editor-body">
+        <div class="usm-form-grid">
+          <div class="usm-form-field usm-form-field--full">
+            <label class="usm-form-label" for="usmEditorName">Model name</label>
+            <input
+              id="usmEditorName"
+              type="text"
+              class="usm-form-input"
+              [(ngModel)]="editorName"
+              placeholder="e.g. Retail" />
+          </div>
+
+          <div class="usm-form-field">
+            <label class="usm-form-label" for="usmEditorUnits">Units in bundle / package</label>
+            <input
+              id="usmEditorUnits"
+              type="number"
+              class="usm-form-input"
+              [ngModel]="editorUnitsInBundle"
+              (ngModelChange)="onEditorUnitsChange($event)"
+              (wheel)="preventNumberInputScroll($event)"
+              min="1"
+              step="1"
+              placeholder="e.g. 5" />
+          </div>
+
+          <div class="usm-form-field">
+            <label class="usm-form-label" for="usmEditorBundlePrice">Bundle price</label>
+            <input
+              id="usmEditorBundlePrice"
+              type="text"
+              inputmode="decimal"
+              class="usm-form-input"
+              [ngModel]="editorBundlePriceText"
+              (ngModelChange)="onBundlePriceInput($event)"
+              placeholder="e.g. 1000" />
+          </div>
+
+          <div class="usm-form-field">
+            <label class="usm-form-label" for="usmEditorUnitSell">Unit sell</label>
+            <input
+              id="usmEditorUnitSell"
+              type="number"
+              class="usm-form-input usm-form-input--readonly"
+              [ngModel]="editorUnitSell"
+              readonly
+              tabindex="-1" />
+          </div>
+
+          <div class="usm-form-field">
+            <label class="usm-form-label" for="usmEditorProfitMargin">Profit margin</label>
+            <input
+              id="usmEditorProfitMargin"
+              type="number"
+              class="usm-form-input usm-form-input--readonly"
+              [ngModel]="editorProfitMargin"
+              readonly
+              tabindex="-1" />
+          </div>
+        </div>
+
+        <p class="usm-editor-hint">
+          Unit sell = bundle price ÷ units in bundle. Profit margin = unit sell − unit cost.
+        </p>
+        <p class="usm-editor-error" *ngIf="error">{{ error }}</p>
+      </div>
+      <div class="usm-editor-actions">
+        <button type="button" class="usm-btn-secondary" (click)="closeEditor()">Cancel</button>
+        <button type="button" class="usm-btn-primary" [disabled]="saving" (click)="saveEditor()">
+          {{ saving ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

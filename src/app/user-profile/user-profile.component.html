@@ -1,0 +1,286 @@
+<div class="up-page" [class.dark]="isDarkMode">
+  <div class="up-toast success" *ngIf="profilePicUploadMessage">
+    <i class="bi bi-check-circle-fill"></i>
+    <span>{{ profilePicUploadMessage }}</span>
+  </div>
+  <div class="up-toast error" *ngIf="profilePicUploadError">
+    <i class="bi bi-exclamation-circle-fill"></i>
+    <span>{{ profilePicUploadError }}</span>
+  </div>
+
+  <div class="up-layout">
+    <aside class="up-sidebar">
+      <div class="up-sidebar-body">
+        <div class="up-identity-card">
+          <div class="up-avatar-wrap">
+            <img [src]="profileImage" [alt]="fullName" (error)="onProfileImageError($event)" />
+          </div>
+          <h2 class="up-name">{{ fullName }}</h2>
+          <button type="button" class="up-role-badge" disabled>
+            {{ role || 'Staff' }}
+          </button>
+
+          <input
+            type="file"
+            #profilePicFileInput
+            accept="image/*"
+            (change)="onProfilePictureSelected($event)"
+            [disabled]="profilePicUploading"
+            hidden
+          />
+
+          <div class="up-sidebar-actions">
+            <button
+              type="button"
+              class="up-sidebar-btn"
+              [disabled]="profilePicUploading"
+              (click)="showProfilePicChooser = !showProfilePicChooser">
+              <i class="bi bi-camera"></i>
+              <span>{{ showProfilePicChooser ? 'Close picture options' : 'Change picture' }}</span>
+            </button>
+            <button
+              type="button"
+              class="up-sidebar-btn"
+              *ngIf="showProfilePicChooser"
+              [disabled]="profilePicUploading"
+              (click)="profilePicFileInput.click()">
+              <i class="bi bi-cloud-upload"></i>
+              <span>{{ profilePicUploading ? 'Uploading…' : 'Upload new photo' }}</span>
+            </button>
+          </div>
+
+          <div class="up-upload-progress" *ngIf="profilePicUploading || profilePicUploadProgress > 0">
+            <div class="up-progress-track">
+              <div class="up-progress-fill" [style.width.%]="profilePicUploadProgress"></div>
+            </div>
+            <small>{{ profilePicUploadProgress }}%</small>
+          </div>
+
+          <div class="up-pic-history" *ngIf="showProfilePicChooser && profilePicHistory.length">
+            <p class="up-pic-history-label">Previously used</p>
+            <div class="up-pic-history-grid">
+              <div class="up-pic-history-item" *ngFor="let pic of profilePicHistory">
+                <button
+                  type="button"
+                  class="up-pic-thumb"
+                  (click)="applyProfilePictureFromHistory(pic)"
+                  [disabled]="profilePicUploading"
+                  title="Use this image">
+                  <img [src]="pic" alt="Previous profile" />
+                </button>
+                <button
+                  type="button"
+                  class="up-pic-remove"
+                  (click)="removeProfilePictureFromHistory(pic)"
+                  [disabled]="profilePicUploading"
+                  title="Remove from history">
+                  ×
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="up-sidebar-section">
+          <div class="up-meta-row">
+            <span class="up-meta-label">Email</span>
+            <span class="up-meta-value">{{ email }}</span>
+          </div>
+          <div class="up-meta-row">
+            <span class="up-meta-label">Contact</span>
+            <span class="up-meta-value">{{ contact }}</span>
+          </div>
+          <div class="up-meta-row">
+            <span class="up-meta-label">User type</span>
+            <span class="up-meta-value">{{ userType }}</span>
+          </div>
+        </div>
+
+        <div class="up-sidebar-foot">
+          <p>Use the tabs to review biodata, job duties, policies, contracts, and remuneration.</p>
+        </div>
+      </div>
+    </aside>
+
+    <main class="up-main">
+      <nav class="up-tabs" role="tablist">
+        <button
+          type="button"
+          class="up-tab"
+          *ngFor="let tab of tabs"
+          [class.active]="activeTab === tab.id"
+          (click)="setActiveTab(tab.id)">
+          <i class="bi" [ngClass]="tab.icon"></i>
+          <span>{{ tab.label }}</span>
+        </button>
+      </nav>
+
+      <div class="up-main-body">
+        <!-- Biodata -->
+        <section class="up-panel" *ngIf="activeTab === 'biodata'">
+          <div class="up-panel-head">
+            <h2><i class="bi bi-person-vcard"></i> Personal biodata</h2>
+            <p>Identity, contacts, and qualification details for this staff account.</p>
+          </div>
+
+          <div class="up-grid up-grid-3">
+            <div class="up-info-card" *ngFor="let item of personalDetails">
+              <span class="up-info-label">{{ item.label }}</span>
+              <strong>{{ item.value }}</strong>
+            </div>
+          </div>
+
+          <div class="up-subsection">
+            <h3>Biography</h3>
+            <div class="up-bio-card">
+              <p>{{ bio }}</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Job description & responsibilities -->
+        <section class="up-panel" *ngIf="activeTab === 'job'">
+          <div class="up-panel-head">
+            <h2><i class="bi bi-briefcase"></i> Job description &amp; responsibilities</h2>
+            <p>Expected duties for the assigned role and day-to-day accountability.</p>
+          </div>
+
+          <div class="up-list">
+            <article class="up-list-card" *ngFor="let item of responsibilityItems">
+              <div class="up-list-icon"><i class="bi bi-check2-square"></i></div>
+              <div>
+                <h4>{{ item.title }}</h4>
+                <p>{{ item.details }}</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- Policies & violations -->
+        <section class="up-panel" *ngIf="activeTab === 'policies'">
+          <div class="up-panel-head">
+            <h2><i class="bi bi-shield-exclamation"></i> Hospital policies &amp; violations</h2>
+            <p>Facility rules that apply to this account, plus any recorded policy issues.</p>
+          </div>
+
+          <div class="up-subsection">
+            <h3>Hospital policies</h3>
+            <div class="up-list">
+              <article class="up-list-card" *ngFor="let policy of policyItems">
+                <div class="up-list-icon"><i class="bi bi-journal-text"></i></div>
+                <div>
+                  <h4>{{ policy.title }}</h4>
+                  <p>{{ policy.details }}</p>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <div class="up-subsection">
+            <h3>Policy violations</h3>
+            <div class="up-list">
+              <article class="up-list-card" *ngFor="let violation of violationItems">
+                <div class="up-list-icon"><i class="bi bi-exclamation-octagon"></i></div>
+                <div class="up-list-body">
+                  <div class="up-list-title-row">
+                    <h4>{{ violation.title }}</h4>
+                    <span [class]="violationStatusClass(violation.status)">{{ violation.status }}</span>
+                  </div>
+                  <p>{{ violation.details }}</p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- Contracts, duty & schedules -->
+        <section class="up-panel" *ngIf="activeTab === 'contracts'">
+          <div class="up-panel-head">
+            <h2><i class="bi bi-file-earmark-text"></i> Contracts, duty &amp; schedules</h2>
+            <p>Employment documents and the current duty roster for this staff member.</p>
+          </div>
+
+          <div class="up-subsection">
+            <h3>Contracts</h3>
+            <div class="up-list">
+              <article class="up-list-card" *ngFor="let contract of contractItems">
+                <div class="up-list-icon"><i class="bi bi-file-earmark-check"></i></div>
+                <div class="up-list-body">
+                  <div class="up-list-title-row">
+                    <h4>{{ contract.title }}</h4>
+                    <span class="up-status up-status-info" *ngIf="contract.meta">{{ contract.meta }}</span>
+                  </div>
+                  <p>{{ contract.details }}</p>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <div class="up-subsection">
+            <h3>Duty &amp; schedule</h3>
+            <div class="up-table-wrap">
+              <table class="up-table">
+                <thead>
+                  <tr>
+                    <th>Day</th>
+                    <th>Shift</th>
+                    <th>Station</th>
+                    <th>Hours</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of dutyScheduleItems">
+                    <td>{{ row.day }}</td>
+                    <td>{{ row.shift }}</td>
+                    <td>{{ row.station }}</td>
+                    <td>{{ row.hours }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Remuneration & wages -->
+        <section class="up-panel" *ngIf="activeTab === 'remuneration'">
+          <div class="up-panel-head">
+            <h2><i class="bi bi-cash-stack"></i> Remuneration &amp; wages</h2>
+            <p>Pay structure summary and recent wage cycles. Values sync when payroll is connected.</p>
+          </div>
+
+          <div class="up-grid up-grid-2">
+            <div class="up-info-card" *ngFor="let item of remunerationItems">
+              <span class="up-info-label">{{ item.label }}</span>
+              <strong>{{ item.value }}</strong>
+              <small *ngIf="item.hint">{{ item.hint }}</small>
+            </div>
+          </div>
+
+          <div class="up-subsection">
+            <h3>Wage history</h3>
+            <div class="up-table-wrap">
+              <table class="up-table">
+                <thead>
+                  <tr>
+                    <th>Period</th>
+                    <th>Gross</th>
+                    <th>Net</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of wageHistory">
+                    <td>{{ row.period }}</td>
+                    <td>{{ row.gross }}</td>
+                    <td>{{ row.net }}</td>
+                    <td><span class="up-status up-status-warn">{{ row.status }}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>

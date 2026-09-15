@@ -1,0 +1,56 @@
+.special-privileges-card .privilege-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.special-privileges-card .privilege-column {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  background: #fff;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.special-privileges-card .privilege-column--wide {
+  max-height: 280px;
+}
+
+.dark .special-privileges-card .privilege-column {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.special-privileges-card .privilege-column h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.special-privileges-card .privilege-desc {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.special-privileges-card .privilege-user {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.92rem;
+}
+
+.special-privileges-card .privilege-user small {
+  color: #64748b;
+}
+
+.form-actions {
+  margin-top: 1rem;
+}
+
+@media (max-width: 900px) {
+  .special-privileges-card .privilege-grid {
+    grid-template-columns: 1fr;
+  }
+}

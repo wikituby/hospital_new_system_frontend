@@ -1,0 +1,186 @@
+<div class="data-backup-component-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-cloud-arrow-up"></i>
+        Backups &amp; Restoration
+      </h1>
+      <p class="page-subtitle">
+        Local backup runs every 5 minutes automatically. Each run also builds
+        <code>kmc-latest.db</code> for the mother mobile app. Dropbox is optional.
+      </p>
+    </div>
+    <div class="header-right">
+      <button type="button" class="btn-secondary" (click)="backupNow()" [disabled]="isBackingUp || isLoading">
+        <i class="bi bi-cloud-upload"></i>
+        {{ isBackingUp ? 'Backing up…' : 'Backup now' }}
+      </button>
+      <button type="button" class="btn-secondary btn-danger-outline" (click)="openRestoreConfirm()" [disabled]="isRestoring || isLoading">
+        <i class="bi bi-arrow-counterclockwise"></i>
+        Restore now
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="responseMessage" class="feedback-banner" [style.background-color]="responseColor">
+    {{ responseMessage }}
+  </div>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading backup settings…</p>
+  </div>
+
+  <div class="backup-layout" *ngIf="!isLoading">
+    <section class="status-card">
+      <div class="status-row">
+        <div>
+          <span class="meta-label">Token mode</span>
+          <span class="meta-value">{{ tokenModeLabel }}</span>
+        </div>
+        <div>
+          <span class="meta-label">Last backup</span>
+          <span class="meta-value">{{ lastBackupLabel }}</span>
+        </div>
+        <div>
+          <span class="meta-label">Status</span>
+          <span class="meta-value status-pill" [class.ok]="status.lastBackupStatus === 'success' || status.lastBackupStatus === 'local_only'">
+            {{ status.lastBackupStatus || 'Not run yet' }}
+          </span>
+        </div>
+        <div>
+          <span class="meta-label">Dropbox</span>
+          <span class="meta-value">{{ status.dropboxConnected ? 'Connected' : 'Not connected' }}</span>
+        </div>
+      </div>
+      <p class="path-preview" *ngIf="status.localBackupPathPreview">
+        <i class="bi bi-hdd"></i>
+        Local latest: <code>{{ status.localBackupPathPreview }}</code>
+      </p>
+      <p class="path-preview" *ngIf="form.dropboxBackupPath">
+        <i class="bi bi-dropbox"></i>
+        Dropbox MySQL: <code>/{{ form.dropboxBackupPath }}</code>
+      </p>
+      <p class="path-preview" *ngIf="status.mobileSqliteLocalPathPreview">
+        <i class="bi bi-phone"></i>
+        Mobile SQLite (local): <code>{{ status.mobileSqliteLocalPathPreview }}</code>
+      </p>
+      <p class="path-preview" *ngIf="status.mobileSqliteDropboxPathPreview">
+        <i class="bi bi-phone"></i>
+        Mobile SQLite (Dropbox): <code>/{{ status.mobileSqliteDropboxPathPreview }}</code>
+      </p>
+      <p class="error-hint" *ngIf="status.lastError">{{ status.lastError }}</p>
+    </section>
+
+    <section class="settings-card">
+      <h3>Backup settings</h3>
+      <p class="settings-hint">
+        Settings are stored in the database. Scheduled backups run every 5 minutes on the server.
+        The local file is always updated; Dropbox upload runs only when credentials are saved and the internet is available.
+      </p>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="facilityName">Facility name</label>
+          <input id="facilityName" type="text" class="form-control" [(ngModel)]="form.facilityName" placeholder="Kavuma Medical Clinic" />
+        </div>
+
+        <div class="form-field">
+          <label for="localBackupRoot">Local backup folder</label>
+          <input id="localBackupRoot" type="text" class="form-control" [(ngModel)]="form.localBackupRoot" placeholder="C:/MediCenter-Backups" />
+        </div>
+
+        <div class="form-field full-width">
+          <label for="dropboxBackupPath">Dropbox backup path (auto-generated)</label>
+          <input id="dropboxBackupPath" type="text" class="form-control" [(ngModel)]="form.dropboxBackupPath" placeholder="Veneranda-Medical/vena.zip" />
+        </div>
+
+        <div class="form-field">
+          <label for="dropboxAppKey">Dropbox app key (client ID)</label>
+          <input id="dropboxAppKey" type="password" class="form-control" [(ngModel)]="form.dropboxAppKey" autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label for="dropboxAppSecret">Dropbox app secret</label>
+          <input id="dropboxAppSecret" type="password" class="form-control" [(ngModel)]="form.dropboxAppSecret" autocomplete="off" />
+        </div>
+
+        <div class="form-field full-width">
+          <label for="dropboxRefreshToken">Dropbox refresh token</label>
+          <input id="dropboxRefreshToken" type="password" class="form-control token-input-masked" [(ngModel)]="form.dropboxRefreshToken" autocomplete="off" />
+          <p class="field-hint">Required for Dropbox backup. The server exchanges this for a short-lived access token automatically — no access token needed.</p>
+        </div>
+
+        <div class="form-field full-width" *ngIf="form.tokenMode === 'access_token'">
+          <label for="dropboxAccessToken">Dropbox access token (access-token mode only)</label>
+          <textarea id="dropboxAccessToken" rows="2" class="form-control token-textarea" [(ngModel)]="form.dropboxAccessToken" autocomplete="off"></textarea>
+        </div>
+
+        <div class="form-field" *ngIf="!form.dropboxRefreshToken?.trim()">
+          <label for="tokenMode">Token mode</label>
+          <select id="tokenMode" class="form-control" [(ngModel)]="form.tokenMode">
+            <option value="oauth_refresh">OAuth refresh token</option>
+            <option value="access_token">Long-lived access token</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="intervalMinutes">Interval (minutes)</label>
+          <input id="intervalMinutes" type="number" min="5" class="form-control" [(ngModel)]="form.intervalMinutes" />
+        </div>
+
+        <div class="form-field checkbox-field">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="form.scheduledEnabled" />
+            Enable scheduled backups
+          </label>
+        </div>
+
+        <div class="form-field checkbox-field">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="form.localBackupEnabled" />
+            Local machine backup (always runs on schedule)
+          </label>
+        </div>
+
+        <div class="form-field checkbox-field">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="form.dropboxBackupEnabled" />
+            Dropbox backup (when online)
+          </label>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button type="button" class="btn-primary" (click)="saveSettings()" [disabled]="isSaving">
+          <i class="bi bi-save"></i>
+          {{ isSaving ? 'Saving…' : 'Save settings' }}
+        </button>
+        <button type="button" class="btn-secondary" (click)="dropboxLogout()" [disabled]="isLoggingOut">
+          <i class="bi bi-box-arrow-right"></i>
+          {{ isLoggingOut ? 'Logging out…' : 'Logout Dropbox' }}
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="confirm-overlay" *ngIf="showRestoreConfirm" (click)="closeRestoreConfirm()">
+    <div class="confirm-card" (click)="$event.stopPropagation()">
+      <h3>Restore database</h3>
+      <p>This will overwrite the current MySQL database. Make sure you have a recent backup.</p>
+      <div class="form-field">
+        <label for="restoreSource">Restore from</label>
+        <select id="restoreSource" class="form-control" [(ngModel)]="restoreSource">
+          <option value="local">Local latest (.sql)</option>
+          <option value="dropbox">Dropbox ({{ form.dropboxBackupPath }})</option>
+        </select>
+      </div>
+      <div class="confirm-actions">
+        <button type="button" class="btn-secondary" (click)="closeRestoreConfirm()" [disabled]="isRestoring">Cancel</button>
+        <button type="button" class="btn-danger" (click)="restoreNow()" [disabled]="isRestoring">
+          {{ isRestoring ? 'Restoring…' : 'Confirm restore' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,98 @@
+<div class="stock-take-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h2 class="page-title">
+        <i class="bi bi-clipboard-check"></i>
+        Stock taking
+      </h2>
+      <p class="page-subtitle">
+        Enter <strong>counted quantity</strong> for each stock batch and apply differences as stock adjustments.
+      </p>
+    </div>
+    <div class="header-right">
+      <button type="button" class="btn-secondary" (click)="loadAll()" [disabled]="isLoading || isSaving">
+        <i class="bi bi-arrow-repeat"></i>
+        Refresh
+      </button>
+      <button type="button" class="btn-secondary" (click)="fillCountedWithSystem()" [disabled]="isLoading || isSaving">
+        <i class="bi bi-check2-square"></i>
+        Fill counted = system
+      </button>
+      <button type="button" class="btn-primary" (click)="applyStockTake()" [disabled]="isLoading || isSaving">
+        <i class="bi bi-upload"></i>
+        {{ isSaving ? 'Applying...' : 'Apply stock take' }}
+      </button>
+    </div>
+  </div>
+
+  <p class="alert error" *ngIf="responseError">{{ responseError }}</p>
+  <p class="alert success" *ngIf="responseMessage">{{ responseMessage }}</p>
+
+  <div class="controls">
+    <div class="control">
+      <label>Store</label>
+      <select [(ngModel)]="selectedStoreId" (ngModelChange)="loadBatches()">
+        <option [ngValue]="null">All stores</option>
+        <option *ngFor="let s of stores" [ngValue]="s.id">{{ s.storeName || s.name }}</option>
+      </select>
+    </div>
+    <div class="control">
+      <label>Adjustment type</label>
+      <select [(ngModel)]="selectedAdjustmentTypeId">
+        <option [ngValue]="null">Select type</option>
+        <option *ngFor="let t of adjustmentTypes" [ngValue]="t.id">
+          {{ t.name }} ({{ t.code }})
+        </option>
+      </select>
+    </div>
+    <div class="control">
+      <label>Reason</label>
+      <input type="text" [(ngModel)]="reason" placeholder="Reason (optional)">
+    </div>
+    <div class="control search">
+      <label>Search</label>
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Item / store / batch...">
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <p class="loading" *ngIf="isLoading">Loading stock batches...</p>
+
+    <table class="data-table" *ngIf="!isLoading">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Store</th>
+          <th>Batch</th>
+          <th class="num">System qty</th>
+          <th class="num">Counted qty</th>
+          <th class="num">Diff</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of filteredRows" [class.diff]="r.diff !== 0">
+          <td>{{ r.stockItemName }}</td>
+          <td>{{ r.storeName }}</td>
+          <td>{{ r.batchNumber }}</td>
+          <td class="num">{{ r.systemQty }}</td>
+          <td class="num">
+            <input
+              type="number"
+              class="qty-input"
+              [ngModel]="r.countedQty"
+              (ngModelChange)="r.countedQty = $event; updateRowDiff(r)"
+              placeholder="—"
+            />
+          </td>
+          <td class="num">
+            <span [class.positive]="r.diff > 0" [class.negative]="r.diff < 0">{{ r.diff }}</span>
+          </td>
+        </tr>
+        <tr *ngIf="filteredRows.length === 0">
+          <td colspan="6" class="empty">No stock batches found.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+

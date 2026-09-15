@@ -1,0 +1,55 @@
+.cart-top{
+    display: flex;
+    min-width: 0;
+    word-wrap: break-word;
+    background-color: rgb(253, 253, 253);
+    background-clip: border-box;
+    position: relative;
+    flex-direction: column;
+    border: 1px solid black;
+    border-radius: .25rem;
+    padding: 10px;
+}
+
+.card-title{
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: rgb(4, 44, 35);
+    white-space: 
+    nowrap;overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100ch;
+}
+
+.itemdata{
+    white-space: 
+    nowrap;overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100ch;
+}
+
+.btn{
+    border-radius: 24px;;
+}
+.card{
+    padding: 10px;
+    margin: 20px;
+    border-radius: 22px;
+    border-color: rgba(204, 217, 213, 0.762);
+}
+
+.card img{
+    width: 100px;
+    height: 100px;
+    margin-bottom: 15px;
+    transition: 0.3s ease-in-out;
+
+}
+
+.card img:hover{
+    transition: 0.3s ease-in-out;
+    transform: scale(1.1);
+
+
+}
