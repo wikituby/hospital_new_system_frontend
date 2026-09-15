@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ApiConfigService, SKIP_CONNECTION_HEADER } from './api-config.service';
-import { API_CLOUD_BASE, getDevProxyBase, isAngularDevServer } from '../config/api-server.config';
+import { API_CLOUD_BASE, API_VENERANDA_PUBLIC_BASE, getDevProxyBase, isAngularDevServer } from '../config/api-server.config';
 import { Observable } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { HttpParams } from '@angular/common/http';
@@ -5361,6 +5361,51 @@ submitCustomerCareMessage(payload: {
   });
   return this.http
     .post<any>(`${this.apiBaseUrl}/support/customer-care`, payload, { headers })
+    .pipe(map((res: any) => res?.data ?? res));
+}
+
+/** Public marketing-site contact form → api.venerandahospital.org (no JWT). */
+submitWebsiteContactMessage(payload: {
+  fullName: string;
+  phone: string;
+  email?: string;
+  subject: string;
+  message: string;
+}): Observable<any> {
+  const headers = new HttpHeaders({
+    [SKIP_CONNECTION_HEADER]: '1',
+    'Content-Type': 'application/json',
+  });
+  return this.http
+    .post<any>(`${API_VENERANDA_PUBLIC_BASE}/support/website-contact/public`, payload, { headers })
+    .pipe(
+      map((res: any) => res?.data ?? res),
+      catchError((err) => throwError(() => err))
+    );
+}
+
+/** Admin inbox: list website contact messages from the connected clinic/cloud API. */
+getWebsiteContactMessages(): Observable<any[]> {
+  const jwt = this.getSessionToken();
+  const headers = new HttpHeaders({
+    Authorization: `Bearer ${jwt}`,
+  });
+  return this.http.get(`${this.apiBaseUrl}/support/website-contact`, { headers }).pipe(
+    map((res: any) => {
+      const data = res?.data ?? res;
+      return Array.isArray(data) ? data : [];
+    })
+  );
+}
+
+updateWebsiteContactMessageStatus(id: number, status: string): Observable<any> {
+  const jwt = this.getSessionToken();
+  const headers = new HttpHeaders({
+    Authorization: `Bearer ${jwt}`,
+    'Content-Type': 'application/json',
+  });
+  return this.http
+    .put(`${this.apiBaseUrl}/support/website-contact/${id}/status`, { status }, { headers })
     .pipe(map((res: any) => res?.data ?? res));
 }
 

@@ -54,11 +54,13 @@
         <button
           type="submit"
           class="contact-submit"
-          [disabled]="!form.fullName.trim() || !form.phone.trim() || !form.message.trim()">
-          Send message
+          [disabled]="submitting || !form.fullName.trim() || !form.phone.trim() || !form.message.trim()">
+          {{ submitting ? 'Sending…' : 'Send message' }}
         </button>
-        <p class="contact-hint" *ngIf="submitted">
-          Your email app should open with the message ready to send. You can also call us using the numbers on the right.
+        <p class="contact-hint contact-success" *ngIf="submitSuccess">{{ submitSuccess }}</p>
+        <p class="contact-hint contact-error" *ngIf="submitError">{{ submitError }}</p>
+        <p class="contact-hint" *ngIf="submitted && !submitError">
+          You can also call us using the numbers on the right if you need a faster response.
         </p>
       </div>
     </form>

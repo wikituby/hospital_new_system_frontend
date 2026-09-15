@@ -185,6 +185,7 @@
           <li (click)="navigateTo('overview/subscription', $event)" [class.active]="activeSubmenu==='subscription'">Subscription Status</li>
           <li *ngIf="canAccessPage('mobile-money-settings') || canManageUsers" (click)="navigateTo('overview/subscription/momo-settings', $event)" [class.active]="activeSubmenu==='momo-settings' || activeSubmenu==='mobile-money-settings'">DGateway / Mobile Money</li>
           <li *ngIf="canManageUsers" (click)="navigateTo('overview/business-settings', $event)" [class.active]="activeSubmenu==='business-settings'">Business Settings</li>
+          <li *ngIf="canManageUsers" (click)="navigateTo('overview/website-contact-messages', $event)" [class.active]="activeSubmenu==='website-contact-messages'">Website Contact Messages</li>
           <li *ngIf="canAccessPage('department-setup')" (click)="navigateTo('overview/department-setup', $event)" [class.active]="activeSubmenu==='department-setup'">Hospital Directory Setup</li>
           <li *ngIf="canAccessPage('data-backup')" (click)="navigateTo('overview/data-backup', $event)" [class.active]="activeSubmenu==='data-backup'">Backups &amp; Restoration</li>
           <li *ngIf="canAccessPage('system-documentation')" (click)="navigateTo('overview/system-documentation', $event)" [class.active]="activeSubmenu==='system-documentation'">System Documentation</li>

@@ -189,6 +189,7 @@ import { SystemConfigurationComponent } from './overview/pages/administration/co
 import { DataBackupComponent } from './overview/pages/administration/backup/data-backup.component';
 import { SystemDocumentationComponent } from './overview/pages/administration/system-documentation/system-documentation.component';
 import { AuditLogsComponent } from './overview/pages/administration/audit-logs/audit-logs.component';
+import { WebsiteContactMessagesComponent } from './overview/pages/administration/website-contact-messages/website-contact-messages.component';
 // Support Services Components
 import { LaundryComponent } from './overview/pages/support-services/laundry/laundry.component';
 import { KitchenDietComponent } from './overview/pages/support-services/kitchen/kitchen-diet.component';
@@ -430,6 +431,7 @@ export function initializeApiConfig(apiConfig: ApiConfigService): () => Promise<
     DataBackupComponent,
     SystemDocumentationComponent,
     AuditLogsComponent,
+    WebsiteContactMessagesComponent,
     // Support Services Components
     LaundryComponent,
     KitchenDietComponent,

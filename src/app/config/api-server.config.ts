@@ -29,6 +29,9 @@ export const API_LOCALHOST_BASE = `http://localhost:${API_DEFAULT_PORT}${API_CON
 /** Hosted Quarkus API on Render (public cloud). */
 export const API_CLOUD_BASE = `https://backend-mc2d.onrender.com${API_CONTEXT_PATH}`;
 
+/** Canonical public API host for the marketing website (contact form, etc.). */
+export const API_VENERANDA_PUBLIC_BASE = `https://api.venerandahospital.org${API_CONTEXT_PATH}`;
+
 /** Mother app on LAN (phone running the embedded server). */
 export const API_DEFAULT_LAN_BASE = `http://${API_DEFAULT_LAN_HOST}:${API_DEFAULT_PORT}${API_CONTEXT_PATH}`;
 

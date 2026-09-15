@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { ApiService } from '../services/api.service';
 
 @Component({
   selector: 'app-contact-page',
@@ -25,7 +26,10 @@ export class ContactPageComponent {
     message: ''
   };
 
+  submitting = false;
   submitted = false;
+  submitError = '';
+  submitSuccess = '';
 
   readonly subjects = [
     'General enquiry',
@@ -40,7 +44,10 @@ export class ContactPageComponent {
   readonly mapUrl: SafeResourceUrl;
   readonly mapsSearchUrl: string;
 
-  constructor(private sanitizer: DomSanitizer) {
+  constructor(
+    private sanitizer: DomSanitizer,
+    private api: ApiService
+  ) {
     const query = encodeURIComponent('H5VH+6R, Lukwemigo');
     this.mapsSearchUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
     this.mapUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
@@ -52,23 +59,44 @@ export class ContactPageComponent {
     if (!this.form.fullName.trim() || !this.form.phone.trim() || !this.form.message.trim()) {
       return;
     }
+    if (this.submitting) {
+      return;
+    }
 
-    const subject = encodeURIComponent(
-      `Contact Us — ${this.form.subject}: ${this.form.fullName}`
-    );
-    const body = encodeURIComponent(
-      [
-        `Name: ${this.form.fullName}`,
-        `Phone: ${this.form.phone}`,
-        `Email: ${this.form.email || 'Not provided'}`,
-        `Subject: ${this.form.subject}`,
-        '',
-        'Message:',
-        this.form.message
-      ].join('\n')
-    );
+    this.submitting = true;
+    this.submitError = '';
+    this.submitSuccess = '';
+    this.submitted = false;
 
-    this.submitted = true;
-    window.location.href = `mailto:${this.contact.email}?subject=${subject}&body=${body}`;
+    this.api
+      .submitWebsiteContactMessage({
+        fullName: this.form.fullName.trim(),
+        phone: this.form.phone.trim(),
+        email: this.form.email.trim(),
+        subject: this.form.subject,
+        message: this.form.message.trim()
+      })
+      .subscribe({
+        next: (res) => {
+          this.submitting = false;
+          this.submitted = true;
+          this.submitSuccess =
+            res?.message ||
+            'Your message was received. Veneranda Hospital will respond as soon as possible.';
+          this.form = {
+            fullName: '',
+            phone: '',
+            email: '',
+            subject: 'General enquiry',
+            message: ''
+          };
+        },
+        error: (err) => {
+          this.submitting = false;
+          this.submitError =
+            err?.error?.message ||
+            'Could not send your message right now. Please call us or try again shortly.';
+        }
+      });
   }
 }

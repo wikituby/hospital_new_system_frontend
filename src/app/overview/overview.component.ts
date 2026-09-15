@@ -340,6 +340,7 @@ export class OverviewComponent implements OnInit, OnDestroy, AfterViewInit {
       this.activeSubmenu === 'user-management' ||
       this.activeSubmenu === 'department-setup' ||
       this.activeSubmenu === 'business-settings' ||
+      this.activeSubmenu === 'website-contact-messages' ||
       this.activeSubmenu === 'special-privileges' ||
       this.activeSubmenu === 'data-backup' ||
       this.activeSubmenu === 'system-documentation' ||

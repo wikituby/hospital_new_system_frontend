@@ -134,6 +134,14 @@
   font-size: 0.9rem;
 }
 
+.contact-hint.contact-success {
+  color: #0f766e;
+}
+
+.contact-hint.contact-error {
+  color: #b91c1c;
+}
+
 .contact-aside {
   padding: 1.3rem 1.35rem;
   border-radius: 18px;

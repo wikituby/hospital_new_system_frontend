@@ -1,0 +1,118 @@
+<div class="wcm-page" [class.dark]="isDarkMode">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <i class="bi bi-envelope-open"></i>
+        Website Contact Messages
+      </h1>
+      <p class="page-subtitle">
+        Messages sent from the public Contact Us page on venerandahospital.org
+      </p>
+    </div>
+    <div class="header-right">
+      <button type="button" class="btn-secondary" (click)="loadMessages()" [disabled]="loading">
+        <i class="bi bi-arrow-clockwise"></i>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <span class="stat-label">New</span>
+      <strong>{{ newCount }}</strong>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Total</span>
+      <strong>{{ messages.length }}</strong>
+    </div>
+  </div>
+
+  <div class="filters-row">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Search name, phone, email, subject…" />
+    </div>
+    <select [(ngModel)]="statusFilter">
+      <option value="">All statuses</option>
+      <option value="NEW">New</option>
+      <option value="READ">Read</option>
+      <option value="CLOSED">Closed</option>
+    </select>
+  </div>
+
+  <p class="error-banner" *ngIf="errorMessage">{{ errorMessage }}</p>
+  <p class="loading-banner" *ngIf="loading">Loading messages…</p>
+  <p class="empty-banner" *ngIf="!loading && !filteredMessages.length">No website contact messages yet.</p>
+
+  <div class="content-grid" *ngIf="filteredMessages.length">
+    <div class="message-list">
+      <button
+        type="button"
+        class="message-card"
+        *ngFor="let row of filteredMessages"
+        [class.active]="selected?.id === row.id"
+        [class.is-new]="(row.status || '').toUpperCase() === 'NEW'"
+        (click)="openMessage(row)">
+        <div class="card-top">
+          <strong>{{ row.fullName }}</strong>
+          <span class="status-pill" [attr.data-status]="(row.status || 'NEW').toUpperCase()">
+            {{ row.status || 'NEW' }}
+          </span>
+        </div>
+        <div class="card-subject">{{ row.subject }}</div>
+        <div class="card-meta">
+          <span>{{ row.phone }}</span>
+          <span>{{ formatDate(row.createdAt) }}</span>
+        </div>
+      </button>
+    </div>
+
+    <aside class="message-detail" *ngIf="selected">
+      <div class="detail-header">
+        <div>
+          <h2>{{ selected.subject }}</h2>
+          <p>{{ selected.ref || ('WC-' + selected.id) }} · {{ formatDate(selected.createdAt) }}</p>
+        </div>
+        <button type="button" class="icon-btn" (click)="closeDetail()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="detail-fields">
+        <div><span>Name</span><strong>{{ selected.fullName }}</strong></div>
+        <div><span>Phone</span><a [href]="'tel:' + selected.phone">{{ selected.phone }}</a></div>
+        <div *ngIf="selected.email">
+          <span>Email</span>
+          <a [href]="'mailto:' + selected.email">{{ selected.email }}</a>
+        </div>
+        <div>
+          <span>Status</span>
+          <strong>{{ selected.status }}</strong>
+        </div>
+      </div>
+
+      <div class="detail-message">
+        <span>Message</span>
+        <p>{{ selected.message }}</p>
+      </div>
+
+      <div class="detail-actions">
+        <button
+          type="button"
+          class="btn-secondary"
+          [disabled]="updatingId === selected.id"
+          (click)="setStatus(selected, 'READ')">
+          Mark read
+        </button>
+        <button
+          type="button"
+          class="btn-primary"
+          [disabled]="updatingId === selected.id"
+          (click)="setStatus(selected, 'CLOSED')">
+          Close
+        </button>
+      </div>
+    </aside>
+  </div>
+</div>
