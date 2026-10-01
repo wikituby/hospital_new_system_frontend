@@ -1,8 +1,20 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { trigger, transition, style, animate } from '@angular/animations';
 import { ApiService } from '../services/api.service';
-import { getOfferedServices, getUpcomingServices } from './service-catalog';
+import { getPublicOfferedServices, getPublicUpcomingServices } from './service-catalog';
+
+export interface HeroSlide {
+  image: string;
+  serviceSlug: string;
+  ctaRoute?: string;
+  ctaLabel: string;
+  title: string;
+  description: string;
+  cardTitle: string;
+  clientNeed: string;
+  imagePosition?: string;
+  upcoming?: boolean;
+}
 
 export interface TeamMemberCard {
   name: string;
@@ -14,256 +26,212 @@ export interface TeamMemberCard {
 @Component({
   selector: 'app-landing-page',
   templateUrl: './landing-page.component.html',
-  styleUrls: ['./landing-page.component.css'],
-  animations: [
-    trigger('fadeIn', [
-      transition('* => *', [
-        style({ opacity: 0, transform: 'translateY(20px)' }),
-        animate('800ms ease-in-out', style({ opacity: 1, transform: 'translateY(0)' }))
-      ])
-    ])
-  ]
+  styleUrls: ['./landing-page.component.css']
 })
 export class LandingPageComponent implements OnInit, OnDestroy {
   currentSlide = 0;
-  autoSlideInterval: any;
+  sliderPaused = false;
+  private autoSlideInterval: ReturnType<typeof setInterval> | null = null;
 
-  /** Same department hero set as the mobile dashboard. */
-  slides = [
+  /** Same department photos as before, written for patients rather than staff software. */
+  slides: HeroSlide[] = [
     {
       image: 'assets/images/hero/dashboard_doctors_hero.jpg',
       serviceSlug: 'general-doctor-consultation',
-      ctaLabel: 'Book an appointment',
       ctaRoute: '/book-appointment',
-      eyebrow: 'Doctors & consultation',
-      title: 'Doctors &\nappointments',
-      description: 'Schedule visits, see doctors, and run consultation modules.',
-      icon: 'bi-stethoscope',
-      cardTitle: 'Doctors & appointments',
-      cardDescription: 'Book visits and manage doctor consultation workflows.'
+      ctaLabel: 'Book a doctor',
+      title: 'See a doctor without leaving Bugogo',
+      description: 'Bring a new illness, a follow-up, or a question you have been putting off. A full-time doctor is here for appointments and walk-in visits.',
+      cardTitle: 'Doctor consultation',
+      clientNeed: 'You leave with a clear plan, a prescription if you need one, and tests arranged on the same visit.'
     },
     {
       image: 'assets/images/hero/dashboard_appointments_hero.jpg',
       serviceSlug: 'general-doctor-consultation',
-      eyebrow: 'Care pathways',
-      title: 'Appointments &\nconsultations',
-      description: 'Manage doctor visits and consultation workflows from one place.',
-      icon: 'bi-calendar2-check',
-      cardTitle: 'Appointments & consultations',
-      cardDescription: 'Keep clinics flowing with clear appointment pathways.'
+      ctaRoute: '/book-appointment',
+      ctaLabel: 'Book your visit',
+      title: 'Book the visit that fits your day',
+      description: 'Reserve time with the doctor or the dentist so you are not guessing whether someone can see you.',
+      cardTitle: 'Appointments',
+      clientNeed: 'Call, email, or book online. We confirm the service that matches what you came for.'
     },
     {
       image: 'assets/images/hero/dashboard_lab_cutout.jpg',
       serviceSlug: 'laboratory-services',
-      eyebrow: 'Medical laboratory',
-      title: 'Lab tests &\nresults',
-      description: 'Order tests, track samples, and complete every lab workflow.',
-      icon: 'bi-clipboard2-pulse',
+      ctaLabel: 'Laboratory for patients',
+      title: 'Get your tests done here',
+      description: 'Blood work and other lab tests are taken on site, then used by your doctor so you are not sent to another town for results.',
       cardTitle: 'Laboratory',
-      cardDescription: 'Full lab testing to guide diagnosis and follow-up.'
+      clientNeed: 'Bring the request from your clinician, or ask during your consultation. Results come back to the doctor treating you.'
     },
     {
       image: 'assets/images/hero/dashboard_pharmacy_dispense.jpg',
       serviceSlug: 'pharmacy',
-      eyebrow: 'Pharmacy',
-      title: 'Dispense drugs\nwith confidence',
-      description: 'Fill prescriptions and dispense medicines from the pharmacy desk.',
-      icon: 'bi-capsule',
+      ctaLabel: 'Pharmacy for patients',
+      title: 'Collect your medicine before you go home',
+      description: 'The pharmacy is in the hospital. After the doctor or dentist prescribes, you can pick up the medicine and ask how to take it.',
       cardTitle: 'Pharmacy',
-      cardDescription: 'On-site dispensing for prescribed medicines.'
+      clientNeed: 'No extra trip for common prescribed medicines and essential supplies.'
     },
     {
       image: 'assets/images/hero/dashboard_dental_slide.jpg',
       serviceSlug: 'dental-services',
-      eyebrow: 'Dental clinic',
-      title: 'Dental care\nin session',
-      description: 'Chart treatments and manage dental visits while work is underway.',
-      icon: 'bi-tooth',
-      cardTitle: 'Dental',
-      cardDescription: 'Dental check-ups and treatment with a dedicated clinic.',
-      imagePosition: '45% 30%'
+      ctaRoute: '/book-appointment',
+      ctaLabel: 'Book the dentist',
+      title: 'Tooth pain and check-ups, on site',
+      description: 'A full-time dentist sees patients for pain, check-ups, and planned treatment. Book it the same way you book the doctor.',
+      cardTitle: 'Dental care',
+      clientNeed: 'Come in when a tooth hurts, or book a check-up before the pain starts.'
     },
     {
       image: 'assets/images/hero/dashboard_scan_slide.jpg',
       serviceSlug: 'ultrasound-scans',
-      eyebrow: 'Imaging & scan',
-      title: 'Ultrasound &\nscan sessions',
-      description: 'Capture and review scans during an active ultrasound session.',
-      icon: 'bi-soundwave',
-      cardTitle: 'Ultrasound & scans',
-      cardDescription: 'Imaging sessions that support timely clinical decisions.'
-    },
-    {
-      image: 'assets/images/hero/dashboard_theatre.jpg',
-      serviceSlug: 'theatre-surgery',
-      eyebrow: 'Operating theatre',
-      title: 'Theatre &\nsurgery',
-      description: 'Plan procedures and support surgical teams in theatre.',
-      icon: 'bi-scissors',
-      cardTitle: 'Theatre',
-      cardDescription: 'Surgical planning and operating theatre support.'
-    },
-    {
-      image: 'assets/images/hero/dashboard_ambulance.jpg',
-      serviceSlug: 'ambulance',
-      eyebrow: 'Ambulance services',
-      title: 'Emergency\nresponse on wheels',
-      description: 'Dispatch ambulances and track pre-hospital emergency care.',
-      icon: 'bi-ambulance',
-      cardTitle: 'Ambulance',
-      cardDescription: 'Emergency transport and pre-hospital response.'
-    },
-    {
-      image: 'assets/images/hero/dashboard_ophthalmology.jpg',
-      serviceSlug: 'ophthalmology',
-      eyebrow: 'Ophthalmology',
-      title: 'Eye care &\nvision clinics',
-      description: 'Manage eye exams, clinics, and ophthalmology visits.',
-      icon: 'bi-eye',
-      cardTitle: 'Ophthalmology',
-      cardDescription: 'Eye clinics and vision care pathways.'
+      ctaLabel: 'Ultrasound for patients',
+      title: 'An ultrasound when you need to see more',
+      description: 'Pregnancy scans and other ultrasound sessions happen here, so your doctor can decide with pictures instead of sending you away.',
+      cardTitle: 'Ultrasound and scans',
+      clientNeed: 'Ask during antenatal care or a consultation. You stay in the same hospital for the scan.'
     },
     {
       image: 'assets/images/hero/dashboard_obgyn.jpg',
       serviceSlug: 'maternity',
-      eyebrow: 'Obstetrics & gynaecology',
-      title: 'Maternity &\nwomen\'s health',
-      description: 'Support antenatal care, delivery, and gynaecology consultations.',
-      icon: 'bi-gender-female',
-      cardTitle: 'Obstetrics & gynaecology',
-      cardDescription: 'Maternity and women\'s health services.',
-      imagePosition: '45% 30%'
-    },
-    {
-      image: 'assets/images/hero/dashboard_xray.jpg',
-      serviceSlug: 'xray',
-      eyebrow: 'Radiology · X-ray',
-      title: 'X-ray\nimaging',
-      description: 'Order, capture, and review X-ray studies in one flow.',
-      icon: 'bi-radioactive',
-      cardTitle: 'X-ray',
-      cardDescription: 'Radiology X-ray ordering and review.'
-    },
-    {
-      image: 'assets/images/hero/dashboard_ct.jpg',
-      serviceSlug: 'ct-scan',
-      eyebrow: 'Radiology · CT',
-      title: 'CT scan\nimaging',
-      description: 'Coordinate CT requests and results for faster diagnosis.',
-      icon: 'bi-circle-half',
-      cardTitle: 'CT scan',
-      cardDescription: 'CT imaging coordination and reporting.'
-    },
-    {
-      image: 'assets/images/hero/dashboard_mri.jpg',
-      serviceSlug: 'mri',
-      eyebrow: 'Radiology · MRI',
-      title: 'MRI\nimaging',
-      description: 'Schedule and follow through MRI scans with clear reporting.',
-      icon: 'bi-magnet',
-      cardTitle: 'MRI',
-      cardDescription: 'MRI scheduling and clinical reporting.'
-    },
-    {
-      image: 'assets/images/hero/dashboard_inpatient.jpg',
-      serviceSlug: 'inpatient',
-      eyebrow: 'Inpatient care',
-      title: 'Beds &\nward admissions',
-      description: 'Track bed occupancy and manage inpatient stays across wards.',
-      icon: 'bi-door-open',
-      cardTitle: 'Inpatient beds',
-      cardDescription: 'Ward admissions and bed occupancy.'
-    },
-    {
-      image: 'assets/images/hero/dashboard_emergency.jpg',
-      serviceSlug: 'emergency-care',
-      eyebrow: 'Emergency',
-      title: 'Casualty &\nemergency desk',
-      description: 'Triage urgent cases and keep the emergency bay moving.',
-      icon: 'bi-heart-pulse',
-      cardTitle: 'Emergency',
-      cardDescription: 'Triage and emergency bay workflows.'
-    },
-    {
-      image: 'assets/images/hero/dashboard_reports.jpg',
-      serviceSlug: 'reports',
-      eyebrow: 'Reports',
-      title: 'Clinical &\noperational reports',
-      description: 'Generate reports that help teams review performance daily.',
-      icon: 'bi-file-earmark-bar-graph',
-      cardTitle: 'Reports',
-      cardDescription: 'Clinical and operational reporting.'
-    },
-    {
-      image: 'assets/images/hero/dashboard_finance.jpg',
-      serviceSlug: 'finance',
-      eyebrow: 'Accounting & finance',
-      title: 'Finance &\nrevenue control',
-      description: 'Track billing, expenses, and financial health of the facility.',
-      icon: 'bi-cash-stack',
-      cardTitle: 'Accounting & finance',
-      cardDescription: 'Billing, expenses, and revenue control.'
-    },
-    {
-      image: 'assets/images/hero/dashboard_insurance.jpg',
-      serviceSlug: 'insurance',
-      eyebrow: 'Insurance schemes',
-      title: 'Cover &\nclaim support',
-      description: 'Manage scheme eligibility and insurance billing workflows.',
-      icon: 'bi-shield-check',
-      cardTitle: 'Insurance',
-      cardDescription: 'Scheme cover and claims support.'
-    },
-    {
-      image: 'assets/images/hero/dashboard_icu.jpg',
-      serviceSlug: 'icu',
-      eyebrow: 'Intensive care',
-      title: 'ICU\ncritical care',
-      description: 'Monitor critical patients and ICU resources with clarity.',
-      icon: 'bi-activity',
-      cardTitle: 'ICU',
-      cardDescription: 'Critical care monitoring and ICU resources.'
-    },
-    {
-      image: 'assets/images/hero/dashboard_nicu.jpg',
-      serviceSlug: 'nicu',
-      eyebrow: 'Neonatal care',
-      title: 'NICU\nfor newborns',
-      description: 'Support neonatal intensive care and incubator-side workflows.',
-      icon: 'bi-balloon-heart',
-      cardTitle: 'NICU',
-      cardDescription: 'Neonatal intensive care workflows.',
-      imagePosition: '45% 22%'
+      ctaLabel: 'Maternity for mothers',
+      title: 'Pregnancy care close to home',
+      description: 'Antenatal visits, delivery planning, and early care after birth for mothers in Bugogo and Kyegegwa.',
+      cardTitle: 'Maternity',
+      clientNeed: 'Come for check-ups through pregnancy and ask what to watch for before labour.'
     },
     {
       image: 'assets/images/hero/dashboard_pediatrics.jpg',
       serviceSlug: 'paediatrics',
-      eyebrow: 'Pediatrics',
-      title: 'Children\'s\ncare',
-      description: 'Manage pediatric visits, wards, and child-focused care.',
-      icon: 'bi-emoji-smile',
-      cardTitle: 'Pediatrics',
-      cardDescription: 'Child-focused clinics and ward care.'
+      ctaLabel: 'Care for your child',
+      title: 'A place to bring a sick child',
+      description: 'Fever, cough, feeding worries, and growth check-ups for infants, children, and adolescents.',
+      cardTitle: 'Children’s care',
+      clientNeed: 'Parents get a practical plan for home, and tests if the doctor needs them.'
+    },
+    {
+      image: 'assets/images/hero/dashboard_ophthalmology.jpg',
+      serviceSlug: 'ophthalmology',
+      ctaLabel: 'Eye care for patients',
+      title: 'Have your eyes examined here',
+      description: 'Vision checks and eye follow-up, so you do not wait until sight problems become an emergency.',
+      cardTitle: 'Eye clinic',
+      clientNeed: 'Book if vision is blurring, an eye hurts, or you were told to come back for review.'
+    },
+    {
+      image: 'assets/images/hero/dashboard_xray.jpg',
+      serviceSlug: 'xray',
+      ctaLabel: 'X-ray for patients',
+      title: 'X-ray without another journey',
+      description: 'If the doctor needs an X-ray, it can be taken here and used for the same visit’s decision.',
+      cardTitle: 'X-ray',
+      clientNeed: 'Useful after injury, chest illness, and other problems your clinician wants to see.'
+    },
+    {
+      image: 'assets/images/hero/dashboard_inpatient.jpg',
+      serviceSlug: 'inpatient',
+      ctaLabel: 'Staying in hospital',
+      title: 'A bed if you need to stay',
+      description: 'When a clinic visit is not enough, you can be admitted to the ward and looked after until you are ready to go home.',
+      cardTitle: 'Inpatient care',
+      clientNeed: 'Families know where the patient is, and the same hospital continues the treatment.'
+    },
+    {
+      image: 'assets/images/hero/dashboard_emergency.jpg',
+      serviceSlug: 'emergency-care',
+      ctaLabel: 'Emergency help',
+      title: 'Call when someone cannot wait',
+      description: 'Urgent assessment and oxygen are available for emergencies. Phone us and say what is happening.',
+      cardTitle: 'Emergency',
+      clientNeed: 'Breathing trouble, collapse, bleeding, or a child who is getting worse quickly.'
     },
     {
       image: 'assets/images/hero/dashboard_nutrition.jpg',
       serviceSlug: 'nutrition',
-      eyebrow: 'Nutrition',
-      title: 'Diet &\nnutrition services',
-      description: 'Plan therapeutic diets and nutrition support for patients.',
-      icon: 'bi-egg-fried',
-      cardTitle: 'Nutrition',
-      cardDescription: 'Therapeutic diets and nutrition support.'
+      ctaLabel: 'Diet help for patients',
+      title: 'Eating advice that matches your illness',
+      description: 'If diet is part of recovery — pregnancy, a child who is not feeding well, or a long illness — ask for nutrition support.',
+      cardTitle: 'Diet and nutrition',
+      clientNeed: 'You get a meal plan you can follow at home, not only a list of foods to avoid.'
     },
     {
       image: 'assets/images/hero/dashboard_physiotherapy.jpg',
       serviceSlug: 'physiotherapy',
-      eyebrow: 'Physiotherapy',
-      title: 'Rehab &\nphysiotherapy',
-      description: 'Schedule sessions and track rehabilitation progress.',
-      icon: 'bi-person-walking',
+      ctaLabel: 'Rehab for patients',
+      title: 'Get moving again after illness or injury',
+      description: 'Physiotherapy sessions help you walk, use an arm, or recover strength after being unwell.',
       cardTitle: 'Physiotherapy',
-      cardDescription: 'Rehab sessions and progress tracking.'
+      clientNeed: 'Book if pain, weakness, or stiffness is stopping daily work.'
+    },
+    {
+      image: 'assets/images/hero/dashboard_insurance.jpg',
+      serviceSlug: 'insurance',
+      ctaLabel: 'Insurance questions',
+      title: 'Ask if your scheme can cover the visit',
+      description: 'Bring your insurance details. We help check whether the scheme can be used for the care you need.',
+      cardTitle: 'Insurance',
+      clientNeed: 'Know what is covered before you are surprised by a bill.'
+    },
+    {
+      image: 'assets/images/hero/dashboard_theatre.jpg',
+      serviceSlug: 'theatre-surgery',
+      upcoming: true,
+      ctaLabel: 'Surgery — not open yet',
+      title: 'Surgery closer to home, coming soon',
+      description: 'Caesarean section, laparoscopy, and other common operations are not available to book yet. We are preparing theatre so fewer families have to travel.',
+      cardTitle: 'Theatre and surgery',
+      clientNeed: 'If you need an operation today, call us. We will tell you honestly where to go until theatre opens.'
+    },
+    {
+      image: 'assets/images/hero/dashboard_ambulance.jpg',
+      serviceSlug: 'ambulance',
+      upcoming: true,
+      ctaLabel: 'Ambulance — not open yet',
+      title: 'An ambulance for the journey, coming soon',
+      description: 'Emergency transport is not running yet. Until it is, call the hospital and we will guide you on how to get here or to the next facility.',
+      cardTitle: 'Ambulance',
+      clientNeed: 'For a collapse or a patient who cannot sit in a car, phone first so we can advise the safest move.'
+    },
+    {
+      image: 'assets/images/hero/dashboard_ct.jpg',
+      serviceSlug: 'ct-scan',
+      upcoming: true,
+      ctaLabel: 'CT scan — not open yet',
+      title: 'CT scans are planned, not offered today',
+      description: 'If you need a CT now, we cannot do it here yet. Your doctor can still see you and explain where the scan should be done.',
+      cardTitle: 'CT scan',
+      clientNeed: 'Ask during consultation if a CT is necessary, and what to do while this service is still upcoming.'
+    },
+    {
+      image: 'assets/images/hero/dashboard_mri.jpg',
+      serviceSlug: 'mri',
+      upcoming: true,
+      ctaLabel: 'MRI — not open yet',
+      title: 'MRI is part of what we are adding',
+      description: 'MRI is not open for patients today. Consultation, X-ray, ultrasound, and laboratory are.',
+      cardTitle: 'MRI',
+      clientNeed: 'Do not delay care that we can already give while waiting for MRI to open.'
+    },
+    {
+      image: 'assets/images/hero/dashboard_icu.jpg',
+      serviceSlug: 'icu',
+      upcoming: true,
+      ctaLabel: 'ICU — not open yet',
+      title: 'Intensive care is still being built',
+      description: 'We can assess an emergency and give oxygen. A full ICU is not open yet, so the most critical patients may still need transfer.',
+      cardTitle: 'Intensive care',
+      clientNeed: 'Call immediately. We will say whether we can stabilise here or you should go onward.'
+    },
+    {
+      image: 'assets/images/hero/dashboard_nicu.jpg',
+      serviceSlug: 'nicu',
+      upcoming: true,
+      ctaLabel: 'Newborn ICU — not open yet',
+      title: 'Specialist newborn care, coming soon',
+      description: 'A neonatal intensive care unit is not open yet. Maternity and paediatric visits are available today.',
+      cardTitle: 'Care for newborns',
+      clientNeed: 'If a baby is struggling, call us at once so we can direct you to the right help.'
     }
   ];
 
@@ -317,13 +285,10 @@ export class LandingPageComponent implements OnInit, OnDestroy {
     return person.image || this.defaultPersonImage;
   }
 
-  get activeSlide() {
-    return this.slides[this.currentSlide];
-  }
 
-  servicesOffered = getOfferedServices();
+  servicesOffered = getPublicOfferedServices();
 
-  upcomingServices = getUpcomingServices();
+  upcomingServices = getPublicUpcomingServices();
 
   successStories = [
     {
@@ -423,9 +388,62 @@ export class LandingPageComponent implements OnInit, OnDestroy {
     private api: ApiService
   ) {}
 
+  get activeSlide() {
+    return this.slides[this.currentSlide];
+  }
+
   ngOnInit() {
-    this.startAutoSlide();
     this.loadTeamMembersFromUsers();
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      this.sliderPaused = true;
+    } else {
+      this.startAutoSlide();
+    }
+  }
+
+  ngOnDestroy() {
+    this.clearAutoSlide();
+  }
+
+  startAutoSlide() {
+    this.clearAutoSlide();
+    if (this.sliderPaused) {
+      return;
+    }
+    this.autoSlideInterval = setInterval(() => this.nextSlide(), 5000);
+  }
+
+  pauseAutoSlide() {
+    this.clearAutoSlide();
+  }
+
+  resumeAutoSlide() {
+    this.startAutoSlide();
+  }
+
+  toggleSliderPause() {
+    this.sliderPaused = !this.sliderPaused;
+    if (this.sliderPaused) {
+      this.clearAutoSlide();
+    } else {
+      this.startAutoSlide();
+    }
+  }
+
+  nextSlide() {
+    this.currentSlide = (this.currentSlide + 1) % this.slides.length;
+  }
+
+  previousSlide() {
+    this.currentSlide = this.currentSlide === 0 ? this.slides.length - 1 : this.currentSlide - 1;
+  }
+
+  private clearAutoSlide() {
+    if (this.autoSlideInterval) {
+      clearInterval(this.autoSlideInterval);
+      this.autoSlideInterval = null;
+    }
   }
 
   private loadTeamMembersFromUsers(): void {
@@ -470,54 +488,6 @@ export class LandingPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy() {
-    if (this.autoSlideInterval) {
-      clearInterval(this.autoSlideInterval);
-    }
-  }
-
-  startAutoSlide() {
-    if (this.autoSlideInterval) {
-      clearInterval(this.autoSlideInterval);
-    }
-    this.autoSlideInterval = setInterval(() => {
-      this.nextSlide();
-    }, 5000);
-  }
-
-  pauseAutoSlide() {
-    if (this.autoSlideInterval) {
-      clearInterval(this.autoSlideInterval);
-      this.autoSlideInterval = null;
-    }
-  }
-
-  resumeAutoSlide() {
-    this.startAutoSlide();
-  }
-
-  /** Depth 0 = front of stack. Kept for compatibility; hero now shows the active slide card. */
-  stackDepth(cardIndex: number): number {
-    return cardIndex === this.currentSlide ? 0 : 1;
-  }
-
-  focusHeroCard(cardIndex: number): void {
-    if (cardIndex >= 0 && cardIndex < this.slides.length) {
-      this.currentSlide = cardIndex;
-    }
-  }
-
-  nextSlide() {
-    this.currentSlide = (this.currentSlide + 1) % this.slides.length;
-  }
-
-  previousSlide() {
-    this.currentSlide = this.currentSlide === 0 ? this.slides.length - 1 : this.currentSlide - 1;
-  }
-
-  goToSlide(index: number) {
-    this.currentSlide = index;
-  }
 
   navigateToOverview() {
     this.router.navigate(['/login']);

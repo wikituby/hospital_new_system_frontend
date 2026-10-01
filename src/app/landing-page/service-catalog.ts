@@ -257,7 +257,7 @@ export const LANDING_SERVICES: LandingServiceItem[] = [
     slug: 'xray',
     image: 'assets/images/hero/dashboard_xray.jpg',
     title: 'X-ray imaging',
-    description: 'Order, capture, and review X-ray studies in one clinical flow.',
+    description: 'On-site X-ray imaging so clinicians can confirm a diagnosis without sending you away.',
     category: 'offered',
     details: [
       'X-ray imaging supports diagnosis by capturing studies requested by clinicians and returning clear results for treatment decisions.',
@@ -275,7 +275,7 @@ export const LANDING_SERVICES: LandingServiceItem[] = [
     slug: 'ct-scan',
     image: 'assets/images/hero/dashboard_ct.jpg',
     title: 'CT scan imaging',
-    description: 'Coordinate CT requests and results for faster diagnosis.',
+    description: 'Detailed CT imaging for complex diagnosis — not yet open to patients.',
     category: 'upcoming',
     details: [
       'CT imaging capacity is part of our growth in advanced diagnostics, helping clinicians coordinate requests and results more quickly.',
@@ -293,7 +293,7 @@ export const LANDING_SERVICES: LandingServiceItem[] = [
     slug: 'mri',
     image: 'assets/images/hero/dashboard_mri.jpg',
     title: 'MRI imaging',
-    description: 'Schedule and follow through MRI scans with clear reporting.',
+    description: 'MRI scanning and reporting — planned as part of our advanced imaging expansion.',
     category: 'upcoming',
     details: [
       'MRI services are planned to expand advanced imaging options for patients who need detailed scans and clear clinical reporting.',
@@ -311,7 +311,7 @@ export const LANDING_SERVICES: LandingServiceItem[] = [
     slug: 'inpatient',
     image: 'assets/images/hero/dashboard_inpatient.jpg',
     title: 'Inpatient care',
-    description: 'Track bed occupancy and manage inpatient stays across wards.',
+    description: 'Ward admission and inpatient stays when you need care beyond a clinic visit.',
     category: 'offered',
     details: [
       'Inpatient care covers ward admissions, bed occupancy, and stay management so patients receive continuous care after consultation or emergency review.',
@@ -329,7 +329,7 @@ export const LANDING_SERVICES: LandingServiceItem[] = [
     slug: 'emergency-care',
     image: 'assets/images/hero/dashboard_emergency.jpg',
     title: 'Emergency care',
-    description: 'Triage urgent cases and keep the emergency bay moving with oxygen-ready support.',
+    description: 'Urgent assessment and oxygen-ready support when a case cannot wait.',
     category: 'offered',
     details: [
       'Emergency care at Veneranda Hospital focuses on triage, urgent assessment, and oxygen-ready response so critical needs are handled quickly.',
@@ -383,7 +383,7 @@ export const LANDING_SERVICES: LandingServiceItem[] = [
     slug: 'insurance',
     image: 'assets/images/hero/dashboard_insurance.jpg',
     title: 'Insurance schemes',
-    description: 'Manage scheme eligibility and insurance billing workflows.',
+    description: 'Help with insurance scheme eligibility and covered care.',
     category: 'offered',
     details: [
       'Insurance support helps patients and the facility navigate scheme eligibility, cover, and claims so care remains accessible.',
@@ -401,7 +401,7 @@ export const LANDING_SERVICES: LandingServiceItem[] = [
     slug: 'icu',
     image: 'assets/images/hero/dashboard_icu.jpg',
     title: 'ICU critical care',
-    description: 'Monitor critical patients and ICU resources with clarity.',
+    description: 'Intensive monitoring for critically ill patients — opening as capacity is ready.',
     category: 'upcoming',
     details: [
       'ICU capacity is part of our critical-care growth plan, strengthening monitoring and resources for patients who need intensive support.',
@@ -419,7 +419,7 @@ export const LANDING_SERVICES: LandingServiceItem[] = [
     slug: 'nicu',
     image: 'assets/images/hero/dashboard_nicu.jpg',
     title: 'NICU for newborns',
-    description: 'Support neonatal intensive care and incubator-side workflows.',
+    description: 'Specialist care for newborns who need intensive support — coming soon.',
     category: 'upcoming',
     details: [
       'NICU services will expand newborn intensive care so vulnerable infants can receive specialised support closer to home.',
@@ -455,7 +455,7 @@ export const LANDING_SERVICES: LandingServiceItem[] = [
     slug: 'physiotherapy',
     image: 'assets/images/hero/dashboard_physiotherapy.jpg',
     title: 'Physiotherapy',
-    description: 'Schedule rehab sessions and track rehabilitation progress.',
+    description: 'Rehabilitation sessions to restore movement, strength, and independence.',
     category: 'offered',
     details: [
       'Physiotherapy supports recovery through scheduled sessions and progress tracking after illness, injury, or inpatient care.',
@@ -481,4 +481,18 @@ export function getOfferedServices(): LandingServiceItem[] {
 
 export function getUpcomingServices(): LandingServiceItem[] {
   return LANDING_SERVICES.filter((s) => s.category === 'upcoming');
+}
+
+/** Internal modules that are not patient-facing hospital services. */
+const STAFF_ONLY_SLUGS = new Set(['reports', 'finance']);
+
+/** Upcoming entries that repeat another public service. */
+const DUPLICATE_PUBLIC_SLUGS = new Set(['theatre-services']);
+
+export function getPublicOfferedServices(): LandingServiceItem[] {
+  return getOfferedServices().filter((s) => !STAFF_ONLY_SLUGS.has(s.slug));
+}
+
+export function getPublicUpcomingServices(): LandingServiceItem[] {
+  return getUpcomingServices().filter((s) => !DUPLICATE_PUBLIC_SLUGS.has(s.slug));
 }

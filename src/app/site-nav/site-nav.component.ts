@@ -1,8 +1,8 @@
 import { Component, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
 import {
-  getOfferedServices,
-  getUpcomingServices,
+  getPublicOfferedServices,
+  getPublicUpcomingServices,
   LandingServiceItem
 } from '../landing-page/service-catalog';
 
@@ -13,8 +13,8 @@ import {
 })
 export class SiteNavComponent {
   readonly venerandaLogo = 'assets/images/veneranda-logo.png';
-  readonly offeredServices: LandingServiceItem[] = getOfferedServices();
-  readonly upcomingServices: LandingServiceItem[] = getUpcomingServices();
+  readonly offeredServices: LandingServiceItem[] = getPublicOfferedServices();
+  readonly upcomingServices: LandingServiceItem[] = getPublicUpcomingServices();
 
   openMenu: 'services' | 'upcoming' | null = null;
 
