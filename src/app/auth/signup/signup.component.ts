@@ -1,9 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ApiService } from 'src/app/services/api.service';
 import { AuthenticationService } from 'src/app/services/authentication.service';
 import { Router } from '@angular/router';
 import { defaultContactValue } from 'src/app/utils/phone-contact.util';
+import { Subscription } from 'rxjs';
+import {
+  DEFAULT_FACILITY_LOGO,
+  DEFAULT_FACILITY_NAME,
+  FacilityBrandingService,
+} from 'src/app/services/facility-branding.service';
 
 
 
@@ -12,7 +18,7 @@ import { defaultContactValue } from 'src/app/utils/phone-contact.util';
   templateUrl: './signup.component.html',
   styleUrls: ['./signup.component.css']
 })
-export class SignupComponent implements OnInit {
+export class SignupComponent implements OnInit, OnDestroy {
 
   data: any[] = [];
   serverDirectoryName:string='';
@@ -34,15 +40,44 @@ export class SignupComponent implements OnInit {
 
   signUpForm!: FormGroup;
   contact = defaultContactValue();
+  facilityName = DEFAULT_FACILITY_NAME;
+  facilityLogoUrl = DEFAULT_FACILITY_LOGO;
+  private brandSubs: Subscription[] = [];
 
-  constructor(private fb: FormBuilder,private api: ApiService, private authService: AuthenticationService, private router: Router){}
+  constructor(
+    private fb: FormBuilder,
+    private api: ApiService,
+    private authService: AuthenticationService,
+    private router: Router,
+    private facilityBranding: FacilityBrandingService
+  ) {}
 
   ngOnInit(): void {
+    this.bindFacilityBranding();
     this.signUpForm = this.fb.group({
       username: ['',Validators.required],
       password:['', Validators.required]
     })
 
+  }
+
+  ngOnDestroy(): void {
+    this.brandSubs.forEach((sub) => sub.unsubscribe());
+  }
+
+  private bindFacilityBranding(): void {
+    const brand = this.facilityBranding.hydrateFromLocalAssets();
+    this.facilityName = brand.facilityName;
+    this.facilityLogoUrl = this.facilityBranding.getLoginLogoUrl();
+    this.brandSubs.push(
+      this.facilityBranding.loginFacilityName$.subscribe((name) => (this.facilityName = name)),
+      this.facilityBranding.loginFacilityLogo$.subscribe((logo) => (this.facilityLogoUrl = logo))
+    );
+    void this.facilityBranding.loadPublicFromConnectedServer();
+  }
+
+  onFacilityLogoError(): void {
+    this.facilityLogoUrl = DEFAULT_FACILITY_LOGO;
   }
 
 

@@ -2099,15 +2099,26 @@ export class ApiService {
     );
   }
 
-  getDashboardSummary(): Observable<any> {
-    return this.http.get(`${this.baseUrl5}/dashboard-summary`).pipe(
+  getDashboardSummary(fromDate?: string, toDate?: string): Observable<any> {
+    let params = new HttpParams();
+    if (fromDate) {
+      params = params.set('fromDate', fromDate);
+    }
+    if (toDate) {
+      params = params.set('toDate', toDate);
+    }
+    return this.http.get(`${this.baseUrl5}/dashboard-summary`, { params }).pipe(
       map((res: any) => this.unwrapApiData(res))
     );
   }
   
-  getAllItemsUsedInProcedure(id:any) {
+  getAllItemsUsedInProcedure(id:any, unitSellingModelId?: number | null) {
+    let params = new HttpParams();
+    if (unitSellingModelId != null && Number(unitSellingModelId) > 0) {
+      params = params.set('unitSellingModelId', String(unitSellingModelId));
+    }
 
-    return this.http.get(`${this.baseUrl5}/items-used/${id}`).pipe(map((res: any) => {
+    return this.http.get(`${this.baseUrl5}/items-used/${id}`, { params }).pipe(map((res: any) => {
 
       console.log(res.data);
       return res.data
@@ -2345,9 +2356,11 @@ export class ApiService {
     treatmentId: number | string,
     flags: {
       status?: string;
+      prescribed?: boolean;
       paid?: boolean;
       dispensed?: boolean;
       administered?: boolean;
+      given?: boolean;
     }
   ): Observable<any> {
     const jwt = this.getSessionToken();
@@ -2355,6 +2368,9 @@ export class ApiService {
     const body: Record<string, unknown> = {};
     if (flags.status != null && String(flags.status).trim() !== '') {
       body['status'] = flags.status;
+    }
+    if (flags.prescribed != null) {
+      body['prescribed'] = flags.prescribed;
     }
     if (flags.paid != null) {
       body['paid'] = flags.paid;
@@ -2364,6 +2380,9 @@ export class ApiService {
     }
     if (flags.administered != null) {
       body['administered'] = flags.administered;
+    }
+    if (flags.given != null) {
+      body['given'] = flags.given;
     }
     return this.http.patch(
       `${this.baseUrl5}/update-treatment-status/${treatmentId}`,

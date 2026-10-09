@@ -81,6 +81,22 @@
   color: #3d6bb8;
 }
 
+.login-password-group > .form-control {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.login-password-group > .password-toggle {
+  display: flex;
+  align-items: center;
+  margin-left: -1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 0.3rem;
+  border-bottom-right-radius: 0.3rem;
+  cursor: pointer;
+}
+
 .simple-loader {
   border: 4px solid #f3f3f3;
   border-top: 4px solid #4b949c;

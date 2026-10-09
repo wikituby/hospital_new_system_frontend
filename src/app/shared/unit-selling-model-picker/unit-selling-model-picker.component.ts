@@ -49,6 +49,10 @@ export class UnitSellingModelPickerComponent implements OnChanges, OnInit, OnDes
   @Input() toolbarButton = false;
   /** Allow local draft models before a service record exists. */
   @Input() allowDraft = false;
+  /** Show an items-used icon on each model. Used for services. */
+  @Input() showItemsUsed = false;
+
+  @Output() itemsUsedRequested = new EventEmitter<UnitSellingModel>();
 
   @Output() selectedModelIdChange = new EventEmitter<number | null>();
   @Output() selectedModelChange = new EventEmitter<UnitSellingModel | null>();
@@ -69,8 +73,13 @@ export class UnitSellingModelPickerComponent implements OnChanges, OnInit, OnDes
   editorUnitsInBundle: number | null = 1;
   /** Raw text while typing — avoids browser number-input rounding (e.g. 50000 → 49998). */
   editorBundlePriceText = '';
+  editorProfitText = '';
   editorUnitSell: number | null = null;
   editorProfitMargin: number | null = null;
+  /** Which amount the user last typed, so the other amount can be calculated from it. */
+  private priceSource: 'bundle' | 'profit' = 'bundle';
+  /** Cost of the model being edited, when that model has its own items used. */
+  private editorCostOverride: number | null = null;
 
   private draftModels: UnitSellingModel[] = [];
   private nextDraftId = -1;
@@ -321,6 +330,8 @@ export class UnitSellingModelPickerComponent implements OnChanges, OnInit, OnDes
     this.editingModel = null;
     this.editorName = '';
     this.editorUnitsInBundle = 1;
+    this.priceSource = 'bundle';
+    this.editorCostOverride = null;
     const cost = Number(this.unitCostPrice) || 0;
     this.editorBundlePriceText = cost > 0 ? this.formatMoneyInput(cost) : '';
     this.syncEditorDerivedPrices();
@@ -336,6 +347,9 @@ export class UnitSellingModelPickerComponent implements OnChanges, OnInit, OnDes
     this.editorName = model.name;
     this.editorUnitsInBundle = this.bundleUnits(model);
     const bundle = this.bundleAmount(model);
+    const modelCost = Number(model?.unitCostPrice);
+    this.editorCostOverride = Number.isFinite(modelCost) ? modelCost : null;
+    this.priceSource = 'bundle';
     this.editorBundlePriceText = bundle > 0 ? this.formatMoneyInput(bundle) : '';
     this.syncEditorDerivedPrices();
     this.showEditor = true;
@@ -346,6 +360,9 @@ export class UnitSellingModelPickerComponent implements OnChanges, OnInit, OnDes
     this.showEditor = false;
     this.editingModel = null;
     this.editorBundlePriceText = '';
+    this.editorProfitText = '';
+    this.editorCostOverride = null;
+    this.priceSource = 'bundle';
     this.error = '';
     this.unlockBodyScroll();
   }
@@ -409,7 +426,14 @@ export class UnitSellingModelPickerComponent implements OnChanges, OnInit, OnDes
 
   onBundlePriceInput(value: string): void {
     this.editorBundlePriceText = value;
-    this.syncEditorDerivedPrices();
+    this.priceSource = 'bundle';
+    this.applyBundleToProfit();
+  }
+
+  onProfitInput(value: string): void {
+    this.editorProfitText = value;
+    this.priceSource = 'profit';
+    this.applyProfitToBundle();
   }
 
   onEditorUnitsChange(value: number | string | null): void {
@@ -422,17 +446,64 @@ export class UnitSellingModelPickerComponent implements OnChanges, OnInit, OnDes
     event.preventDefault();
   }
 
+  requestItemsUsed(model: UnitSellingModel, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.closeDropdown();
+    this.itemsUsedRequested.emit(model);
+  }
+
+  get unitCostDisplay(): string {
+    return this.formatMoney(this.editorUnitCost());
+  }
+
   syncEditorDerivedPrices(): void {
+    if (this.priceSource === 'profit') {
+      this.applyProfitToBundle();
+      return;
+    }
+    this.applyBundleToProfit();
+  }
+
+  private editorUnitCost(): number {
+    if (this.editorCostOverride != null && Number.isFinite(this.editorCostOverride)) {
+      return this.editorCostOverride;
+    }
+    const cost = Number(this.unitCostPrice);
+    return Number.isFinite(cost) ? cost : 0;
+  }
+
+  /** Bundle price was typed: unit sell and profit follow it. */
+  private applyBundleToProfit(): void {
     const units = Number(this.editorUnitsInBundle);
     const bundle = this.parseMoneyInput(this.editorBundlePriceText);
-    const cost = Number(this.unitCostPrice) || 0;
-    if (Number.isFinite(units) && units > 0 && bundle != null && bundle > 0) {
+    const cost = this.editorUnitCost();
+    if (Number.isFinite(units) && units > 0 && bundle != null && bundle >= 0) {
       this.editorUnitSell = this.roundMoney(bundle / units);
-    } else {
-      this.editorUnitSell = null;
+      this.editorProfitMargin = this.roundMoney(this.editorUnitSell - cost);
+      this.editorProfitText = this.formatMoneyInput(this.editorProfitMargin);
+      return;
     }
-    const sell = Number(this.editorUnitSell) || 0;
-    this.editorProfitMargin = sell > cost ? this.roundMoney(sell - cost) : 0;
+    this.editorUnitSell = null;
+    this.editorProfitMargin = null;
+    this.editorProfitText = '';
+  }
+
+  /** Profit was typed: unit sell and bundle price follow it. */
+  private applyProfitToBundle(): void {
+    const units = Number(this.editorUnitsInBundle);
+    const profit = this.parseMoneyInput(this.editorProfitText);
+    const cost = this.editorUnitCost();
+    if (Number.isFinite(units) && units > 0 && profit != null) {
+      this.editorProfitMargin = this.roundMoney(profit);
+      this.editorUnitSell = this.roundMoney(cost + this.editorProfitMargin);
+      const bundle = this.roundMoney(this.editorUnitSell * units);
+      this.editorBundlePriceText = this.formatMoneyInput(bundle);
+      return;
+    }
+    this.editorUnitSell = null;
+    this.editorProfitMargin = null;
+    this.editorBundlePriceText = '';
   }
 
   private parseMoneyInput(value: string | number | null | undefined): number | null {

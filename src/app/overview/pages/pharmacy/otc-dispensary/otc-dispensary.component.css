@@ -3,7 +3,7 @@
   display: block;
   height: calc(100vh - var(--app-header-height, 56px));
   max-height: calc(100vh - var(--app-header-height, 56px));
-  overflow: visible;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
@@ -175,7 +175,8 @@
 
 .otc-dispensary-page .otc-tab-content > .tab-pane.otc-rx-tab-v2.active,
 .otc-dispensary-page .otc-tab-content > .tab-pane.otc-rx-modern-tab.active {
-  display: block !important;
+  display: flex !important;
+  flex-direction: column;
   overflow: hidden !important;
   min-height: 0;
   height: 100%;
@@ -2662,6 +2663,44 @@ body.otc-receipt-modal-open {
   font-weight: 600;
 }
 
+.otc-unpaid-lead {
+  margin: 0 0 12px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.otc-unpaid-summary {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.otc-unpaid-summary div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.otc-unpaid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.otc-unpaid-table th,
+.otc-unpaid-table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.otc-unpaid-table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
 .otc-queue-modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -2752,7 +2791,8 @@ body.otc-receipt-modal-open {
 .otc-dispensary-page .otc-tab-content > .tab-pane.otc-rx-tab-v2.show,
 .otc-dispensary-page .otc-tab-content > .tab-pane.otc-rx-tab-v2.active,
 .otc-dispensary-page .otc-tab-content > .tab-pane.otc-rx-modern-tab.active {
-  display: block !important;
+  display: flex !important;
+  flex-direction: column;
   overflow: hidden !important;
   min-height: 0;
   height: 100%;
@@ -2947,10 +2987,12 @@ body.otc-receipt-modal-open {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  flex: 1 1 auto;
   height: 100%;
   min-height: 0;
   padding: 4px 2px 8px;
   pointer-events: auto;
+  overflow: hidden;
 }
 
 .rx-studio-toolbar {
@@ -2988,14 +3030,24 @@ body.otc-receipt-modal-open {
 .rx-studio-search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: min(100%, 260px);
-  padding: 0 12px;
-  height: 38px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #fff;
+  gap: 6px;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  margin: 0;
+  padding: 0 8px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: whitesmoke;
   color: #64748b;
+  box-sizing: border-box;
+}
+
+.rx-studio-search i {
+  font-size: 0.72rem;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .rx-studio-search-input {
@@ -3003,8 +3055,17 @@ body.otc-receipt-modal-open {
   outline: none;
   background: transparent;
   width: 100%;
-  font-size: 0.875rem;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  font-size: 0.75rem;
   color: #0f172a;
+}
+
+.rx-studio-search-input::-webkit-search-decoration,
+.rx-studio-search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .rx-studio-stats {
@@ -3089,26 +3150,49 @@ body.otc-receipt-modal-open {
 
 .rx-studio-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  grid-template-columns: minmax(210px, 248px) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 14px;
   flex: 1 1 auto;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
+  align-items: stretch;
 }
 
 .rx-studio-queue {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  height: 100%;
   min-height: 0;
+  max-height: none;
+  overflow: hidden;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.rx-studio-queue-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
-  padding-right: 4px;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 2px 2px 0;
+  border-radius: 12px;
   -webkit-overflow-scrolling: touch;
 }
 
 .rx-visit-card {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: 10px;
   width: 100%;
   text-align: left;
@@ -3163,6 +3247,7 @@ body.otc-receipt-modal-open {
 }
 
 .rx-visit-name {
+  display: block;
   font-weight: 700;
   font-size: 0.9rem;
   color: #0f172a;
@@ -3170,13 +3255,14 @@ body.otc-receipt-modal-open {
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
-  flex: 1 1 auto;
 }
 
-.rx-visit-name-row {
+.rx-visit-actions-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
+  margin-top: 0;
   min-width: 0;
 }
 
@@ -3257,14 +3343,16 @@ body.otc-receipt-modal-open {
 .rx-studio-detail {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  min-width: 0;
+  height: 100%;
   min-height: 0;
-  overflow-y: auto;
+  max-height: 100%;
+  overflow: hidden;
   padding: 14px;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
   background: #fff;
-  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
 }
 
 .rx-detail-header {
@@ -3302,7 +3390,12 @@ body.otc-receipt-modal-open {
 .rx-detail-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
 .rx-detail-section-head {
@@ -3311,6 +3404,7 @@ body.otc-receipt-modal-open {
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .rx-detail-section-head-line {
@@ -3368,11 +3462,341 @@ body.otc-receipt-modal-open {
   color: #64748b;
 }
 
+.rx-line-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 0;
+  padding: 14px 10px;
+  border-radius: 14px;
+  background: #f4f7fb;
+  border: 1px solid #e2e8f0;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+}
+
+.rx-line-list-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #f4f7fb #f4f7fb;
+}
+
+.rx-line-list-scroll::-webkit-scrollbar {
+  width: 4px;
+  background: #f4f7fb;
+}
+
+.rx-line-list-scroll::-webkit-scrollbar-track,
+.rx-line-list-scroll::-webkit-scrollbar-thumb,
+.rx-line-list-scroll::-webkit-scrollbar-corner {
+  background: #f4f7fb;
+}
+
+.rx-line-empty {
+  margin: 8px;
+  color: #64748b;
+}
+
+.rx-line-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1px solid #e6eaf0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
+  color: #0f172a;
+}
+
+.rx-line-card--pending {
+  background: #fff;
+}
+
+.rx-line-thumb {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #f3f6fb;
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+}
+
+.rx-line-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rx-line-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #111827;
+}
+
+.rx-line-rx {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.rx-given-switch {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  cursor: pointer;
+}
+
+.rx-given-switch input {
+  appearance: none;
+  width: 28px;
+  height: 16px;
+  margin: 0;
+  border-radius: 999px;
+  background: #cbd5e1;
+  position: relative;
+  cursor: pointer;
+}
+
+.rx-given-switch input:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.rx-given-switch input::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.15s ease;
+}
+
+.rx-given-switch.on input,
+.rx-given-switch input:checked {
+  background: #0f766e;
+}
+
+.rx-given-switch.on input::after,
+.rx-given-switch input:checked::after {
+  transform: translateX(12px);
+}
+
+.rx-line-rx-sep {
+  margin: 0 4px;
+  color: #cbd5e1;
+}
+
+.rx-dispense-switch {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 8px 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.rx-dispense-switch:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.rx-dispense-switch-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  flex: 0 0 auto;
+  transition: background 0.15s ease;
+}
+
+.rx-dispense-switch.on .rx-dispense-switch-track {
+  background: #16a34a;
+}
+
+.rx-dispense-switch.on {
+  color: #15803d;
+}
+
+.rx-dispense-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.rx-dispense-switch.on .rx-dispense-switch-thumb {
+  transform: translateX(16px);
+}
+
+.rx-line-card--skip {
+  opacity: 0.72;
+}
+
+.rx-line-dispense-state {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.rx-line-dispense-state--on {
+  color: #15803d;
+}
+
+.rx-line-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.rx-line-price i {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.rx-line-price strong {
+  color: #334155;
+  font-weight: 700;
+}
+
+.rx-line-price-extra,
+.rx-line-stock {
+  color: #94a3b8;
+}
+
+.rx-line-stock--low {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.rx-line-side {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rx-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rx-stepper-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.rx-stepper-stock {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.rx-stepper-stock--low {
+  color: #dc2626;
+}
+
+.rx-stepper-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 999px;
+  background: #3b82f6;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.rx-stepper-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.rx-stepper-value {
+  min-width: 28px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
 .rx-table-wrap {
+  display: block;
+  width: 100%;
   overflow-x: auto;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  background: #fafbfc;
+  background: #fff;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -3407,22 +3831,52 @@ body.otc-receipt-modal-open {
 
 .rx-table tbody tr:hover td { background: #f8fafc; }
 
+.rx-dispense-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rx-dispense-split--pay {
+  grid-template-columns: minmax(0, 1fr) 236px;
+}
+
 .rx-checkout {
-  margin-top: auto;
+  margin-top: 0;
   padding: 14px;
   border-radius: 14px;
   background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
   border: 1px solid #e2e8f0;
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
+  position: relative;
+  top: auto;
+  align-self: stretch;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.rx-checkout-title {
+  margin: 0 0 12px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1e293b;
 }
 
 .rx-checkout-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
-  align-items: end;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
 }
 
 .rx-checkout-field {
@@ -3446,7 +3900,7 @@ body.otc-receipt-modal-open {
   color: #0f172a;
 }
 
-.rx-checkout-field--wide { grid-column: span 2; }
+.rx-checkout-field--wide { width: 100%; }
 
 .rx-checkout-input {
   width: 100%;
@@ -3459,18 +3913,36 @@ body.otc-receipt-modal-open {
   color: #0f172a;
 }
 
+.rx-checkout-input--readonly {
+  background: #f8fafc;
+  color: #0f172a;
+  cursor: default;
+  pointer-events: none;
+}
+
 .rx-checkout-submit { height: 38px; align-self: end; }
 
+.rx-checkout-stock-block {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .rx-checkout-actions {
-  grid-column: 1 / -1;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 10px;
   align-items: stretch;
 }
 
 .rx-checkout-actions .rx-checkout-submit {
-  flex: 1 1 220px;
+  flex: 0 0 auto;
+  width: 100%;
   height: auto;
   min-height: 42px;
   white-space: normal;
@@ -3540,8 +4012,29 @@ body.otc-receipt-modal-open {
 .otc-dispensary-page.dark .rx-detail-title,
 .otc-dispensary-page.dark .rx-stat-value,
 .otc-dispensary-page.dark .rx-visit-name,
+.otc-dispensary-page.dark .rx-line-name,
+.otc-dispensary-page.dark .rx-line-price strong,
+.otc-dispensary-page.dark .rx-stepper-value,
 .otc-dispensary-page.dark .rx-table tbody td,
 .otc-dispensary-page.dark .rx-checkout-field strong { color: #f1f5f9; }
+
+.otc-dispensary-page.dark .rx-line-card {
+  border-color: #334155;
+}
+
+.otc-dispensary-page.dark .rx-line-rx,
+.otc-dispensary-page.dark .rx-line-price,
+.otc-dispensary-page.dark .rx-line-price-extra,
+.otc-dispensary-page.dark .rx-line-stock,
+.otc-dispensary-page.dark .rx-stepper-stock {
+  color: #94a3b8;
+}
+
+.otc-dispensary-page.dark .rx-stepper-stock--low {
+  color: #f87171;
+}
+
+.otc-dispensary-page.dark .rx-checkout-title { color: #e2e8f0; }
 
 .otc-dispensary-page.dark .rx-studio-subtitle,
 .otc-dispensary-page.dark .rx-detail-subtitle,
@@ -3551,6 +4044,10 @@ body.otc-receipt-modal-open {
 .otc-dispensary-page.dark .rx-visit-card-bottom,
 .otc-dispensary-page.dark .rx-studio-empty { color: #94a3b8; }
 
+.otc-dispensary-page.dark .rx-line-card,
+.otc-dispensary-page.dark .rx-line-thumb,
+.otc-dispensary-page.dark .rx-stepper-value,
+.otc-dispensary-page.dark .rx-studio-queue,
 .otc-dispensary-page.dark .rx-studio-search,
 .otc-dispensary-page.dark .rx-stat-card,
 .otc-dispensary-page.dark .rx-visit-card,
@@ -3562,7 +4059,10 @@ body.otc-receipt-modal-open {
   color: #e2e8f0;
 }
 
-.otc-dispensary-page.dark .rx-studio-search-input { color: #f1f5f9; }
+.otc-dispensary-page.dark .rx-checkout-input--readonly {
+  background: #1e293b;
+  color: #f1f5f9;
+}
 
 .otc-dispensary-page.dark .rx-visit-card--active {
   background: linear-gradient(180deg, #1e3a5f 0%, #0f172a 100%);
@@ -3593,19 +4093,64 @@ body.otc-receipt-modal-open {
   color: #e2e8f0;
 }
 
+@media (max-width: 1100px) {
+  .rx-dispense-split--pay {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rx-line-card {
+    flex-wrap: wrap;
+  }
+
+  .rx-line-side {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
 @media (max-width: 992px) {
   .rx-studio-layout {
     grid-template-columns: 1fr;
-    overflow-y: auto;
+    grid-template-rows: minmax(160px, 32vh) minmax(0, 1fr);
+    overflow: hidden;
   }
-  .rx-studio-queue { max-height: 240px; flex-shrink: 0; }
-  .rx-checkout-grid { grid-template-columns: 1fr 1fr; }
-  .rx-checkout-field--wide,
-  .rx-checkout-submit { grid-column: span 2; }
+  .rx-studio-queue {
+    max-height: none;
+    height: 100%;
+    min-height: 0;
+  }
 }
 
-@media (max-width: 576px) {
-  .rx-checkout-grid { grid-template-columns: 1fr; }
-  .rx-checkout-field--wide,
-  .rx-checkout-submit { grid-column: span 1; }
+.otc-dispensary-page .otc-tab-content > .tab-pane.otc-rx-modern-tab.active,
+.otc-dispensary-page .otc-tab-content > .tab-pane.otc-rx-modern-tab.show {
+  display: flex !important;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden !important;
+}
+
+.rx-studio-queue,
+.rx-studio-detail,
+.rx-dispense-split,
+.rx-detail-section {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.rx-studio-queue-scroll,
+.rx-line-list-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.rx-checkout {
+  overflow: hidden;
+}
+
+.rx-line-card {
+  display: flex;
+  flex-shrink: 0;
+  visibility: visible;
+  opacity: 1;
 }

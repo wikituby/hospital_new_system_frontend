@@ -75,6 +75,14 @@ export class ServerConnectionComponent implements OnInit, OnDestroy {
     this.autoCheckingSub?.unsubscribe();
   }
 
+  cancelDialog(): void {
+    this.stopScan();
+    this.checking = false;
+    this.connectingCloud = false;
+    this.testingServer = '';
+    this.apiConfig.dismissServerConnectionDialog();
+  }
+
   async trySaved(url: string): Promise<void> {
     this.stopScan();
     await this.attemptConnect(url);

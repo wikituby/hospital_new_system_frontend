@@ -44,7 +44,6 @@ import { FormarrayexampleComponent } from './formarrayexample/formarrayexample.c
 import { Login2Component } from './login2/login2.component';
 import { Login3Component } from './login3/login3.component';
 import { Login4Component } from './auth/login4/login4.component';
-import { PatientComponent } from './patient/patient.component';
 import { PatientVisitComponent } from './patient-visit/patient-visit.component';
 import { CapitalizePipe } from './capitalize.pipe';
 import { ServicesOfferedComponent } from './services-offered/services-offered.component';
@@ -74,15 +73,12 @@ import { AssetManagementComponent } from './overview/pages/inventory/asset-manag
 import { StoreManagementComponent } from './overview/pages/inventory/store-management/store-management.component';
 import { StoreReportsComponent } from './overview/pages/inventory/store-reports/store-reports.component';
 import { StoreAnalyticsComponent } from './overview/pages/inventory/store-analytics/store-analytics.component';
-import { ConsultationsCenterComponent } from './overview/pages/consultations-center/consultations-center.component';
 import { ConsultationV2Component } from './overview/pages/consultation-v2/consultation-v2.component';
 import { ScanV2Component } from './overview/pages/scan-v2/scan-v2.component';
 import { LabV2Component } from './overview/pages/lab-v2/lab-v2.component';
 import { DentalV2Component } from './overview/pages/dental-v2/dental-v2.component';
 import { MchV2Component } from './overview/pages/mch-v2/mch-v2.component';
 import { MaternalChildHealthRequestsComponent } from './overview/pages/maternal-child-health/test-requests/maternal-child-health-requests.component';
-import { ConsultationPatientInfoComponent } from './overview/pages/consultations-center/components/consultation-patient-info/consultation-patient-info.component';
-import { ConsultationDetailsComponent } from './overview/pages/consultations-center/components/consultation-details/consultation-details.component';
 import { StockManagementComponent } from './overview/pages/inventory/stock-management/stock-management.component';
 import { ConsumableItemsComponent } from './overview/pages/inventory/consumable-items/consumable-items.component';
 import { StockTransferComponent } from './overview/pages/inventory/stock-transfer/stock-transfer.component';
@@ -287,7 +283,6 @@ export function initializeApiConfig(apiConfig: ApiConfigService): () => Promise<
     Login2Component,
     Login3Component,
     Login4Component,
-    PatientComponent,
     CapitalizePipe,
     PatientVisitComponent,
     ServicesOfferedComponent,
@@ -317,15 +312,12 @@ export function initializeApiConfig(apiConfig: ApiConfigService): () => Promise<
     StoreManagementComponent,
     StoreReportsComponent,
     StoreAnalyticsComponent,
-    ConsultationsCenterComponent,
     ConsultationV2Component,
     ScanV2Component,
     LabV2Component,
     DentalV2Component,
     MchV2Component,
     MaternalChildHealthRequestsComponent,
-    ConsultationPatientInfoComponent,
-    ConsultationDetailsComponent,
     StockManagementComponent,
     ConsumableItemsComponent,
     StockTransferComponent,

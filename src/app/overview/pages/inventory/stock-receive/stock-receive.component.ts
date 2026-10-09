@@ -46,6 +46,12 @@ export class StockReceiveComponent implements OnInit {
   eyeIconDrop: string = "bi bi-chevron-down";
   isText: boolean = true;
   isDarkMode: boolean = false;
+  stockReceiveDateMenuId: number | null = null;
+  stockReceiveDateMenuItem: any = null;
+  stockReceiveDateMenuStyle: Record<string, string> = {};
+  stockReceiveActionMenuId: number | null = null;
+  stockReceiveActionMenuItem: any = null;
+  stockReceiveActionMenuStyle: Record<string, string> = {};
   
   // Form properties
   currentStockReceive: any = {
@@ -414,6 +420,94 @@ export class StockReceiveComponent implements OnInit {
       this.isStoreDropdownOpen = false;
       this.isSupplierDropdownOpen = false;
     }
+    if (!target.closest('.stock-receive-pop') && !target.closest('.stock-receive-menu-btn')) {
+      this.closeStockReceiveMenus();
+    }
+  }
+
+  onStockReceivePageChange(page: number): void {
+    this.page = page;
+    this.closeStockReceiveMenus();
+  }
+
+  onStockReceivePageSizeChange(size: number): void {
+    this.itemsPerPage = size;
+    this.closeStockReceiveMenus();
+  }
+
+  toggleStockReceiveDateMenu(receive: any, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const id = Number(receive?.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return;
+    }
+    if (this.stockReceiveDateMenuId === id) {
+      this.closeStockReceiveMenus();
+      return;
+    }
+    this.closeStockReceiveMenus();
+    const style = this.stockReceiveMenuStyle(event, 240, 76);
+    if (!style) {
+      return;
+    }
+    this.stockReceiveDateMenuId = id;
+    this.stockReceiveDateMenuItem = receive;
+    this.stockReceiveDateMenuStyle = style;
+  }
+
+  toggleStockReceiveActionMenu(receive: any, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const id = Number(receive?.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return;
+    }
+    if (this.stockReceiveActionMenuId === id) {
+      this.closeStockReceiveMenus();
+      return;
+    }
+    this.closeStockReceiveMenus();
+    const style = this.stockReceiveMenuStyle(event, 168, 132);
+    if (!style) {
+      return;
+    }
+    this.stockReceiveActionMenuId = id;
+    this.stockReceiveActionMenuItem = receive;
+    this.stockReceiveActionMenuStyle = style;
+  }
+
+  closeStockReceiveMenus(): void {
+    this.stockReceiveDateMenuId = null;
+    this.stockReceiveDateMenuItem = null;
+    this.stockReceiveActionMenuId = null;
+    this.stockReceiveActionMenuItem = null;
+  }
+
+  private stockReceiveMenuStyle(event: Event, popWidth: number, popHeight: number): Record<string, string> | null {
+    const trigger = (event.currentTarget as HTMLElement) || null;
+    const rect = trigger?.getBoundingClientRect();
+    if (!rect) {
+      return null;
+    }
+    const gap = 4;
+    let top = rect.bottom + gap;
+    if (top + popHeight > window.innerHeight - 8) {
+      top = Math.max(8, rect.top - popHeight - gap);
+    }
+    let left = rect.right - popWidth;
+    if (left < 8) {
+      left = 8;
+    }
+    if (left + popWidth > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - popWidth - 8);
+    }
+    return {
+      position: 'fixed',
+      top: `${top}px`,
+      left: `${left}px`,
+      zIndex: '150030',
+    };
   }
 
   // Stock Item dropdown methods

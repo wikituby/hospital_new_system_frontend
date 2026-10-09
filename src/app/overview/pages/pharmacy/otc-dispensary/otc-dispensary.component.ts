@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, ElementRef, NgZone, OnDestroy, OnInit, Vi
 import { NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 import { catchError, map, switchMap } from 'rxjs/operators';
-import { forkJoin, of, Observable } from 'rxjs';
+import { forkJoin, interval, of, Observable, Subscription } from 'rxjs';
 import jsPDF from 'jspdf';
 import { ThemeService } from '../../../../services/theme.service';
 import { ApiService } from '../../../../services/api.service';
@@ -13,6 +13,7 @@ import {
 import {
   applyQueuePageModuleToSession,
   getQueuePageModuleIdFromSession,
+  isPharmacyModule,
   resolveModuleIdForUrl,
 } from '../../../../utils/queue-page-context.util';
 import {
@@ -139,6 +140,8 @@ export interface DoctorPrescriptionRow {
   totalAmount: number;
   instructions: string;
   route: string;
+  /** When true, this line is left out of the current dispense. */
+  skipDispense?: boolean;
   /** RX (treatment) or SUNDRY. */
   lineKind?: 'RX' | 'SUNDRY';
   visitSundryId?: number | null;
@@ -219,6 +222,9 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
   private statusBannerTimer: ReturnType<typeof setTimeout> | null = null;
   /** Debounced PUT update-treatmentRequest when pharmacy edits Rx qty. */
   private rxQtyPersistTimers = new Map<number, ReturnType<typeof setTimeout>>();
+  private prescriptionChangedSub?: Subscription;
+  private prescriptionRefreshSub?: Subscription;
+  private doctorPrescriptionLoadSeq = 0;
   responseMessage = '';
   responseColor = '';
   showStatusBanner = false;
@@ -304,13 +310,49 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
   doctorPrescriptionRows: DoctorPrescriptionRow[] = [];
   openingPrescriptionVisitId: number | null = null;
   selectedPrescriptionVisitId: number | null = null;
+  /** Header for the visit currently shown in Items to dispense. */
+  selectedPrescriptionHeader: {
+    visitId: number;
+    visitNumber: number;
+    patientName: string;
+    visitDate: string;
+    visitTime: string;
+  } | null = null;
+  private prescriptionVisitGroupsCache: {
+    visitId: number;
+    visitNumber: number;
+    patientName: string;
+    visitDate: string;
+    visitTime: string;
+    rows: DoctorPrescriptionRow[];
+  }[] = [];
+  private prescriptionVisitGroupsSource: DoctorPrescriptionRow[] | null = null;
   /** Rows for the visit currently open in the details panel (set directly on Details click). */
   selectedPrescriptionDetailRows: DoctorPrescriptionRow[] = [];
+  /** Cards shown in Items to dispense. Same lines as the selected client card. */
+  dispenseCardRows: DoctorPrescriptionRow[] = [];
+  /** Item rows for the open visit. Kept in step with the patient card line count. */
+  selectedGroupRows: DoctorPrescriptionRow[] = [];
+  dispenseCardViews: {
+    key: string;
+    name: string;
+    sundry: boolean;
+    rxLine: string;
+    price: string;
+    extras: string;
+    stock: string;
+    stockLow: boolean;
+    row: DoctorPrescriptionRow;
+  }[] = [];
   prescriptionSundriesLoading = false;
   prescriptionSundriesRows: any[] = [];
   rxPaymentMethod = 'Cash At Hand';
-  rxAmountReceived: number | null = null;
+  rxAmountReceived: number | null = 0;
   rxSaleNotes = 'Pharmacy prescription sale';
+  showUnpaidDispenseModal = false;
+  unpaidDispenseLines: { itemName: string; lineTotal: number; unpaid: number }[] = [];
+  unpaidDispenseTotal = 0;
+  unpaidDispenseReceived = 0;
   showRxQueueModal = false;
   rxQueueSaving = false;
   rxQueueError = '';
@@ -350,6 +392,9 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
   get rxQueueDestinationModules(): { id?: number; name?: string; code?: string; routeKey?: string }[] {
     return queueDestinationOptions(this.hospitalModules);
   }
+
+  /** Filters the prescription patient column without scrolling the search field. */
+  prescriptionPatientQuery = '';
 
   /** Visits with a completed prescription sale — shown as Done until queued to the next station. */
   private completedPrescriptionVisitIds = new Set<number>();
@@ -399,6 +444,13 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     });
     this.loadPharmacyStock();
     this.loadSalesHistoryLast7Days();
+    this.prescriptionChangedSub = this.pharmacyVisitSync.prescriptionChanged$.subscribe((event) => {
+      const visitId = Number(event?.visitId);
+      if (this.activeMainTab !== 'prescriptions' || !Number.isFinite(visitId) || visitId <= 0) {
+        return;
+      }
+      this.ngZone.run(() => this.loadDoctorPrescriptions(true));
+    });
   }
 
   ngOnDestroy(): void {
@@ -410,6 +462,8 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
       clearTimeout(timer);
     }
     this.rxQtyPersistTimers.clear();
+    this.prescriptionChangedSub?.unsubscribe();
+    this.stopPrescriptionLiveRefresh();
   }
 
   /** Default OTC sale mode from facility business settings (staff may override on this page). */
@@ -444,7 +498,26 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
       this.loadSalesHistory();
     } else if (tab === 'prescriptions') {
       this.loadDoctorPrescriptions();
+      this.startPrescriptionLiveRefresh();
+    } else {
+      this.stopPrescriptionLiveRefresh();
     }
+  }
+
+  /** Reload the prescription queue while this tab is open so another screen's edits appear. */
+  private startPrescriptionLiveRefresh(): void {
+    this.stopPrescriptionLiveRefresh();
+    this.prescriptionRefreshSub = interval(4000).subscribe(() => {
+      if (this.activeMainTab !== 'prescriptions' || this.processing || this.showUnpaidDispenseModal) {
+        return;
+      }
+      this.loadDoctorPrescriptions(true);
+    });
+  }
+
+  private stopPrescriptionLiveRefresh(): void {
+    this.prescriptionRefreshSub?.unsubscribe();
+    this.prescriptionRefreshSub = undefined;
   }
 
   filteredSoldOrders(): PharmacySoldOrder[] {
@@ -1070,11 +1143,21 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     if (this.selectedPrescriptionVisitId == null) {
       return null;
     }
+    const visitId = Number(this.selectedPrescriptionVisitId);
     return (
-      this.groupedPrescriptionVisits().find(
-        (g) => g.visitId === this.selectedPrescriptionVisitId
-      ) ?? null
+      this.groupedPrescriptionVisits().find((g) => Number(g.visitId) === visitId) ?? null
     );
+  }
+
+  trackPrescriptionVisit(
+    _index: number,
+    group: { visitId: number }
+  ): number {
+    return Number(group.visitId);
+  }
+
+  trackPrescriptionRow(index: number, row: DoctorPrescriptionRow): string {
+    return `${this.prescriptionRowKey(row)}:${row.itemName || 'item'}:${index}`;
   }
 
   selectedPrescriptionRows(): DoctorPrescriptionRow[] {
@@ -1094,25 +1177,118 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
   }
 
   selectPrescriptionVisit(visitId: number, detailRows?: DoctorPrescriptionRow[]): void {
-    this.selectedPrescriptionVisitId = visitId;
+    const id = Number(visitId);
+    if (!Number.isFinite(id) || id <= 0) {
+      return;
+    }
+    const switchingVisit = Number(this.selectedPrescriptionVisitId) !== id;
+    this.selectedPrescriptionVisitId = id;
     const group = this.selectedPrescriptionGroup();
-    const rows =
-      detailRows?.length
-        ? detailRows
-        : group?.rows?.length
-          ? group.rows
-          : this.doctorPrescriptionRows.filter((r) => r.visitId === visitId);
+    const fromClientCard = Array.isArray(detailRows) ? detailRows : group?.rows || [];
+    const stored = this.doctorPrescriptionRows.filter((row) => Number(row.visitId) === id);
+    const rows = (fromClientCard.length ? fromClientCard : stored).map((row) => ({ ...row }));
+    this.dispenseCardRows = rows;
+    this.selectedGroupRows = rows;
     this.selectedPrescriptionDetailRows = rows;
-    if (group) {
-      this.rxSaleNotes = `Pharmacy prescription sale — ${group.patientName}`;
-      if (group.rows.some((r) => this.prescriptionRowHasPrescribing(r))) {
+    this.selectedPrescriptionHeader = {
+      visitId: id,
+      visitNumber: group?.visitNumber ?? rows[0]?.visitNumber ?? 0,
+      patientName: group?.patientName ?? rows[0]?.patientName ?? '',
+      visitDate: group?.visitDate ?? rows[0]?.visitDate ?? '',
+      visitTime: group?.visitTime ?? rows[0]?.visitTime ?? '',
+    };
+    if (group || this.selectedPrescriptionDetailRows.length) {
+      const patientName = this.selectedPrescriptionHeader.patientName;
+      this.rxSaleNotes = `Pharmacy prescription sale — ${patientName}`;
+      if (this.selectedPrescriptionDetailRows.some((r) => this.prescriptionRowHasPrescribing(r))) {
         this.otcSaleMode = 'prescribing';
       }
-      this.applyPrescriptionStockAvailability(group.rows);
+      try {
+        this.applyPrescriptionStockAvailability(this.selectedPrescriptionDetailRows);
+        if (switchingVisit) {
+          this.rxAmountReceived = 0;
+        }
+      } catch {
+        // Keep the item cards on screen if stock math fails.
+      }
     }
-    this.loadPrescriptionSundriesForSelectedVisit();
-    this.syncRxAmountReceivedToSubtotal();
+    this.publishDispenseCardViews();
     this.cdr.detectChanges();
+    this.loadAllPrescriptionItemsForVisit(id);
+  }
+
+  dispenseRowsForView(): DoctorPrescriptionRow[] {
+    if (this.selectedGroupRows.length) {
+      return this.selectedGroupRows;
+    }
+    const visitId = Number(this.selectedPrescriptionVisitId);
+    const group = this.groupedPrescriptionVisits().find((item) => Number(item.visitId) === visitId);
+    return group?.rows?.length ? group.rows : this.dispenseCardRows;
+  }
+
+  private publishDispenseCardViews(): void {
+    const rows = Array.isArray(this.dispenseCardRows) ? this.dispenseCardRows : [];
+    this.selectedGroupRows = rows;
+    this.dispenseCardViews = rows.map((row, index) => this.toDispenseCardView(row, index));
+  }
+
+  private toDispenseCardView(row: DoctorPrescriptionRow, index: number): {
+    key: string;
+    name: string;
+    sundry: boolean;
+    rxLine: string;
+    price: string;
+    extras: string;
+    stock: string;
+    stockLow: boolean;
+    row: DoctorPrescriptionRow;
+  } {
+    const blank = {
+      key: `item-${index}`,
+      name: String(row?.itemName || 'Item'),
+      sundry: false,
+      rxLine: '',
+      price: '',
+      extras: '',
+      stock: '',
+      stockLow: false,
+      row,
+    };
+    try {
+      const sundry = this.isSundryPrescriptionRow(row);
+      const parts = sundry
+        ? []
+        : [this.prescriptionRowDosage(row), this.prescriptionRowFrequency(row), this.prescriptionRowDuration(row)]
+            .map((value) => String(value ?? '').trim())
+            .filter((label) => !!label && label !== '—' && label !== '0');
+      const extras: string[] = [];
+      if (this.canViewPharmacyCostColumns()) {
+        extras.push(`Cost ${this.formatSoldMoney(Number(row?.unitBuy) || 0)}`);
+      }
+      extras.push(
+        `Total ${row?.given ? this.formatSoldMoney(this.prescriptionRowTtSell(row)) : '—'}`
+      );
+      let stock = 'Stock deducted when recorded';
+      let stockLow = false;
+      if (!sundry) {
+        const available = this.prescriptionItemTotalStock(row);
+        stockLow = this.prescriptionQtyExceedsStock(row);
+        stock = stockLow ? `Exceeds stock · ${available}` : `Stock ${available}`;
+      }
+      return {
+        key: `${this.prescriptionRowKey(row)}-${index}`,
+        name: String(row?.itemName || (sundry ? 'Sundry item' : 'Item')),
+        sundry,
+        rxLine: parts.join(' · '),
+        price: this.formatSoldMoney(Number(row?.unitSellingPrice) || 0),
+        extras: extras.join('   '),
+        stock,
+        stockLow,
+        row,
+      };
+    } catch {
+      return blank;
+    }
   }
 
   prescriptionSundryQty(row: any): number {
@@ -1139,6 +1315,15 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     return this.prescriptionSundryQty(row) * this.prescriptionSundryUnitSell(row);
   }
 
+  prescriptionVisitClock(time: string | null | undefined): string {
+    const value = String(time ?? '').trim();
+    const match = value.match(/^(\d{1,2}):(\d{2})/);
+    if (!match) {
+      return '';
+    }
+    return `${match[1].padStart(2, '0')}:${match[2]}`;
+  }
+
   selectPrescriptionVisitCard(
     group: {
       visitId: number;
@@ -1147,11 +1332,15 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     },
     event?: Event
   ): void {
-    event?.preventDefault();
-    event?.stopPropagation();
+    const visitId = Number(group.visitId);
+    const rows = Array.isArray(group.rows) ? group.rows.slice() : [];
     this.ngZone.run(() => {
-      this.selectPrescriptionVisit(group.visitId, group.rows);
+      this.selectPrescriptionVisit(visitId, rows);
       this.cdr.detectChanges();
+      document.getElementById('otc-rx-drugs-section')?.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest',
+      });
     });
   }
 
@@ -1286,7 +1475,9 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     if (!this.rxQueueTarget) {
       return;
     }
-    const fromModuleId = Number(this.rxQueueForm.fromModuleId);
+    const pharmacyIdForFrom = this.resolvePharmacyModuleId();
+    const fromModuleId =
+      pharmacyIdForFrom != null ? pharmacyIdForFrom : Number(this.rxQueueForm.fromModuleId);
     const toModuleId = Number(this.rxQueueForm.toModuleId);
     if (!Number.isFinite(fromModuleId) || fromModuleId <= 0 || !Number.isFinite(toModuleId)) {
       this.rxQueueError = 'Select both From and destination.';
@@ -1334,22 +1525,23 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
       this.rxQueuePatientGroups.find((g) => g.id === this.rxQueueForm.patientGroupId)
         ?.groupName ||
       '';
-    this.completePharmacyQueueForVisit(visitId, pharmacyId)
+    this.api
+      .queuePatient({
+        patientId: this.rxQueueTarget!.patientId,
+        patientVisitId: visitId,
+        fromModuleId,
+        toModuleId,
+        clinicId: this.rxQueueForm.clinicId ?? undefined,
+        note: String(this.rxQueueForm.note ?? '').trim() || 'Pharmacy prescription',
+        visitDefaultScheme: scheme,
+        patientGroupId: this.rxQueueForm.patientGroupId ?? undefined,
+        emergency: this.rxQueueForm.emergency,
+        revisit: this.rxQueueForm.revisit,
+        queuedBy: sessionStorage.getItem('username') || '',
+      })
       .pipe(
-        switchMap(() =>
-          this.api.queuePatient({
-            patientId: this.rxQueueTarget!.patientId,
-            patientVisitId: visitId,
-            fromModuleId,
-            toModuleId,
-            clinicId: this.rxQueueForm.clinicId ?? undefined,
-            note: String(this.rxQueueForm.note ?? '').trim() || 'Pharmacy prescription',
-            visitDefaultScheme: scheme,
-            patientGroupId: this.rxQueueForm.patientGroupId ?? undefined,
-            emergency: this.rxQueueForm.emergency,
-            revisit: this.rxQueueForm.revisit,
-            queuedBy: sessionStorage.getItem('username') || '',
-          })
+        switchMap((entry: any) =>
+          this.completePharmacyQueueForVisit(visitId, pharmacyId).pipe(map(() => entry))
         )
       )
       .subscribe({
@@ -1371,7 +1563,10 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
       });
   }
 
-  /** Close the active pharmacy queue board entry so the visit drops off the Rx table. */
+  /**
+   * Discharge this visit from the pharmacy queue, including completed rows that
+   * still appear on the prescription list, then the patient can be queued onward.
+   */
   private completePharmacyQueueForVisit(
     visitId: number,
     pharmacyModuleId: number | null
@@ -1379,25 +1574,24 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     if (pharmacyModuleId == null || visitId <= 0) {
       return of(undefined);
     }
-    const activeStatuses = new Set(['WAITING', 'CALLED', 'SERVING']);
     return this.api.getPatientQueueEntries(pharmacyModuleId).pipe(
-      map((res: any) => {
-        const entries = Array.isArray(res) ? res : [];
-        return entries.find(
-          (e: any) =>
-            Number(e.patientVisitId) === visitId &&
-            activeStatuses.has(String(e.status ?? '').toUpperCase())
-        );
-      }),
-      switchMap((entry: any) => {
-        const entryId = Number(entry?.id);
-        if (!Number.isFinite(entryId) || entryId <= 0) {
+      switchMap((res: any) => {
+        const entries = (Array.isArray(res) ? res : []).filter((e: any) => {
+          const status = String(e?.status ?? '').toUpperCase();
+          return (
+            Number(e?.patientVisitId) === visitId &&
+            status !== 'CANCELLED' &&
+            status !== 'DISCHARGED'
+          );
+        });
+        if (!entries.length) {
           return of(undefined);
         }
-        return this.api.completePatientQueueEntry(entryId).pipe(
-          map(() => undefined),
-          catchError(() => of(undefined))
-        );
+        return forkJoin(
+          entries.map((e: any) =>
+            this.api.dischargePatientQueueEntry(Number(e.id)).pipe(catchError(() => of(null)))
+          )
+        ).pipe(map(() => undefined));
       }),
       catchError(() => of(undefined))
     );
@@ -1448,22 +1642,29 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Current pharmacy page module — used as default queue "From" department. */
+  /** Pharmacy department for this screen — not a module left over from another page. */
   private resolvePharmacyModuleId(): number | null {
-    if (this.pharmacyModuleId != null && this.pharmacyModuleId > 0) {
-      return this.pharmacyModuleId;
+    const fromList = (this.hospitalModules || []).find((m) => isPharmacyModule(m));
+    const fromListId = Number(fromList?.id);
+    if (Number.isFinite(fromListId) && fromListId > 0) {
+      this.pharmacyModuleId = fromListId;
+      applyQueuePageModuleToSession(fromListId);
+      return fromListId;
+    }
+    const fromUrl = resolveModuleIdForUrl(this.router.url, this.hospitalModules);
+    if (fromUrl != null) {
+      this.pharmacyModuleId = fromUrl;
+      applyQueuePageModuleToSession(fromUrl);
+      return fromUrl;
     }
     const cached = getQueuePageModuleIdFromSession();
     if (cached != null) {
       this.pharmacyModuleId = cached;
       return cached;
     }
-    const id = resolveModuleIdForUrl(this.router.url, this.hospitalModules);
-    if (id != null) {
-      this.pharmacyModuleId = id;
-      applyQueuePageModuleToSession(id);
-    }
-    return id;
+    return this.pharmacyModuleId != null && this.pharmacyModuleId > 0
+      ? this.pharmacyModuleId
+      : null;
   }
 
   private pickRxQueueFromModuleId(): number | null {
@@ -1653,16 +1854,52 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     ) {
       return false;
     }
-    const billable = this.dispensablePrescriptionRows();
-    if (billable.length) {
-      return (
-        this.prescriptionSubtotal > 0 &&
-        billable.every(
-          (row) => row.quantity > 0 && !this.prescriptionQtyExceedsStock(row)
-        )
-      );
+    if (this.prescriptionRowsShortOnStock().length) {
+      return false;
     }
-    return allRows.every((row) => this.prescriptionItemTotalStock(row) <= 0);
+    const billable = this.dispensablePrescriptionRows();
+    return (
+      billable.length > 0 &&
+      this.prescriptionSubtotal > 0 &&
+      billable.every((row) => row.quantity > 0 && !this.prescriptionQtyExceedsStock(row))
+    );
+  }
+
+  /** Drugs still marked given whose stock is zero or below the dispense qty. */
+  prescriptionRowsShortOnStock(): DoctorPrescriptionRow[] {
+    return this.selectedPrescriptionRows().filter((row) => this.prescriptionRowShortOnStock(row));
+  }
+
+  prescriptionStockBlockMessage(): string {
+    const rows = this.prescriptionRowsShortOnStock();
+    if (!rows.length) {
+      return '';
+    }
+    const parts = rows.map((row) => {
+      const stock = this.prescriptionDisplayStock(row);
+      return stock <= 0
+        ? `${row.itemName} is out of stock`
+        : `${row.itemName} needs ${row.quantity} but only ${stock} in stock`;
+    });
+    return `Cannot dispense. ${parts.join('. ')}.`;
+  }
+
+  private prescriptionRowShortOnStock(row: DoctorPrescriptionRow): boolean {
+    if (
+      !row ||
+      row.given === false ||
+      row.dispensed === true ||
+      this.isPrescriptionStatusGiven(row.status) ||
+      this.isSundryPrescriptionRow(row)
+    ) {
+      return false;
+    }
+    const qty = this.num(row.quantity);
+    if (qty <= 0) {
+      return false;
+    }
+    const available = this.prescriptionDisplayStock(row);
+    return available <= 0 || qty > available;
   }
 
   /** In-stock prescription lines ready to dispense (DSP is set by the dispense buttons). */
@@ -1672,6 +1909,8 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
         r.id > 0 &&
         this.num(r.quantity) > 0 &&
         r.dispensed !== true &&
+        r.given !== false &&
+        r.skipDispense !== true &&
         !this.isPrescriptionStatusGiven(r.status) &&
         (this.isSundryPrescriptionRow(r) || this.prescriptionItemTotalStock(r) > 0)
     );
@@ -1713,6 +1952,9 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     visitTime: string;
     rows: DoctorPrescriptionRow[];
   }[] {
+    if (this.prescriptionVisitGroupsSource === this.doctorPrescriptionRows) {
+      return this.prescriptionVisitGroupsCache;
+    }
     const map = new Map<number, {
       visitId: number;
       visitNumber: number;
@@ -1722,25 +1964,49 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
       rows: DoctorPrescriptionRow[];
     }>();
     for (const row of this.doctorPrescriptionRows) {
-      let group = map.get(row.visitId);
+      const visitId = Number(row.visitId);
+      if (!Number.isFinite(visitId) || visitId <= 0) {
+        continue;
+      }
+      let group = map.get(visitId);
       if (!group) {
         group = {
-          visitId: row.visitId,
+          visitId,
           visitNumber: row.visitNumber,
           patientName: row.patientName,
           visitDate: row.visitDate,
           visitTime: row.visitTime,
           rows: [],
         };
-        map.set(row.visitId, group);
+        map.set(visitId, group);
       }
       group.rows.push(row);
     }
-    return Array.from(map.values()).sort((a, b) => {
+    this.prescriptionVisitGroupsCache = Array.from(map.values()).sort((a, b) => {
       const da = `${a.visitDate} ${a.visitTime}`;
       const db = `${b.visitDate} ${b.visitTime}`;
       return db.localeCompare(da);
     });
+    this.prescriptionVisitGroupsSource = this.doctorPrescriptionRows;
+    return this.prescriptionVisitGroupsCache;
+  }
+
+  filteredPrescriptionVisits(): {
+    visitId: number;
+    visitNumber: number;
+    patientName: string;
+    visitDate: string;
+    visitTime: string;
+    rows: DoctorPrescriptionRow[];
+  }[] {
+    const groups = this.groupedPrescriptionVisits();
+    const query = this.prescriptionPatientQuery.trim().toLowerCase();
+    if (!query) {
+      return groups;
+    }
+    return groups.filter((group) =>
+      String(group.patientName || '').toLowerCase().includes(query)
+    );
   }
 
   isPrescriptionVisitSaleDone(visitId: number | null | undefined): boolean {
@@ -1782,8 +2048,81 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     return row.status || 'Not given';
   }
 
+  prescriptionCardWillDispense(row: DoctorPrescriptionRow): boolean {
+    if (!row) {
+      return false;
+    }
+    if (row.dispensed === true || this.isPrescriptionStatusGiven(row.status)) {
+      return true;
+    }
+    if (row.skipDispense === true || this.num(row.quantity) <= 0) {
+      return false;
+    }
+    if (!this.isSundryPrescriptionRow(row) && this.prescriptionDisplayStock(row) <= 0) {
+      return false;
+    }
+    return true;
+  }
+
+  prescriptionCardDispenseLabel(row: DoctorPrescriptionRow): string {
+    if (row?.dispensed === true || this.isPrescriptionStatusGiven(row?.status)) {
+      return 'Dispensed';
+    }
+    return this.prescriptionCardWillDispense(row) ? 'Dispense' : 'Do not dispense';
+  }
+
+  togglePrescriptionDispenseIntent(row: DoctorPrescriptionRow, dispense: boolean): void {
+    if (
+      !row ||
+      this.processing ||
+      this.isPrescriptionVisitSaleDone(row.visitId) ||
+      row.dispensed === true ||
+      this.isPrescriptionStatusGiven(row.status)
+    ) {
+      return;
+    }
+    if (dispense && !this.isSundryPrescriptionRow(row) && this.prescriptionDisplayStock(row) <= 0) {
+      this.flashStatus(`${row.itemName} is out of stock and cannot be dispensed.`, true);
+      return;
+    }
+    if (dispense && this.num(row.quantity) <= 0) {
+      this.flashStatus(`Enter a quantity for ${row.itemName} before dispensing.`, true);
+      return;
+    }
+    const previousTotal = this.prescriptionSubtotal;
+    row.skipDispense = !dispense;
+    this.syncRxAmountReceivedToSubtotal(previousTotal);
+  }
+
   onPrescriptionGivenChange(row: DoctorPrescriptionRow, checked: boolean): void {
     this.onPrescriptionPdDspAdmChange(row, 'dispensed', checked);
+  }
+
+  /** Switch after duration: on = given, off = not given. */
+  onPrescriptionLineGivenChange(row: DoctorPrescriptionRow, checked: boolean): void {
+    if (!row?.id || this.isSundryPrescriptionRow(row) || this.processing || this.isPrescriptionVisitSaleDone(row.visitId)) {
+      return;
+    }
+    const previous = row.given !== false;
+    const prevSubtotal = this.prescriptionSubtotal;
+    row.given = checked;
+    this.syncRxAmountReceivedToSubtotal(prevSubtotal);
+    this.publishDispenseCardViews();
+    this.api.updateTreatmentLifecycleFlags(row.id, { given: checked }).subscribe({
+      next: (dto) => {
+        if (dto && typeof dto === 'object') {
+          applyTreatmentLifecycleFlags(Object.assign(row, dto));
+        }
+        this.publishDispenseCardViews();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        row.given = previous;
+        this.syncRxAmountReceivedToSubtotal(prevSubtotal);
+        this.publishDispenseCardViews();
+        this.flashStatus('Could not update given status.', true);
+      },
+    });
   }
 
   prescriptionRowsEligibleForDispense(): DoctorPrescriptionRow[] {
@@ -1913,6 +2252,19 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     return getPharmacyItemTotalStock(row, this.itemList);
   }
 
+  stepPrescriptionQuantity(row: DoctorPrescriptionRow, delta: number): void {
+    if (
+      !row ||
+      this.processing ||
+      this.isSundryPrescriptionRow(row) ||
+      this.isPrescriptionVisitSaleDone(row.visitId)
+    ) {
+      return;
+    }
+    const next = Math.max(0, Math.floor(Number(row.quantity) || 0) + delta);
+    this.onPrescriptionQuantityChange(row, next);
+  }
+
   onPrescriptionQuantityChange(row: DoctorPrescriptionRow, raw: string | number): void {
     if (this.isSundryPrescriptionRow(row)) {
       return;
@@ -1931,6 +2283,7 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     }
     this.syncRxAmountReceivedToSubtotal(prevSubtotal);
     this.schedulePrescriptionQuantityPersist(row);
+    this.publishDispenseCardViews();
   }
 
   /** Persist qty to treatmentrequested and refresh visit balance/totals. */
@@ -1996,6 +2349,18 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** On-hand stock for the Items to dispense qty, including sundries. */
+  prescriptionDisplayStock(row: DoctorPrescriptionRow): number {
+    return Math.max(0, Math.floor(getPharmacyItemTotalStock(row, this.itemList)));
+  }
+
+  prescriptionDisplayStockShort(row: DoctorPrescriptionRow): boolean {
+    const qty = this.isSundryPrescriptionRow(row)
+      ? this.prescriptionSundryQty(row)
+      : this.num(row?.quantity);
+    return qty > this.prescriptionDisplayStock(row);
+  }
+
   prescriptionQtyExceedsStock(row: DoctorPrescriptionRow): boolean {
     if (row.quantity <= 0) {
       return false;
@@ -2012,13 +2377,9 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     return (Number(line.quantity) || 0) * (Number(line.unitSellingPrice) || 0);
   }
 
-  private syncRxAmountReceivedToSubtotal(previousSubtotal?: number): void {
-    const total = this.prescriptionSubtotal;
-    if (
-      this.rxAmountReceived == null ||
-      (previousSubtotal != null && this.rxAmountReceived === previousSubtotal)
-    ) {
-      this.rxAmountReceived = total > 0 ? total : null;
+  private syncRxAmountReceivedToSubtotal(_previousSubtotal?: number, _force = false): void {
+    if (this.rxAmountReceived == null) {
+      this.rxAmountReceived = 0;
     }
   }
 
@@ -2031,6 +2392,22 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     ) {
       this.amountReceived = total > 0 ? total : null;
     }
+  }
+
+  /** Show the prescription line only when the item has a real dose, frequency, or duration. */
+  prescriptionCardShowsRx(row: DoctorPrescriptionRow): boolean {
+    if (!row || this.isSundryPrescriptionRow(row)) {
+      return false;
+    }
+    const parts = [
+      this.prescriptionRowDosage(row),
+      this.prescriptionRowFrequency(row),
+      this.prescriptionRowDuration(row),
+    ];
+    return parts.some((value) => {
+      const label = String(value ?? '').trim();
+      return !!label && label !== '—' && label !== '0';
+    });
   }
 
   prescriptionRowHasPrescribing(row: DoctorPrescriptionRow): boolean {
@@ -2053,24 +2430,14 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     return false;
   }
 
-  /** Cap quantity by stock. Do not change PD / DSP / ADM flags. */
+  /** Keep the prescribed quantity. Stock is shown beside the stepper and does not replace qty. */
   private applyPrescriptionStockAvailability(rows: DoctorPrescriptionRow[]): void {
     for (const row of rows) {
-      if (row.dispensed === true || this.isPrescriptionStatusGiven(row.status)) {
+      if (!row || row.dispensed === true || this.isPrescriptionStatusGiven(row.status)) {
         continue;
       }
-      const prescribed =
-        row.prescribedQuantity > 0 ? row.prescribedQuantity : Math.max(0, row.quantity);
-      if (row.prescribedQuantity <= 0) {
-        row.prescribedQuantity = prescribed;
-      }
-
-      const stock = this.prescriptionItemTotalStock(row);
-      if (stock > 0) {
-        const targetQty = prescribed > 0 ? prescribed : 1;
-        row.quantity = Math.min(targetQty, stock);
-      } else {
-        row.quantity = prescribed;
+      if (!(row.prescribedQuantity > 0) && row.quantity > 0) {
+        row.prescribedQuantity = row.quantity;
       }
       row.totalAmount = this.num(row.quantity) * this.num(row.unitSellingPrice);
     }
@@ -2382,8 +2749,11 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
           this.isLoadingDrugList = false;
           if (this.doctorPrescriptionRows.length) {
             this.applyPrescriptionStockAvailability(this.doctorPrescriptionRows);
+            if (this.selectedPrescriptionDetailRows.length) {
+              this.applyPrescriptionStockAvailability(this.selectedPrescriptionDetailRows);
+            }
             if (this.selectedPrescriptionVisitId != null) {
-              this.syncRxAmountReceivedToSubtotal();
+              this.syncRxAmountReceivedToSubtotal(undefined, true);
             }
           }
         },
@@ -2421,8 +2791,11 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
         this.refreshGroupedStockItems();
         if (this.doctorPrescriptionRows.length) {
           this.applyPrescriptionStockAvailability(this.doctorPrescriptionRows);
+          if (this.selectedPrescriptionDetailRows.length) {
+            this.applyPrescriptionStockAvailability(this.selectedPrescriptionDetailRows);
+          }
           if (this.selectedPrescriptionVisitId != null) {
-            this.syncRxAmountReceivedToSubtotal();
+            this.syncRxAmountReceivedToSubtotal(undefined, true);
           }
         }
       },
@@ -2903,7 +3276,7 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     this.showStatusBanner = false;
   }
 
-  completePrescriptionSale(collectPayment: boolean = true): void {
+  completePrescriptionSale(collectPayment: boolean = true, confirmedUnpaid = false): void {
     if (this.processing) {
       return;
     }
@@ -2916,8 +3289,13 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
       this.flashStatus('No prescription lines for this visit.', true);
       return;
     }
+    const stockMessage = this.prescriptionStockBlockMessage();
+    if (stockMessage) {
+      this.flashStatus(stockMessage, true);
+      return;
+    }
     const billable = this.dispensablePrescriptionRows();
-    if (!billable.length && !allRows.every((row) => this.prescriptionItemTotalStock(row) <= 0)) {
+    if (!billable.length) {
       this.flashStatus('Set a quantity for at least one in-stock drug to dispense.', true);
       return;
     }
@@ -2942,13 +3320,14 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     }
     const received = collectPayment
       ? billable.length > 0
-        ? this.effectiveAmountReceived(this.rxAmountReceived, total)
+        ? Math.max(0, this.num(this.rxAmountReceived))
         : 0
       : 0;
-    if (collectPayment && billable.length > 0 && received < total) {
-      this.flashStatus('Amount received is less than total due.', true);
+    if (collectPayment && billable.length > 0 && received + 0.009 < total && !confirmedUnpaid) {
+      this.openUnpaidDispenseModal(billable, total, received);
       return;
     }
+    this.showUnpaidDispenseModal = false;
     const group = this.selectedPrescriptionGroup();
     const visitId = this.selectedPrescriptionVisitId;
     const patientName = group?.patientName ?? billable[0]?.patientName ?? allRows[0]?.patientName;
@@ -3050,6 +3429,46 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
           this.flashStatus(this.extractApiErrorMessage(err, 'Prescription dispense could not be completed.'), true);
         },
       });
+  }
+
+  /** Lines still owing after the cash received is applied in list order. */
+  private openUnpaidDispenseModal(
+    rows: DoctorPrescriptionRow[],
+    total: number,
+    received: number
+  ): void {
+    let remaining = Math.max(0, received);
+    this.unpaidDispenseLines = rows
+      .map((row) => {
+        const lineTotal = this.prescriptionLineAmount(row);
+        const covered = Math.min(lineTotal, remaining);
+        remaining = Math.max(0, remaining - covered);
+        return {
+          itemName: row.itemName || 'Item',
+          lineTotal,
+          unpaid: Math.max(0, lineTotal - covered),
+        };
+      })
+      .filter((line) => line.unpaid > 0.009);
+    this.unpaidDispenseTotal = total;
+    this.unpaidDispenseReceived = received;
+    this.showUnpaidDispenseModal = true;
+  }
+
+  closeUnpaidDispenseModal(): void {
+    if (this.processing) {
+      return;
+    }
+    this.showUnpaidDispenseModal = false;
+  }
+
+  confirmUnpaidDispense(): void {
+    this.showUnpaidDispenseModal = false;
+    this.completePrescriptionSale(true, true);
+  }
+
+  unpaidDispenseBalance(): number {
+    return Math.max(0, this.unpaidDispenseTotal - this.unpaidDispenseReceived);
   }
 
   private prescriptionRowToSaleLine(row: DoctorPrescriptionRow): Record<string, unknown> {
@@ -3332,9 +3751,12 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     return da.localeCompare(db);
   }
 
-  loadDoctorPrescriptions(): void {
-    this.loadingDoctorPrescriptions = true;
-    this.doctorPrescriptionsError = '';
+  loadDoctorPrescriptions(silent = false): void {
+    if (!silent) {
+      this.loadingDoctorPrescriptions = true;
+      this.doctorPrescriptionsError = '';
+    }
+    const seq = ++this.doctorPrescriptionLoadSeq;
     const runLoad = (toModuleId: number | null) => {
       this.api
       .listPendingDoctorPrescriptions(toModuleId)
@@ -3345,12 +3767,21 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
             .map((r) => this.mapDoctorPrescriptionRow(r))
         ),
         catchError((err) => {
-          this.doctorPrescriptionsError =
-            err?.error?.message || err?.message || 'Failed to load doctor prescriptions.';
-          return of([] as DoctorPrescriptionRow[]);
+          if (!silent) {
+            this.doctorPrescriptionsError =
+              err?.error?.message || err?.message || 'Failed to load doctor prescriptions.';
+            return of([] as DoctorPrescriptionRow[]);
+          }
+          return of(null);
         })
       )
-      .subscribe((rows: DoctorPrescriptionRow[]) => {
+      .subscribe((rows: DoctorPrescriptionRow[] | null) => {
+        if (seq !== this.doctorPrescriptionLoadSeq) {
+          return;
+        }
+        if (rows == null) {
+          return;
+        }
         const pendingRows = rows.filter(
           (row) => !this.completedPrescriptionVisitIds.has(row.visitId)
         );
@@ -3367,7 +3798,10 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
         const visits = this.groupedPrescriptionVisits();
         if (!visits.length) {
           this.selectedPrescriptionVisitId = null;
+          this.selectedPrescriptionHeader = null;
           this.selectedPrescriptionDetailRows = [];
+          this.dispenseCardRows = [];
+          this.publishDispenseCardViews();
           this.prescriptionSundriesRows = [];
           this.prescriptionSundriesLoading = false;
           return;
@@ -3384,23 +3818,188 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
       });
     };
 
-    const cached = getQueuePageModuleIdFromSession();
-    if (cached) {
-      this.pharmacyModuleId = cached;
-      runLoad(cached);
+    if (this.hospitalModules?.length) {
+      runLoad(this.resolvePharmacyModuleId());
       return;
     }
     this.api.getAllHospitalModules().subscribe({
       next: (res: any) => {
-        const modules = normalizeHospitalModules(res);
-        this.hospitalModules = modules;
-        const id = resolveModuleIdForUrl(this.router.url, modules);
-        this.pharmacyModuleId = id;
-        applyQueuePageModuleToSession(id);
-        runLoad(id);
+        this.hospitalModules = normalizeHospitalModules(res);
+        runLoad(this.resolvePharmacyModuleId());
       },
       error: () => runLoad(null),
     });
+  }
+
+  private prescriptionItemsLoadSeq = 0;
+
+  /** Load every drug and sundry still to dispense for the selected client. */
+  private loadAllPrescriptionItemsForVisit(visitId: number): void {
+    const seq = ++this.prescriptionItemsLoadSeq;
+    const header = this.selectedPrescriptionHeader;
+    const known = this.selectedPrescriptionDetailRows.slice();
+    const asResult = (source: Observable<any>) =>
+      source.pipe(
+        map((rows) => ({ ok: true, rows: Array.isArray(rows) ? rows : [] })),
+        catchError(() => of({ ok: false, rows: [] as any[] }))
+      );
+    forkJoin({
+      treatments: asResult(this.api.getTreatmentRequestedByVisit(visitId)),
+      sundries: asResult(this.api.getVisitSundriesByVisitId(visitId)),
+    }).subscribe(({ treatments, sundries }) => {
+      if (seq !== this.prescriptionItemsLoadSeq || Number(this.selectedPrescriptionVisitId) !== visitId) {
+        return;
+      }
+      const patientId = known[0]?.patientId ?? null;
+      const drugRows = treatments.ok
+        ? this.mapVisitTreatmentCards(visitId, treatments.rows, header, patientId)
+        : known.filter((row) => !this.isSundryPrescriptionRow(row));
+      const sundryRows = sundries.ok
+        ? this.mapVisitSundryCards(visitId, sundries.rows, header, patientId)
+        : known.filter((row) => this.isSundryPrescriptionRow(row));
+      if (sundries.ok) {
+        this.prescriptionSundriesRows = sundries.rows;
+      }
+      this.prescriptionSundriesLoading = false;
+      if (treatments.ok || sundries.ok) {
+        const merged = this.keepLocalPrescriptionQuantities(known, [...drugRows, ...sundryRows]);
+        this.dispenseCardRows = merged;
+        this.selectedPrescriptionDetailRows = merged;
+        this.selectedGroupRows = merged;
+      }
+      this.applyPrescriptionStockAvailability(this.selectedPrescriptionDetailRows);
+      this.syncRxAmountReceivedToSubtotal(undefined, true);
+      this.publishDispenseCardViews();
+      this.cdr.detectChanges();
+    });
+  }
+
+  private mapVisitTreatmentCards(
+    visitId: number,
+    treatments: any[],
+    header: {
+      visitNumber: number;
+      patientName: string;
+      visitDate: string;
+      visitTime: string;
+    } | null,
+    patientId: number | null
+  ): DoctorPrescriptionRow[] {
+    const mapped = treatments
+      .filter((row) => row != null)
+      .map((row) =>
+        this.mapDoctorPrescriptionRow({
+          ...row,
+          visitId,
+          visitNumber: header?.visitNumber ?? 0,
+          visitDate: header?.visitDate ?? '',
+          visitTime: header?.visitTime ?? '',
+          patientName: header?.patientName ?? '',
+          patientId,
+          unitBuy: row.unitBuy ?? row.unitCostPrice,
+          lineKind: 'RX',
+        })
+      )
+      .filter((row) => row.id > 0);
+    const stillToDispense = mapped.filter((row) => this.isPrescriptionItemStillToDispense(row));
+    return stillToDispense.length ? stillToDispense : mapped;
+  }
+
+  private mapVisitSundryCards(
+    visitId: number,
+    sundries: any[],
+    header: {
+      visitNumber: number;
+      patientName: string;
+      visitDate: string;
+      visitTime: string;
+    } | null,
+    patientId: number | null
+  ): DoctorPrescriptionRow[] {
+    return sundries
+      .filter(
+        (row) =>
+          row &&
+          row.dispensed !== true &&
+          row.dispensed !== 1 &&
+          `${row.dispensed}` !== '1'
+      )
+      .map((row) =>
+        this.mapDoctorPrescriptionRow({
+          ...row,
+          id: row.id,
+          visitSundryId: row.id,
+          lineKind: 'SUNDRY',
+          quantity: row.quantityUsed ?? row.quantity,
+          unitBuy: row.unitCostPrice,
+          unitSellingPrice: row.unitSellingPrice,
+          totalAmount: row.lineTotal,
+          visitId,
+          visitNumber: header?.visitNumber ?? 0,
+          visitDate: header?.visitDate ?? '',
+          visitTime: header?.visitTime ?? '',
+          patientName: header?.patientName ?? '',
+          patientId,
+          status: 'pending',
+          paid: true,
+          dispensed: false,
+          route: 'SUNDRY',
+          dosage: 'Sundry',
+        })
+      )
+      .filter((row) => row.id > 0);
+  }
+
+  /** Keep a qty the pharmacist just typed until the save has time to land. */
+  private keepLocalPrescriptionQuantities(
+    previous: DoctorPrescriptionRow[],
+    next: DoctorPrescriptionRow[]
+  ): DoctorPrescriptionRow[] {
+    if (!previous.length) {
+      return next;
+    }
+    return next.map((row) => {
+      const inFlight = this.rxQtyPersistTimers.has(row.id);
+      if (!inFlight) {
+        return row;
+      }
+      const old = previous.find((item) => this.samePrescriptionRow(item, row));
+      if (!old) {
+        return row;
+      }
+      return { ...row, quantity: old.quantity, totalAmount: old.totalAmount };
+    });
+  }
+
+  private mergePrescriptionItemCards(
+    ...groups: DoctorPrescriptionRow[][]
+  ): DoctorPrescriptionRow[] {
+    const merged: DoctorPrescriptionRow[] = [];
+    const seen = new Set<string>();
+    groups.forEach((group, groupIndex) => {
+      (group || []).forEach((row, rowIndex) => {
+        if (!row) {
+          return;
+        }
+        const key = `${this.prescriptionRowKey(row)}:${row.itemName || ''}:${groupIndex}:${rowIndex}`;
+        const identity = `${this.prescriptionRowKey(row)}:${String(row.itemName || '').trim().toLowerCase()}`;
+        if (seen.has(identity)) {
+          return;
+        }
+        seen.add(identity);
+        seen.add(key);
+        merged.push(row);
+      });
+    });
+    return merged;
+  }
+
+  private isPrescriptionItemStillToDispense(row: DoctorPrescriptionRow): boolean {
+    if (row.dispensed === true) {
+      return false;
+    }
+    const status = String(row.status ?? '').toLowerCase();
+    return status !== 'given' && status !== 'dispensed' && status !== 'sold' && status !== 'completed';
   }
 
   private loadPrescriptionSundriesForSelectedVisit(): void {
@@ -3457,6 +4056,8 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
             ...this.selectedPrescriptionDetailRows,
             ...mapped,
           ];
+          this.dispenseCardRows = this.selectedPrescriptionDetailRows;
+          this.publishDispenseCardViews();
           this.syncRxAmountReceivedToSubtotal();
         }
         this.cdr.markForCheck();
@@ -3496,7 +4097,7 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
         sessionStorage.setItem('patientVisitOpenTab', 'pharmacy');
         sessionStorage.setItem('pharmacistDispenseMode', 'true');
         this.openingPrescriptionVisitId = null;
-        this.router.navigate(['/overview/consultations-center']);
+        this.router.navigate(['/overview/consultation-v2']);
       },
       error: () => {
         sessionStorage.setItem('item', JSON.stringify(item));
@@ -3504,7 +4105,7 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
         sessionStorage.setItem('patientVisitOpenTab', 'pharmacy');
         sessionStorage.setItem('pharmacistDispenseMode', 'true');
         this.openingPrescriptionVisitId = null;
-        this.router.navigate(['/overview/consultations-center']);
+        this.router.navigate(['/overview/consultation-v2']);
       },
     });
   }
@@ -3548,7 +4149,7 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
       patientName: this.formatDisplayName(row?.patientName) || '—',
       stockBatchId: row?.stockBatchId != null ? Number(row.stockBatchId) : null,
       itemId: row?.itemId != null ? Number(row.itemId) : null,
-      given: row?.paid !== false,
+      given: row?.given !== false,
       paid: row?.paid !== false,
       dispensed: row?.dispensed === true || this.isPrescriptionStatusGiven(row?.status),
       administered: row?.administered === true,
@@ -3581,11 +4182,14 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
   }
 
   private prescriptionLineAmountFromApi(row: any): number {
-    const stored = this.num(row?.totalAmount ?? row?.lineTotal);
-    if (stored > 0) {
-      return stored;
+    const qty = this.num(row?.quantity ?? row?.quantityUsed);
+    const price = this.num(row?.unitSellingPrice);
+    const computed = qty * price;
+    if (computed > 0) {
+      return computed;
     }
-    return this.num(row?.quantity ?? row?.quantityUsed) * this.num(row?.unitSellingPrice);
+    const stored = this.num(row?.totalAmount ?? row?.lineTotal);
+    return stored > 0 ? stored : computed;
   }
 
   private mapHistoryRow(row: any): OtcSoldRow {
@@ -3878,12 +4482,17 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
   }
 
   prescriptionRowDosage(row: DoctorPrescriptionRow): string {
+    const unit = String(row.amountPerFrequencyUnit ?? '').trim();
     const built = this.formatDosageDisplay(row.amountPerFrequencyValue, row.amountPerFrequencyUnit);
-    if (built) {
-      return built;
-    }
     const fallback = String(row.dosage ?? '').trim();
-    return fallback || '—';
+    let label = built || (fallback && fallback !== '—' && fallback !== '0' ? fallback : '');
+    if (!label) {
+      return unit || '—';
+    }
+    if (unit && !label.toLowerCase().includes(unit.toLowerCase())) {
+      label = `${label} ${unit}`.trim();
+    }
+    return label;
   }
 
   prescriptionRowFrequency(row: DoctorPrescriptionRow): string {
@@ -3910,10 +4519,18 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
   }
 
   prescriptionRowTtSell(row: DoctorPrescriptionRow): number {
-    if (row.given) {
-      return this.prescriptionLineAmount(row);
+    if (this.isSundryPrescriptionRow(row)) {
+      const computed = this.prescriptionSundryQty(row) * this.prescriptionSundryUnitSell(row);
+      if (computed > 0) {
+        return computed;
+      }
+      return this.prescriptionSundryTotalSell(row);
     }
-    return row.totalAmount || 0;
+    const computed = this.num(row.quantity) * this.num(row.unitSellingPrice);
+    if (computed > 0) {
+      return computed;
+    }
+    return this.num(row.totalAmount);
   }
 
   private formatTreatmentFrequencyPart(value: unknown): string {
@@ -4181,8 +4798,11 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     );
     if (deselect && this.selectedPrescriptionVisitId === visitId) {
       this.selectedPrescriptionVisitId = null;
+      this.selectedPrescriptionHeader = null;
       this.selectedPrescriptionDetailRows = [];
-      this.rxAmountReceived = null;
+      this.dispenseCardRows = [];
+      this.publishDispenseCardViews();
+      this.rxAmountReceived = 0;
     }
   }
 
@@ -4210,8 +4830,11 @@ export class OtcDispensaryComponent implements OnInit, OnDestroy {
     const visitStillQueued = this.doctorPrescriptionRows.some((row) => row.visitId === visitId);
     if (!visitStillQueued && this.selectedPrescriptionVisitId === visitId) {
       this.selectedPrescriptionVisitId = null;
+      this.selectedPrescriptionHeader = null;
       this.selectedPrescriptionDetailRows = [];
-      this.rxAmountReceived = null;
+      this.dispenseCardRows = [];
+      this.publishDispenseCardViews();
+      this.rxAmountReceived = 0;
     }
   }
 

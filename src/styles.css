@@ -283,6 +283,17 @@ table td[style*="background-color"] {
   border-bottom-color: #334155;
 }
 
+.dark table .patient-name-text,
+.dark table .patient-name,
+.dark table .patient-name-cell,
+.dark table .item-title,
+.dark table .item-name,
+.dark table .cell-name,
+.dark table .queue-name,
+.dark table .queue-patient-name {
+  color: #e2e8f0;
+}
+
 .dark .table-container {
   background: #1e293b;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);

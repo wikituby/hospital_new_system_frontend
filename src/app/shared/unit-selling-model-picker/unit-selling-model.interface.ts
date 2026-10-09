@@ -7,6 +7,7 @@ export interface UnitSellingModel {
   unitsInBundle?: number | null;
   bundlePrice?: number | null;
   profitMargin?: number | null;
+  unitCostPrice?: number | null;
   sortOrder?: number | null;
   isDefault?: boolean | null;
   /** Client-only draft row before the parent record is saved. */

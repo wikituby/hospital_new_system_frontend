@@ -156,7 +156,7 @@ export class DoctorAssistantComponent implements OnInit, OnDestroy {
       return;
     }
     sessionStorage.setItem('doctorAssistantVisitId', String(this.activeVisitId));
-    this.router.navigate(['/overview/consultations-center']);
+    this.router.navigate(['/overview/consultation-v2']);
   }
 
   private runAgent(userMessage: string): void {

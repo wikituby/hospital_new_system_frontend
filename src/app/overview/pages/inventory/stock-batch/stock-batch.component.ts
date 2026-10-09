@@ -39,6 +39,9 @@ export class StockBatchComponent implements OnInit {
   eyeIconDrop: string = "bi bi-chevron-down";
   isText: boolean = true;
   isDarkMode: boolean = false;
+  stockBatchActionMenuId: number | null = null;
+  stockBatchActionMenuItem: any = null;
+  stockBatchActionMenuStyle: Record<string, string> = {};
   
   // Form properties
   currentStockBatch: any = {
@@ -451,6 +454,64 @@ export class StockBatchComponent implements OnInit {
     if (!target.closest('.strength-unit-dropdown-wrapper')) {
       this.isLastUnitOfMeasureDropdownOpen = false;
     }
+    if (!target.closest('.stock-batch-pop') && !target.closest('.stock-batch-menu-btn')) {
+      this.closeStockBatchActionMenu();
+    }
+  }
+
+  onStockBatchPageChange(page: number): void {
+    this.page = page;
+    this.closeStockBatchActionMenu();
+  }
+
+  onStockBatchPageSizeChange(size: number): void {
+    this.itemsPerPage = size;
+    this.closeStockBatchActionMenu();
+  }
+
+  toggleStockBatchActionMenu(batch: any, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const id = Number(batch?.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return;
+    }
+    if (this.stockBatchActionMenuId === id) {
+      this.closeStockBatchActionMenu();
+      return;
+    }
+    const trigger = (event.currentTarget as HTMLElement) || null;
+    const rect = trigger?.getBoundingClientRect();
+    if (!rect) {
+      return;
+    }
+    const popWidth = 168;
+    const popHeight = 132;
+    const gap = 4;
+    let top = rect.bottom + gap;
+    if (top + popHeight > window.innerHeight - 8) {
+      top = Math.max(8, rect.top - popHeight - gap);
+    }
+    let left = rect.right - popWidth;
+    if (left < 8) {
+      left = 8;
+    }
+    if (left + popWidth > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - popWidth - 8);
+    }
+    this.stockBatchActionMenuId = id;
+    this.stockBatchActionMenuItem = batch;
+    this.stockBatchActionMenuStyle = {
+      position: 'fixed',
+      top: `${top}px`,
+      left: `${left}px`,
+      zIndex: '150030',
+    };
+  }
+
+  closeStockBatchActionMenu(): void {
+    this.stockBatchActionMenuId = null;
+    this.stockBatchActionMenuItem = null;
   }
 
   // Form methods - removed openStockBatchModal as we only allow updates via editStockBatch

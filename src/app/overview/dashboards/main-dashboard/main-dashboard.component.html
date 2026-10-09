@@ -19,6 +19,7 @@
 
   <!-- Main Dashboard Content -->
   <section class="dashboard-section" *ngIf="!isLoading && !errorMessage">
+    <div class="summary-heading-row">
     <button
       type="button"
       class="section-toggle"
@@ -30,6 +31,16 @@
         <span class="row-subtitle">Key metrics at a glance</span>
       </div>
     </button>
+    <div class="summary-date-filter" (click)="$event.stopPropagation()">
+      <label for="summaryFromDate">From</label>
+      <input id="summaryFromDate" class="summary-date-input" type="date" name="summaryFromDate"
+             [(ngModel)]="summaryFromDate" (ngModelChange)="onSummaryDateChange()">
+      <label for="summaryToDate">To</label>
+      <input id="summaryToDate" class="summary-date-input" type="date" name="summaryToDate"
+             [(ngModel)]="summaryToDate" (ngModelChange)="onSummaryDateChange()">
+      <button type="button" class="summary-date-clear" *ngIf="summaryDateFilterActive" (click)="clearSummaryDates()">Clear</button>
+    </div>
+    </div>
     <div class="section-body cards" *ngIf="isDashboardSectionExpanded('summary')">
     <div class="card gradient-blue">
       <div class="card-row">
@@ -56,7 +67,7 @@
         <i class="bi bi-calendar-event card-icon"></i>
         <div class="card-meta">
           <div class="card-value">{{ totalVisitsLast30 }}</div>
-          <div class="card-label">Visits (last 30 days)</div>
+          <div class="card-label">{{ summaryDateFilterActive ? 'Visits' : 'Visits (last 30 days)' }}</div>
         </div>
       </div>
       <img src="assets/images/card-wave.svg" alt="wave" class="mini-wave-img"/>
@@ -85,61 +96,6 @@
     </div>
   </section>
 
-  <section class="dashboard-section pending-tasks-row" *ngIf="!isLoading && !errorMessage">
-    <button
-      type="button"
-      class="section-toggle"
-      (click)="toggleDashboardSection('pendingTasks')"
-      [attr.aria-expanded]="isDashboardSectionExpanded('pendingTasks')">
-      <div class="row-heading">
-        <i class="bi section-chevron" [ngClass]="isDashboardSectionExpanded('pendingTasks') ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
-        <h3>Pending Tasks</h3>
-        <span class="row-subtitle">Items needing attention</span>
-      </div>
-    </button>
-    <div class="section-body pending-tasks-grid" *ngIf="isDashboardSectionExpanded('pendingTasks')">
-      <button
-        type="button"
-        class="pending-task-card"
-        *ngFor="let task of pendingTasks"
-        [class]="'tone-' + task.tone"
-        (click)="openQuickLink(task.route)">
-        <div class="pending-task-icon"><i class="bi" [ngClass]="task.icon"></i></div>
-        <div class="pending-task-body">
-          <div class="pending-task-count">{{ formatTaskCount(task) }}</div>
-          <div class="pending-task-label">{{ task.label }}</div>
-        </div>
-        <i class="bi bi-chevron-right pending-task-arrow"></i>
-      </button>
-    </div>
-  </section>
-
-  <section class="dashboard-section quick-links-row" *ngIf="!isLoading && !errorMessage">
-    <button
-      type="button"
-      class="section-toggle"
-      (click)="toggleDashboardSection('quickLinks')"
-      [attr.aria-expanded]="isDashboardSectionExpanded('quickLinks')">
-      <div class="row-heading">
-        <i class="bi section-chevron" [ngClass]="isDashboardSectionExpanded('quickLinks') ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
-        <h3>Quick Links</h3>
-        <span class="row-subtitle">Jump to common modules</span>
-      </div>
-    </button>
-    <div class="section-body quick-links-grid" *ngIf="isDashboardSectionExpanded('quickLinks')">
-      <button
-        type="button"
-        class="quick-link-card"
-        *ngFor="let link of quickLinks"
-        (click)="openQuickLink(link.route)">
-        <div class="quick-link-icon" [style.background]="link.color + '18'" [style.color]="link.color">
-          <i class="bi" [ngClass]="link.icon"></i>
-        </div>
-        <span class="quick-link-label">{{ link.label }}</span>
-      </button>
-    </div>
-  </section>
-
   <!-- Hospital-Specific Metrics Grid -->
   <section class="dashboard-section" *ngIf="!isLoading && !errorMessage">
     <button
@@ -154,32 +110,27 @@
       </div>
     </button>
     <div class="section-body hospital-metrics" *ngIf="isDashboardSectionExpanded('hospitalMetrics')">
-    <!-- Today's Appointments -->
-    <div class="metric-card">
-      <div class="metric-header">
-        <i class="bi bi-calendar-check metric-icon blue"></i>
-        <div class="metric-info">
-          <div class="metric-label">Today's Appointments</div>
-          <div class="metric-value">{{ todayAppointments }}</div>
+    <div class="metrics-spotlight">
+    <div class="metrics-quick-links">
+      <button
+        type="button"
+        class="quick-link-card"
+        *ngFor="let link of metricQuickLinks"
+        (click)="openQuickLink(link.route)">
+        <div class="quick-link-icon" [style.background]="link.color + '18'" [style.color]="link.color">
+          <i class="bi" [ngClass]="link.icon"></i>
         </div>
-      </div>
-      <div class="metric-footer">
-        <span class="metric-detail">
-          <span class="success">{{ completedAppointments }}</span> completed
-        </span>
-        <span class="metric-detail">
-          <span class="warning">{{ pendingAppointments }}</span> pending
-        </span>
-      </div>
+        <span class="quick-link-label">{{ link.label }}</span>
+      </button>
     </div>
 
     <!-- Healthcare Banner -->
     <div class="banner-card banner-in-metrics">
       <div class="banner-content">
         <div class="banner-team-images">
-          <div class="team-image team-image-a"></div>
-          <div class="team-image team-image-b"></div>
-          <div class="team-image team-image-c"></div>
+          <div class="team-image team-image-a"><i class="bi bi-heart-pulse"></i></div>
+          <div class="team-image team-image-b"><i class="bi bi-hospital"></i></div>
+          <div class="team-image team-image-c"><i class="bi bi-people"></i></div>
         </div>
         <div class="banner-text">
           <h3 class="banner-title">Quality Healthcare</h3>
@@ -194,12 +145,32 @@
               <div class="banner-stat-label">Available</div>
             </div>
           </div>
-          <button class="banner-btn" (click)="navigateTo('/patient')">
+          <button class="banner-btn" (click)="navigateTo('/overview/all-patients')">
             <i class="bi bi-calendar-plus"></i> Book Appointment
           </button>
         </div>
         <div class="banner-image"></div>
       </div>
+    </div>
+
+    <div class="metrics-watch">
+      <button type="button" class="watch-card" (click)="openQuickLink('/overview/expired-items')">
+        <span class="watch-count">{{ nearExpiryItems }}</span>
+        <span class="watch-label">Expiry</span>
+      </button>
+      <button type="button" class="watch-card" (click)="openQuickLink('/overview/reorder-levels')">
+        <span class="watch-count">{{ totalReorderItems }}</span>
+        <span class="watch-label">Reorder levels</span>
+      </button>
+      <button type="button" class="watch-card" (click)="openQuickLink('/overview/stock-verification')">
+        <span class="watch-count">{{ lowConfidenceStockItems }}</span>
+        <span class="watch-label">Low confidence stock</span>
+      </button>
+      <button type="button" class="watch-card" (click)="openQuickLink('/overview/patient-billing')">
+        <span class="watch-count">{{ outstandingPaymentsFormatted }}</span>
+        <span class="watch-label">Debts</span>
+      </button>
+    </div>
     </div>
 
     <!-- Admitted Patients -->
@@ -296,6 +267,61 @@
         </span>
       </div>
     </div>
+    </div>
+  </section>
+
+  <section class="dashboard-section pending-tasks-row" *ngIf="!isLoading && !errorMessage">
+    <button
+      type="button"
+      class="section-toggle"
+      (click)="toggleDashboardSection('pendingTasks')"
+      [attr.aria-expanded]="isDashboardSectionExpanded('pendingTasks')">
+      <div class="row-heading">
+        <i class="bi section-chevron" [ngClass]="isDashboardSectionExpanded('pendingTasks') ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
+        <h3>Pending Tasks</h3>
+        <span class="row-subtitle">Items needing attention</span>
+      </div>
+    </button>
+    <div class="section-body pending-tasks-grid" *ngIf="isDashboardSectionExpanded('pendingTasks')">
+      <button
+        type="button"
+        class="pending-task-card"
+        *ngFor="let task of pendingTasks"
+        [class]="'tone-' + task.tone"
+        (click)="openQuickLink(task.route)">
+        <div class="pending-task-icon"><i class="bi" [ngClass]="task.icon"></i></div>
+        <div class="pending-task-body">
+          <div class="pending-task-count">{{ formatTaskCount(task) }}</div>
+          <div class="pending-task-label">{{ task.label }}</div>
+        </div>
+        <i class="bi bi-chevron-right pending-task-arrow"></i>
+      </button>
+    </div>
+  </section>
+
+  <section class="dashboard-section quick-links-row" *ngIf="!isLoading && !errorMessage">
+    <button
+      type="button"
+      class="section-toggle"
+      (click)="toggleDashboardSection('quickLinks')"
+      [attr.aria-expanded]="isDashboardSectionExpanded('quickLinks')">
+      <div class="row-heading">
+        <i class="bi section-chevron" [ngClass]="isDashboardSectionExpanded('quickLinks') ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
+        <h3>Quick Links</h3>
+        <span class="row-subtitle">Jump to common modules</span>
+      </div>
+    </button>
+    <div class="section-body quick-links-grid" *ngIf="isDashboardSectionExpanded('quickLinks')">
+      <button
+        type="button"
+        class="quick-link-card"
+        *ngFor="let link of quickLinks"
+        (click)="openQuickLink(link.route)">
+        <div class="quick-link-icon" [style.background]="link.color + '18'" [style.color]="link.color">
+          <i class="bi" [ngClass]="link.icon"></i>
+        </div>
+        <span class="quick-link-label">{{ link.label }}</span>
+      </button>
     </div>
   </section>
 

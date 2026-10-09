@@ -12,10 +12,12 @@ export function parseLoginFailure(error: any): { isInactive: boolean; message: s
     message = String(error.message);
   }
 
-  const isInactive = message.toLowerCase().includes('inactive');
+  const normalized = message.toLowerCase();
+  const showServerMessage =
+    normalized.includes('inactive') || normalized.includes('no role');
   return {
-    isInactive,
-    message: isInactive
+    isInactive: showServerMessage,
+    message: showServerMessage
       ? message
       : 'Email or password incorrect. Please correct it and try again.'
   };

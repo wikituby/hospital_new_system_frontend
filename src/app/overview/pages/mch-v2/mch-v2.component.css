@@ -651,6 +651,7 @@
 }
 
 .mv2-field input,
+.mv2-field select,
 .mv2-field textarea {
   width: 100%;
   padding: 11px 13px;
@@ -664,6 +665,7 @@
 }
 
 .mv2-field input:focus,
+.mv2-field select:focus,
 .mv2-field textarea:focus {
   outline: none;
   border-color: #f9a8d4;

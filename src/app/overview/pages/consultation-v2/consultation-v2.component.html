@@ -275,7 +275,20 @@
       <section class="cv2-panel" *ngIf="activeTab === 'consultation' && visitId">
         <div class="cv2-panel-head cv2-panel-head-row">
           <div>
-            <h2><i class="bi bi-journal-medical"></i> Consultation</h2>
+            <h2>
+              <i class="bi bi-journal-medical"></i>
+              Consultation
+              <button
+                type="button"
+                class="cv2-entry-switch"
+                [class.on]="consultationPlainText"
+                (click)="toggleConsultationPlainText()"
+                [attr.aria-pressed]="consultationPlainText"
+                title="Switch presenting complaint, physical examination, and diagnosis between structured entries and plain text">
+                <span class="cv2-entry-switch-track" aria-hidden="true"><span class="cv2-entry-switch-thumb"></span></span>
+                <span class="cv2-entry-switch-label">Plain text</span>
+              </button>
+            </h2>
             <p>Clinical notes and assessment</p>
           </div>
           <button type="button" class="cv2-btn cv2-btn-primary" [disabled]="isSavingConsultation" (click)="saveConsultation()">
@@ -298,11 +311,16 @@
               [attr.aria-expanded]="isConsultAccordionOpen('presenting')">
               <div class="cv2-consult-acc-title">
                 <h4><i class="bi bi-chat-left-text"></i> Presenting complaints</h4>
-                <p>Add one or more presenting complaints with site, severity, onset, and related detail.</p>
+                <p *ngIf="!consultationPlainText">Add one or more presenting complaints with site, severity, onset, and related detail.</p>
+                <p *ngIf="consultationPlainText">Write the presenting complaint as plain text.</p>
               </div>
               <i class="bi bi-chevron-down cv2-consult-acc-chevron" aria-hidden="true"></i>
             </button>
             <div class="cv2-consult-acc-body" *ngIf="isConsultAccordionOpen('presenting')">
+              <div class="cv2-field" *ngIf="consultationPlainText; else cv2PresentingObjects">
+                <textarea rows="4" [(ngModel)]="consultationForm.chiefComplaint" placeholder="Presenting complaint"></textarea>
+              </div>
+              <ng-template #cv2PresentingObjects>
               <div class="cv2-consult-acc-toolbar">
                 <button
                   type="button"
@@ -354,6 +372,7 @@
                 <p>Add the main reasons for this visit as structured presenting complaints.</p>
               </div>
             </ng-template>
+              </ng-template>
             </div>
           </div>
 
@@ -472,11 +491,16 @@
               [attr.aria-expanded]="isConsultAccordionOpen('physicalExam')">
               <div class="cv2-consult-acc-title">
                 <h4><i class="bi bi-heart-pulse"></i> Physical examinations</h4>
-                <p>Add system-by-system exam findings (inspection, palpation, percussion, auscultation).</p>
+                <p *ngIf="!consultationPlainText">Add system-by-system exam findings (inspection, palpation, percussion, auscultation).</p>
+                <p *ngIf="consultationPlainText">Write the physical examination as plain text.</p>
               </div>
               <i class="bi bi-chevron-down cv2-consult-acc-chevron" aria-hidden="true"></i>
             </button>
             <div class="cv2-consult-acc-body" *ngIf="isConsultAccordionOpen('physicalExam')">
+              <div class="cv2-field" *ngIf="consultationPlainText; else cv2PhysicalObjects">
+                <textarea rows="4" [(ngModel)]="consultationForm.clinicalExamination" placeholder="Physical examination"></textarea>
+              </div>
+              <ng-template #cv2PhysicalObjects>
               <div class="cv2-consult-acc-toolbar">
                 <button
                   type="button"
@@ -533,6 +557,7 @@
                 <p>Add examination findings by body system for this consultation.</p>
               </div>
             </ng-template>
+              </ng-template>
             </div>
           </div>
 
@@ -540,11 +565,16 @@
             <button type="button" class="cv2-consult-acc-trigger" (click)="toggleConsultAccordion('diagnoses', $event)" [attr.aria-expanded]="isConsultAccordionOpen('diagnoses')">
               <div class="cv2-consult-acc-title">
                 <h4><i class="bi bi-clipboard2-pulse"></i> Diagnoses</h4>
-                <p>Add diagnoses for this consultation. Treatments can be linked to a diagnosis.</p>
+                <p *ngIf="!consultationPlainText">Add diagnoses for this consultation. Treatments can be linked to a diagnosis.</p>
+                <p *ngIf="consultationPlainText">Write the diagnosis as plain text.</p>
               </div>
               <i class="bi bi-chevron-down cv2-consult-acc-chevron" aria-hidden="true"></i>
             </button>
             <div class="cv2-consult-acc-body" *ngIf="isConsultAccordionOpen('diagnoses')">
+              <div class="cv2-field" *ngIf="consultationPlainText; else cv2DiagnosisObjects">
+                <textarea rows="4" [(ngModel)]="consultationForm.diagnosis" placeholder="Diagnosis"></textarea>
+              </div>
+              <ng-template #cv2DiagnosisObjects>
               <div class="cv2-consult-acc-toolbar">
                 <button type="button" class="cv2-btn cv2-btn-primary cv2-btn-sm" (click)="startAddDiagnosis()" [disabled]="!visitId || isSavingDiagnosis">
                   <i class="bi bi-plus-lg"></i> Add diagnosis
@@ -588,6 +618,7 @@
                 <p>Add at least one diagnosis for this consultation.</p>
               </div>
             </ng-template>
+              </ng-template>
             </div>
           </div>
 
@@ -649,9 +680,9 @@
                 <th class="text-center no-sort">When</th>
                 <th class="no-sort">Cost</th>
                 <th class="no-sort">Sell</th>
-                <th class="no-sort">TT Cst</th>
-                <th class="no-sort">TT Sll</th>
-                <th class="text-right no-sort">ACT</th>
+                <th class="no-sort cv2-tt-cost">TT Cst</th>
+                <th class="no-sort cv2-tt-sell">TT Sll</th>
+                <th class="text-right no-sort cv2-line-pay-cell">ACT</th>
               </tr>
             </thead>
             <tbody>
@@ -704,18 +735,10 @@
                 </td>
                 <td>{{ item.unitCostPrice ?? item.cost ?? item.price ?? 0 }}</td>
                 <td>{{ item.unitSellingPrice ?? 0 }}</td>
-                <td>{{ serviceLineTotalCost(item) }}</td>
-                <td>{{ item.totalAmount ?? 0 }}</td>
-                <td class="cv2-row-actions text-right">
+                <td class="cv2-tt-cost">{{ serviceLineTotalCost(item) }}</td>
+                <td class="cv2-tt-sell">{{ item.totalAmount ?? 0 }}</td>
+                <td class="cv2-row-actions text-right cv2-line-pay-cell">
                   <div class="cv2-services-act-row">
-                    <button
-                      *ngIf="isServiceDeletable(item)"
-                      type="button"
-                      class="cv2-kebab-btn cv2-kebab-btn--danger"
-                      title="Delete pending request"
-                      (click)="deleteServiceRequest(item)">
-                      <i class="bi bi-trash"></i>
-                    </button>
                     <div class="cv2-action-menu" [class.open]="isServiceActionMenuOpen(item)">
                       <button
                         type="button"
@@ -774,14 +797,14 @@
                 <th>Treatment Given</th>
                 <th>Dosage</th>
                 <th>Freq</th>
-                <th>Dur</th>
+                <th class="cv2-dur-cell">Dur</th>
                 <th>Qty</th>
                 <th *ngIf="canViewCostColumns()">Cost</th>
-                <th>Sell</th>
-                <th *ngIf="canViewCostColumns()">TT Cost</th>
-                <th>TT Sell</th>
-                <th class="text-right">Act</th>
-                <th class="text-center">PD/DSP/ADM</th>
+                <th class="cv2-unit-sell">Sell</th>
+                <th *ngIf="canViewCostColumns()" class="cv2-tt-cost">TT Cost</th>
+                <th class="cv2-tt-sell">TT Sell</th>
+                <th class="text-right cv2-line-pay-cell">Act</th>
+                <th class="text-center cv2-lifecycle-cell">PSD/PD/DSP/ADM</th>
               </tr>
             </thead>
             <tbody>
@@ -791,32 +814,47 @@
                     {{ treatmentRowSerial(i) }}
                   </span>
                 </td>
-                <td class="cv2-treatment-name-cell">{{ (item.itemName || item.drugName || item.stockItemName || '—') | uppercase }}</td>
-                <td>{{ item.amountPerFrequencyValue }} {{ item.amountPerFrequencyUnit }}</td>
+                <td class="cv2-treatment-name-cell">
+                  {{ (item.itemName || item.drugName || item.stockItemName || '—') | uppercase }}
+                  <span class="cv2-stock-warn" *ngIf="treatmentRowQtyExceedsStock(item)">{{ treatmentRowStockWarning(item) }}</span>
+                </td>
+                <td>{{ treatmentDosageCell(item) }}</td>
                 <td>{{ treatmentFrequencyShortLabel(item) }}</td>
-                <td>{{ item.durationValue }} {{ formatTreatmentPeriodUnit(item.durationUnit) }}</td>
-                <td>{{ item.quantity }}</td>
+                <td class="cv2-dur-cell">{{ treatmentDurationCell(item) }}</td>
+                <td [class.cv2-qty-short]="treatmentRowQtyExceedsStock(item)">{{ item.quantity }}</td>
                 <td *ngIf="canViewCostColumns()">{{ item.unitBuy }}</td>
-                <td>{{ item.unitSellingPrice }}</td>
-                <td *ngIf="canViewCostColumns()">{{ (item.quantity || 0) * (item.unitBuy || 0) }}</td>
-                <td>{{ item.totalAmount }}</td>
-                <td class="cv2-row-actions text-right">
-                  <div class="cv2-action-menu" [class.open]="isPharmacyActionMenuOpen(item)">
+                <td class="cv2-unit-sell">{{ item.unitSellingPrice }}</td>
+                <td *ngIf="canViewCostColumns()" class="cv2-tt-cost">{{ (item.quantity || 0) * (item.unitBuy || 0) }}</td>
+                <td class="cv2-tt-sell">{{ item.totalAmount }}</td>
+                <td class="cv2-row-actions text-right cv2-line-pay-cell">
+                  <div class="cv2-services-act-row">
                     <button
                       type="button"
-                      class="cv2-kebab-btn"
-                      title="Actions"
-                      (click)="togglePharmacyActionMenu(item, $event)">
-                      <i class="bi bi-three-dots-vertical"></i>
+                      class="cv2-service-inline-btn"
+                      title="Receive payment for this drug"
+                      (click)="openTreatmentLinePayment(item)">
+                      <i class="bi bi-cash-coin"></i>
                     </button>
+                    <div class="cv2-action-menu" [class.open]="isPharmacyActionMenuOpen(item)">
+                      <button
+                        type="button"
+                        class="cv2-kebab-btn"
+                        title="Actions"
+                        (click)="togglePharmacyActionMenu(item, $event)">
+                        <i class="bi bi-three-dots-vertical"></i>
+                      </button>
+                    </div>
                   </div>
                 </td>
-                <td class="text-center">
+                <td class="text-center cv2-lifecycle-cell">
                   <app-pd-dsp-adm
                     [item]="item"
                     [inputIdPrefix]="'cv2-plan'"
+                    [showPrescribed]="true"
+                    [paidReadonly]="true"
                     [dispensedReadonly]="true"
                     [administeredReadonly]="true"
+                    (prescribedChange)="onTreatmentPdDspAdmChange(item, 'prescribed', $event)"
                     (paidChange)="onTreatmentPdDspAdmChange(item, 'paid', $event)">
                   </app-pd-dsp-adm>
                 </td>
@@ -973,8 +1011,30 @@
           <table class="cv2-billing-summary-table">
             <thead>
               <tr>
-                <th *ngIf="canViewCostColumns()">Treatment</th>
-                <th *ngIf="canViewCostColumns()">Procedure</th>
+                <th *ngIf="canViewCostColumns()">
+                  <span class="cv2-billing-head">
+                    Treatment
+                    <button
+                      type="button"
+                      class="cv2-billing-pay-btn"
+                      title="Receive all pending treatment debt"
+                      (click)="openAllTreatmentsPayment()">
+                      <i class="bi bi-cash-coin"></i>
+                    </button>
+                  </span>
+                </th>
+                <th *ngIf="canViewCostColumns()">
+                  <span class="cv2-billing-head">
+                    Services
+                    <button
+                      type="button"
+                      class="cv2-billing-pay-btn"
+                      title="Receive all pending service debt"
+                      (click)="openAllServicesPayment()">
+                      <i class="bi bi-cash-coin"></i>
+                    </button>
+                  </span>
+                </th>
                 <th *ngIf="canViewCostColumns()">TT Cost</th>
                 <th>SubTotal</th>
                 <th>Discount | Tax</th>
@@ -2678,7 +2738,8 @@
       <div class="cv2-modal-head">
         <div>
           <h3><i class="bi bi-clipboard2-pulse"></i> {{ (selectedProcedureResult?.procedureRequestedName || 'Procedure') | uppercase }} results</h3>
-          <p>Review investigation findings for this visit.</p>
+          <p *ngIf="serviceReportCanEdit">You can edit this report and save it.</p>
+          <p *ngIf="!serviceReportCanEdit">View and print only. Your role cannot edit this report.</p>
         </div>
         <button type="button" class="cv2-modal-close" (click)="closeServiceResultsModal()" aria-label="Close">
           <i class="bi bi-x-lg"></i>
@@ -2691,24 +2752,58 @@
           </div>
 
           <ng-container *ngIf="!isLoadingProcedureResults">
-            <div class="cv2-result-title-card" *ngIf="procedureResultsLabReportTitle">
+            <div class="cv2-result-title-card">
               <span class="cv2-result-label">Overall result / report title</span>
-              <p>{{ procedureResultsLabReportTitle }}</p>
+              <input *ngIf="serviceReportCanEdit && (showResultClinicalForm || showResultGeneralForm)"
+                     class="cv2-report-input"
+                     [(ngModel)]="procedureResultsLabReportTitle"
+                     [ngModelOptions]="{standalone: true}"
+                     placeholder="Report title" />
+              <p *ngIf="!(serviceReportCanEdit && (showResultClinicalForm || showResultGeneralForm))">{{ procedureResultsLabReportTitle || '—' }}</p>
+            </div>
+
+            <div *ngIf="showResultClinicalForm" class="cv2-result-sections">
+              <h4 class="cv2-clinical-report-title">{{ clinicalReportHeading() }}</h4>
+              <div class="cv2-result-grid">
+                <div class="cv2-result-card" *ngFor="let field of clinicalReportFields" [class.cv2-result-card--span]="field.wide">
+                  <span class="cv2-result-label">{{ field.label }}</span>
+                  <select *ngIf="serviceReportCanEdit && field.options" class="cv2-report-input" [(ngModel)]="clinicalReportValues[field.key]" [ngModelOptions]="{standalone: true}">
+                    <option value="">Select</option>
+                    <option *ngFor="let opt of field.options" [value]="opt">{{ opt }}</option>
+                  </select>
+                  <textarea *ngIf="serviceReportCanEdit && !field.options && field.wide" class="cv2-report-input" rows="3" [(ngModel)]="clinicalReportValues[field.key]" [ngModelOptions]="{standalone: true}"></textarea>
+                  <input *ngIf="serviceReportCanEdit && !field.options && !field.wide" class="cv2-report-input" [type]="field.inputType || 'text'" [(ngModel)]="clinicalReportValues[field.key]" [ngModelOptions]="{standalone: true}" />
+                  <p *ngIf="!serviceReportCanEdit">{{ clinicalReportValues[field.key] || '—' }}</p>
+                </div>
+                <div class="cv2-result-card">
+                  <span class="cv2-result-label">Notes</span>
+                  <textarea *ngIf="serviceReportCanEdit" class="cv2-report-input" rows="3" [(ngModel)]="generalResult.notes" [ngModelOptions]="{standalone: true}"></textarea>
+                  <p *ngIf="!serviceReportCanEdit">{{ generalResult.notes || '—' }}</p>
+                </div>
+                <div class="cv2-result-card">
+                  <span class="cv2-result-label">Recommendation</span>
+                  <textarea *ngIf="serviceReportCanEdit" class="cv2-report-input" rows="3" [(ngModel)]="generalResult.recommendation" [ngModelOptions]="{standalone: true}"></textarea>
+                  <p *ngIf="!serviceReportCanEdit">{{ generalResult.recommendation || '—' }}</p>
+                </div>
+              </div>
             </div>
 
             <!-- General lab -->
             <div class="cv2-result-grid" *ngIf="showResultGeneralForm">
               <div class="cv2-result-card cv2-result-card--span">
                 <span class="cv2-result-label">Result</span>
-                <p>{{ generalResult.result || '—' }}</p>
+                <textarea *ngIf="serviceReportCanEdit" class="cv2-report-input" rows="4" [(ngModel)]="generalResult.result" [ngModelOptions]="{standalone: true}"></textarea>
+                <p *ngIf="!serviceReportCanEdit">{{ generalResult.result || '—' }}</p>
               </div>
               <div class="cv2-result-card">
                 <span class="cv2-result-label">Notes</span>
-                <p>{{ generalResult.notes || '—' }}</p>
+                <textarea *ngIf="serviceReportCanEdit" class="cv2-report-input" rows="3" [(ngModel)]="generalResult.notes" [ngModelOptions]="{standalone: true}"></textarea>
+                <p *ngIf="!serviceReportCanEdit">{{ generalResult.notes || '—' }}</p>
               </div>
               <div class="cv2-result-card">
                 <span class="cv2-result-label">Recommendation</span>
-                <p>{{ generalResult.recommendation || '—' }}</p>
+                <textarea *ngIf="serviceReportCanEdit" class="cv2-report-input" rows="3" [(ngModel)]="generalResult.recommendation" [ngModelOptions]="{standalone: true}"></textarea>
+                <p *ngIf="!serviceReportCanEdit">{{ generalResult.recommendation || '—' }}</p>
               </div>
             </div>
 
@@ -2881,6 +2976,10 @@
       </div>
       <div class="cv2-modal-foot">
         <button type="button" class="cv2-btn cv2-btn-ghost" (click)="closeServiceResultsModal()">Close</button>
+        <button type="button" class="cv2-btn cv2-btn-primary" *ngIf="serviceReportCanEdit && (showResultClinicalForm || showResultGeneralForm)" (click)="saveServiceReportFromModal()" [disabled]="isSavingServiceReport || isLoadingProcedureResults">
+          <i class="bi bi-save"></i>
+          {{ isSavingServiceReport ? 'Saving...' : 'Save report' }}
+        </button>
         <button type="button" class="cv2-btn cv2-btn-primary" (click)="printServiceResultsFromModal()" [disabled]="isPrintingScanResults">
           <i class="bi bi-printer"></i>
           {{ isPrintingScanResults ? 'Preparing...' : 'Print' }}
@@ -3084,6 +3183,13 @@
                   (optionApplied)="applyPharmacyStandardDosageOption($event)">
                 </app-standard-dosage-picker>
               </div>
+              <label class="cv2-rx-fields-switch">
+                <input
+                  type="checkbox"
+                  [checked]="pharmacyUsePrescribing"
+                  (change)="onPharmacyPrescribingToggle($any($event.target).checked)" />
+                <span>{{ pharmacyUsePrescribing ? 'Prescription fields on' : 'Quantity only' }}</span>
+              </label>
             </div>
 
             <div class="cv2-pharmacy-item-field cv2-pharmacy-item-field--full">
@@ -3185,6 +3291,7 @@
             </div>
 
             <div class="cv2-pharmacy-prescribing-row">
+              <ng-container *ngIf="pharmacyUsePrescribing">
               <div class="cv2-field cv2-pharmacy-prescribing-field">
                 <label>Dosage</label>
                 <input
@@ -3218,6 +3325,7 @@
                   name="frequencyUnit"
                   (change)="calculatePharmacyDurationUnit(); calculatePharmacyTotalQty()">
                   <option [ngValue]="null"></option>
+                  <option [ngValue]="statPeriodUnit">Stat</option>
                   <option [ngValue]="1 / 1440">Minute</option>
                   <option [ngValue]="1 / 24">Hour</option>
                   <option [ngValue]="1">Day</option>
@@ -3225,17 +3333,18 @@
                   <option [ngValue]="30">Month</option>
                 </select>
               </div>
-              <div class="cv2-field cv2-pharmacy-prescribing-field">
+              <div class="cv2-field cv2-pharmacy-prescribing-field" [class.cv2-pharmacy-prescribing-field--off]="isPharmacyStatFrequency()">
                 <label>Duration</label>
                 <input
                   type="number"
                   [(ngModel)]="pharmacyForm.durationValue"
                   name="durationValue"
+                  [disabled]="isPharmacyStatFrequency()"
                   (input)="calculatePharmacyTotalQty()" />
               </div>
-              <div class="cv2-field cv2-pharmacy-prescribing-field">
+              <div class="cv2-field cv2-pharmacy-prescribing-field" [class.cv2-pharmacy-prescribing-field--off]="isPharmacyStatFrequency()">
                 <label>Dura. Unit</label>
-                <select [(ngModel)]="pharmacyForm.durationUnit" name="durationUnit">
+                <select [(ngModel)]="pharmacyForm.durationUnit" name="durationUnit" [disabled]="isPharmacyStatFrequency()">
                   <option [ngValue]="null"></option>
                   <option [ngValue]="1 / 1440">Minute(s)</option>
                   <option [ngValue]="1 / 24">Hour(s)</option>
@@ -3244,6 +3353,7 @@
                   <option [ngValue]="30">Month(s)</option>
                 </select>
               </div>
+              </ng-container>
               <div class="cv2-field cv2-pharmacy-prescribing-field">
                 <label>Total Qty</label>
                 <input
@@ -3251,6 +3361,9 @@
                   [(ngModel)]="pharmacyForm.quantity"
                   name="quantity"
                   (input)="calculatePharmacyTotal()" />
+                <p class="cv2-stock-warn" *ngIf="pharmacyPrescribingQtyExceedsStock()">
+                  {{ pharmacyPrescribingStockWarning() }}
+                </p>
               </div>
               <div class="cv2-field cv2-pharmacy-prescribing-field">
                 <label>Total Units</label>
@@ -3597,7 +3710,9 @@
       <div class="cv2-modal-head">
         <div>
           <h3><i class="bi bi-cash"></i> {{ editingPaymentId != null ? 'Edit Payment' : 'Receive Payment' }}</h3>
-          <p>{{ editingPaymentId != null ? 'Update this payment record.' : 'Amount defaults to this visit’s balance due. You can change what was received.' }}</p>
+          <p *ngIf="editingPaymentId != null">Update this payment record.</p>
+          <p *ngIf="editingPaymentId == null && paymentTarget">Receiving payment for {{ paymentTarget.label }}.</p>
+          <p *ngIf="editingPaymentId == null && !paymentTarget">Amount defaults to this visit’s balance due. You can change what was received.</p>
         </div>
         <button type="button" class="cv2-modal-close" (click)="closePaymentModal()" aria-label="Close">
           <i class="bi bi-x-lg"></i>
@@ -3610,7 +3725,7 @@
               <label>Amount to pay</label>
               <input type="number" step="0.01" min="0.01" [(ngModel)]="paymentForm.amountToPay" name="amountToPay" />
               <small class="cv2-field-hint" *ngIf="paymentVisitDueHint != null">
-                Visit balance due: UGX {{ formatMoney(paymentVisitDueHint) }}
+                {{ paymentTarget ? 'Balance due' : 'Visit balance due' }}: UGX {{ formatMoney(paymentVisitDueHint) }}
               </small>
             </div>
             <div class="cv2-field">
@@ -3942,6 +4057,12 @@
     *ngIf="serviceActionMenuItem as item"
     [ngStyle]="serviceActionMenuStyle"
     (click)="$event.stopPropagation()">
+    <button type="button" class="cv2-action-menu-item" (click)="openServiceLinePayment(item); closeServiceActionMenu()">
+      <i class="bi bi-cash-coin"></i> Receive payment
+    </button>
+    <button type="button" class="cv2-action-menu-item" (click)="openServiceItemsUsed(item)">
+      <i class="bi bi-box-seam"></i> Items used
+    </button>
     <button
       type="button"
       class="cv2-action-menu-item danger"
@@ -3949,6 +4070,84 @@
       (click)="deleteServiceRequest(item)">
       <i class="bi bi-trash"></i> Delete
     </button>
+  </div>
+
+  <div class="cv2-modal-overlay cv2-modal-overlay--stacked" *ngIf="showServiceItemsUsedModal" (click)="closeServiceItemsUsed()">
+    <div class="cv2-modal cv2-modal--wide" (click)="$event.stopPropagation()">
+      <div class="cv2-modal-head">
+        <div>
+          <h3><i class="bi bi-box-seam"></i> Items used</h3>
+          <p>{{ (serviceItemsUsedTarget?.procedureRequestedName || serviceItemsUsedTarget?.name || 'Service') | uppercase }}</p>
+        </div>
+        <button type="button" class="cv2-modal-close" (click)="closeServiceItemsUsed()" aria-label="Close" [disabled]="serviceItemsUsedSaving">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="cv2-modal-body">
+        <p class="cv2-items-used-lead">Search each item used for this service, then enter the quantity and unit cost. The service cost becomes the total of these lines.</p>
+        <div class="cv2-items-used-add">
+          <div class="cv2-items-used-search">
+            <label>Item</label>
+            <input
+              type="text"
+              [ngModel]="serviceItemPick ? serviceItemLabel(serviceItemPick) : serviceItemSearch"
+              (ngModelChange)="onServiceItemSearch($event)"
+              placeholder="Search item"
+              [ngModelOptions]="{standalone: true}" />
+            <div class="cv2-items-used-results" *ngIf="!serviceItemPick && serviceItemSearch.trim()">
+              <button
+                type="button"
+                *ngFor="let item of filteredServiceItemOptions()"
+                (click)="pickServiceItem(item)">
+                <span>{{ serviceItemLabel(item) }}</span>
+                <span>Cost {{ serviceItemCost(item) }}</span>
+              </button>
+              <p *ngIf="!filteredServiceItemOptions().length">No matching items.</p>
+            </div>
+          </div>
+          <label>Qty
+            <input type="number" min="1" step="1" [(ngModel)]="serviceItemQty" [ngModelOptions]="{standalone: true}" />
+          </label>
+          <label>Unit cost
+            <input type="number" min="0" step="1" [(ngModel)]="serviceItemUnitCost" [ngModelOptions]="{standalone: true}" />
+          </label>
+          <button type="button" class="cv2-btn cv2-btn-primary" (click)="addServiceItemUsed()" [disabled]="serviceItemsUsedSaving || !serviceItemPick">
+            {{ serviceItemsUsedSaving ? 'Adding...' : 'Add' }}
+          </button>
+        </div>
+        <p class="cv2-stock-warn" *ngIf="serviceItemsUsedMessage">{{ serviceItemsUsedMessage }}</p>
+        <div class="cv2-inline-loader" *ngIf="serviceItemsUsedLoading"><span class="cv2-spinner"></span> Loading items...</div>
+        <table class="cv2-table cv2-items-used-table" *ngIf="!serviceItemsUsedLoading && serviceItemsUsedRows.length">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Unit cost</th>
+              <th>Line cost</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of serviceItemsUsedRows">
+              <td>{{ row.itemName || 'Item' }}</td>
+              <td>{{ row.quantityUsed }}</td>
+              <td>{{ row.unitCostPrice || 0 }}</td>
+              <td>{{ serviceItemUsedLineCost(row) }}</td>
+              <td class="text-right">
+                <button type="button" class="cv2-kebab-btn cv2-kebab-btn--danger" title="Remove" (click)="removeServiceItemUsed(row)" [disabled]="serviceItemsUsedSaving">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="cv2-items-used-empty" *ngIf="!serviceItemsUsedLoading && !serviceItemsUsedRows.length">No items used yet.</p>
+        <p class="cv2-items-used-total">Service cost {{ serviceItemsUsedTotal() }}</p>
+      </div>
+      <div class="cv2-modal-foot">
+        <button type="button" class="cv2-btn cv2-btn-ghost" (click)="closeServiceItemsUsed()" [disabled]="serviceItemsUsedSaving">Close</button>
+      </div>
+    </div>
   </div>
 
   <div

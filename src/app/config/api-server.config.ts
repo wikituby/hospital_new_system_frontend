@@ -1,9 +1,9 @@
 export const API_CONTEXT_PATH = '/health_care';
-export const API_DEFAULT_PORT = 8080;
-export const API_DEV_SERVER_PORTS = [4800, 4900] as const;
+export const API_DEFAULT_PORT = 8083;
+export const API_DEV_SERVER_PORTS = [4300, 4800, 4900] as const;
 export const API_DEV_SERVER_PORT = API_DEV_SERVER_PORTS[0];
 
-/** Dev-server proxy base for the current browser port (4800 / 4900). */
+/** Dev-server proxy base for the current browser port (4300 / 4800 / 4900). */
 export function getDevProxyBase(): string {
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     const port = Number(window.location.port);
@@ -16,7 +16,7 @@ export function getDevProxyBase(): string {
 
 /**
  * When `ng serve` runs with proxy.conf.json, API calls via the dev server avoid CORS
- * and always reach the backend on localhost:8080.
+ * and always reach the backend on localhost:8083.
  */
 export const API_DEV_PROXY_BASE = getDevProxyBase();
 
@@ -52,7 +52,7 @@ export function isAngularDevServer(): boolean {
   );
 }
 
-/** Map ng serve proxy base (e.g. :4800) back to the real Quarkus backend for display. */
+/** Map ng serve proxy base (e.g. :4300) back to the real Quarkus backend for display. */
 export function toDisplayBaseUrl(baseUrl: string): string {
   const value = (baseUrl || '').trim();
   if (!value || !isAngularDevServer()) {

@@ -1143,10 +1143,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
 
     const byKey: Record<string, string> = {
-      'patient-visit': '/overview/consultations-center',
-      'consultations-center': '/overview/consultations-center',
-      consultation: '/overview/consultations-center',
-      triage: '/overview/consultations-center',
+      'patient-visit': '/overview/consultation-v2',
+      'consultations-center': '/overview/consultation-v2',
+      consultation: '/overview/consultation-v2',
+      triage: '/overview/consultation-v2',
       pharmacy: '/overview/otc-dispensary',
       'otc-dispensary': '/overview/otc-dispensary',
       lab: '/overview/lab-v2',
@@ -1165,8 +1165,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
     };
     const byCode: Record<string, string> = {
       PHARMACY: '/overview/otc-dispensary',
-      CONSULTATION: '/overview/consultations-center',
-      TRIAGE: '/overview/consultations-center',
+      CONSULTATION: '/overview/consultation-v2',
+      TRIAGE: '/overview/consultation-v2',
       LAB: '/overview/lab-v2',
       SCAN: '/overview/scan-v2',
       DENTAL: '/overview/dental-v2',

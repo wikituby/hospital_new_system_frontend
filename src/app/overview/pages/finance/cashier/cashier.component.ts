@@ -722,7 +722,7 @@ export class CashierComponent implements OnInit {
     };
     sessionStorage.setItem('item', JSON.stringify(patient));
     sessionStorage.setItem('initialPatientVisit', JSON.stringify(visit));
-    this.router.navigate(['/overview/consultations-center']);
+    this.router.navigate(['/overview/consultation-v2']);
   }
 
   openPaymentVisit(payment: any): void {

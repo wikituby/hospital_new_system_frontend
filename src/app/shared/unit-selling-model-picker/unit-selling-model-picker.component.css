@@ -239,6 +239,18 @@
   flex: 1;
 }
 
+.usm-unit-cost-label {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.usm-unit-cost-label strong {
+  font-weight: 800;
+  color: #0f172a;
+}
+
 .usm-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

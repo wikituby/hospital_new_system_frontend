@@ -375,6 +375,28 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
+}
+
+.stock-item-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.stock-item-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+  flex-shrink: 0;
+  text-transform: uppercase;
 }
 
 .item-title {
@@ -382,6 +404,59 @@
   color: #0f172a;
   font-size: 14px;
   text-transform: capitalize;
+}
+
+.item-sku {
+  margin-top: 4px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.sku-barcode {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 8px 10px 6px;
+  background: #fff;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+}
+
+.sku-barcode-svg {
+  width: 240px;
+  max-width: 100%;
+  height: 52px;
+  display: block;
+}
+
+.sku-barcode-caption {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #111827;
+  text-transform: uppercase;
+}
+
+.sku-barcode--compact {
+  padding: 4px 6px 3px;
+  border-radius: 6px;
+}
+
+.sku-barcode--compact .sku-barcode-svg {
+  width: 168px;
+  height: 32px;
+}
+
+.sku-barcode--compact .sku-barcode-caption {
+  font-size: 10px;
+  letter-spacing: 0.08em;
 }
 
 .item-meta {
@@ -501,6 +576,69 @@
 .action-buttons {
   display: flex;
   gap: 6px;
+}
+
+.stock-item-action-cell {
+  text-align: center;
+  text-transform: none;
+}
+
+.stock-item-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+}
+
+.stock-item-action-btn:hover,
+.stock-item-action-btn--active {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1d4ed8;
+}
+
+.stock-item-action-pop {
+  width: 168px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+}
+
+.stock-item-action-pop button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stock-item-action-pop button:hover {
+  background: #f1f5f9;
+}
+
+.stock-item-action-pop button.danger {
+  color: #dc2626;
+}
+
+.stock-item-action-pop button.danger:hover {
+  background: #fef2f2;
 }
 
 .btn-icon {
@@ -730,6 +868,10 @@
   color: #e2e8f0;
 }
 
+.consumable-items-page.dark .item-sku {
+  color: #94a3b8;
+}
+
 .consumable-items-page.dark .item-meta {
   color: #64748b;
 }
@@ -795,6 +937,40 @@
 .consumable-items-page.dark .btn-icon.delete:hover {
   background: #450a0a;
   color: #fca5a5;
+}
+
+.consumable-items-page.dark .stock-item-action-btn {
+  background: #1e293b;
+  border-color: #475569;
+  color: #cbd5e1;
+}
+
+.consumable-items-page.dark .stock-item-action-btn:hover,
+.consumable-items-page.dark .stock-item-action-btn--active {
+  background: #334155;
+  border-color: #64748b;
+  color: #93c5fd;
+}
+
+.consumable-items-page.dark .stock-item-action-pop {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.consumable-items-page.dark .stock-item-action-pop button {
+  color: #e2e8f0;
+}
+
+.consumable-items-page.dark .stock-item-action-pop button:hover {
+  background: #334155;
+}
+
+.consumable-items-page.dark .stock-item-action-pop button.danger {
+  color: #fca5a5;
+}
+
+.consumable-items-page.dark .stock-item-action-pop button.danger:hover {
+  background: #450a0a;
 }
 
 .consumable-items-page.dark .no-data {
@@ -1370,10 +1546,28 @@ textarea.form-control {
 }
 
 .prescribing-rule-header {
+  display: block;
+}
+
+.standard-dosage-rule-btn {
+  width: 100%;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1.5px solid #667eea;
+  border-radius: 8px;
+  background: #fff;
+  color: #4338ca;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.standard-dosage-rule-btn:hover {
+  background: #eef2ff;
 }
 
 .stock-dosage-rule-loading,
@@ -1505,6 +1699,18 @@ textarea.form-control {
   box-shadow: 0 0 0 3px rgba(209, 213, 219, 0.1);
 }
 
+.stock-item-barcode-input[readonly] {
+  background: #f8fafc;
+  color: #334155;
+  font-family: ui-monospace, Consolas, monospace;
+  letter-spacing: 0.04em;
+  cursor: default;
+}
+
+.stock-item-other-barcodes {
+  margin-top: 16px;
+}
+
 .stock-item-form-textarea {
   resize: vertical;
   min-height: 80px;
@@ -1518,6 +1724,18 @@ textarea.form-control {
   background: #f9fafb;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
+}
+
+.stock-form-card {
+  margin-top: 20px;
+  padding: 16px 18px 18px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.stock-form-card .section-title {
+  margin: 0 0 14px;
 }
 
 .ingredients-header {
@@ -1537,6 +1755,16 @@ textarea.form-control {
   align-items: center;
   gap: 12px;
   margin-bottom: 10px;
+}
+
+.indications-header .stock-item-form-label {
+  position: static;
+  top: auto;
+  left: auto;
+  padding: 0;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .indications-list {
@@ -2662,11 +2890,30 @@ textarea.form-control {
   background: #1e293b;
 }
 
+.consumable-items-page.dark .indications-header .stock-item-form-label {
+  background: transparent;
+}
+
 .consumable-items-page.dark .stock-item-form-input,
 .consumable-items-page.dark .stock-item-form-textarea {
   background: #0f172a;
   border-color: #475569;
   color: #e2e8f0;
+}
+
+.consumable-items-page.dark .stock-item-barcode-input[readonly] {
+  background: #0f172a;
+  color: #cbd5e1;
+}
+
+.consumable-items-page.dark .standard-dosage-rule-btn {
+  background: #1e293b;
+  border-color: #818cf8;
+  color: #c7d2fe;
+}
+
+.consumable-items-page.dark .standard-dosage-rule-btn:hover {
+  background: #312e81;
 }
 
 .consumable-items-page.dark .stock-item-form-input:focus,
@@ -2686,6 +2933,11 @@ textarea.form-control {
 
 /* Dark mode for ingredients section */
 .consumable-items-page.dark .ingredients-section {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.consumable-items-page.dark .stock-form-card {
   background: #1f2937;
   border-color: #374151;
 }
@@ -4529,7 +4781,7 @@ textarea.form-control {
   grid-template-columns: 1fr auto;
 }
 
-.category-search-container:has(> .category-sync-drug-button) {
+.category-search-container:has(> .category-bulk-load-button) {
   grid-template-columns: 1fr auto auto;
 }
 
@@ -5063,7 +5315,7 @@ textarea.form-control {
   margin-left: 0;
 }
 
-.category-search-container > .category-sync-drug-button {
+.category-search-container > .category-bulk-load-button {
   grid-column: 3;
   grid-row: 1;
 }
@@ -5095,7 +5347,7 @@ textarea.form-control {
   font-size: 14px;
 }
 
-.category-search-container .category-sync-drug-button {
+.category-search-container .category-bulk-load-button {
   margin-top: 0;
   margin-left: 0;
   min-height: 36px;
@@ -5108,7 +5360,7 @@ textarea.form-control {
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-.category-search-container .category-sync-drug-button:hover:not(:disabled) {
+.category-search-container .category-bulk-load-button:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(67, 56, 202, 0.18);
 }
@@ -5353,13 +5605,13 @@ textarea.form-control {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
 }
 
-.consumable-items-page.dark .category-search-container .category-sync-drug-button {
+.consumable-items-page.dark .category-search-container .category-bulk-load-button {
   background: #312e81;
   border-color: #4338ca;
   color: #c7d2fe;
 }
 
-.consumable-items-page.dark .category-search-container .category-sync-drug-button:hover:not(:disabled) {
+.consumable-items-page.dark .category-search-container .category-bulk-load-button:hover {
   background: #3730a3;
 }
 
@@ -6680,39 +6932,7 @@ textarea.form-control {
   cursor: not-allowed;
 }
 
-.drug-category-seed-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 12000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(15, 23, 42, 0.45);
-}
-
-.drug-category-seed-content {
-  min-width: 280px;
-  padding: 28px 32px;
-  border-radius: 12px;
-  background: #fff;
-  text-align: center;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
-}
-
-.drug-category-seed-content p {
-  margin: 10px 0 0;
-  color: #374151;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.drug-category-seed-detail {
-  font-size: 13px !important;
-  color: #6b7280 !important;
-  font-weight: 400 !important;
-}
-
-.category-sync-drug-button {
+.category-bulk-load-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -6727,28 +6947,11 @@ textarea.form-control {
   cursor: pointer;
 }
 
-.category-sync-drug-button:hover:not(:disabled) {
+.category-bulk-load-button:hover {
   background: #e0e7ff;
 }
 
-.category-sync-drug-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.consumable-items-page.dark .drug-category-seed-content {
-  background: #1e293b;
-}
-
-.consumable-items-page.dark .drug-category-seed-content p {
-  color: #e2e8f0;
-}
-
-.consumable-items-page.dark .drug-category-seed-detail {
-  color: #94a3b8 !important;
-}
-
-.consumable-items-page.dark .category-sync-drug-button {
+.consumable-items-page.dark .category-bulk-load-button {
   background: #312e81;
   border-color: #4338ca;
   color: #c7d2fe;
@@ -7044,8 +7247,8 @@ textarea.form-control {
 }
 
 .details-image-wrapper {
-  width: 100%;
-  max-width: 400px;
+  width: 140px;
+  max-width: 140px;
   aspect-ratio: 1;
   border-radius: 12px;
   overflow: hidden;

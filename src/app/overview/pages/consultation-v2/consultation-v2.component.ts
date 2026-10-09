@@ -3,17 +3,21 @@ import { Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ApiService } from '../../../services/api.service';
+import { PharmacyVisitSyncService } from '../../../services/pharmacy-visit-sync.service';
 import { AccessControlService } from '../../../services/access-control.service';
 import { FacilityBrandingService } from '../../../services/facility-branding.service';
 import {
-  ensureFromModuleInList,
   isQueueDischargeDestination,
   normalizeHospitalModules,
   pickDefaultFromModuleId,
   QUEUE_DISCHARGE_DESTINATION_ID,
   queueDestinationOptions,
 } from '../../../utils/queue-module.util';
-import { formatTreatmentPeriodUnit, parseTreatmentPeriodUnitToDayFraction, resolveStockPrescribingSource, DOSAGE_UNIT_SELECT_OPTIONS, applyPrescribingPrefillToTreatmentForm, normalizeDosageUnitForSelect, isStandardDosageUnit } from '../../../utils/prescribing-prefill.util';
+import {
+  applyQueuePageModuleToSession,
+  resolveModuleIdForUrl,
+} from '../../../utils/queue-page-context.util';
+import { formatTreatmentPeriodUnit, parseTreatmentPeriodUnitToDayFraction, resolveStockPrescribingSource, DOSAGE_UNIT_SELECT_OPTIONS, applyPrescribingPrefillToTreatmentForm, normalizeDosageUnitForSelect, isStandardDosageUnit, isStatPeriodUnit, STAT_PERIOD_UNIT } from '../../../utils/prescribing-prefill.util';
 import { patientGroupUsesCompassionPricing, findUnitSellingModelByNameKeyword } from '../../../shared/unit-selling-model-picker/unit-selling-model.interface';
 import { formatMoneyWholeDisplay } from '../../../utils/ugx-money.util';
 import {
@@ -21,6 +25,7 @@ import {
   formatPulsePressureDisplay as formatPulsePressureUtil,
 } from '../../../utils/vitals-calculations.util';
 import { BatchSellingModel, extractBatchLinePricing } from '../../../utils/stock-batch-pricing.util';
+import { getPharmacyItemTotalStock } from '../../../utils/pharmacy-prescription-sale.util';
 import { StandardDosageOption } from '../../../utils/standard-dosage.util';
 import { downloadPaymentReceiptPdf } from '../../../utils/payment-receipt-pdf.util';
 import {
@@ -36,6 +41,7 @@ import {
   getProcedureReportKindForPdf,
   isUltrasoundScanCategoryProcedure,
   isUrinalysisProcedureName,
+  mchClinicalFormKind,
   normalizeProcedureRequestedNameForLabRouting,
 } from '../../../utils/lab-results-docx.util';
 import {
@@ -225,6 +231,8 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
 
   // Consultation
   consultationForm: ConsultationFormModel = this.emptyConsultationForm();
+  /** When on, presenting complaint, physical examination, and diagnosis are plain text fields. */
+  consultationPlainText = this.readConsultationPlainTextPref();
   isSavingConsultation = false;
   isLoadingConsultation = false;
   presentingComplaintsList: any[] = [];
@@ -345,6 +353,17 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
   isSavingService = false;
   isLoadingProcedureCatalog = false;
   isLoadingServices = false;
+  showServiceItemsUsedModal = false;
+  serviceItemsUsedTarget: any = null;
+  serviceItemsUsedRows: any[] = [];
+  serviceItemsUsedLoading = false;
+  serviceItemsUsedSaving = false;
+  serviceItemSearch = '';
+  serviceItemPick: any = null;
+  serviceItemQty = 1;
+  serviceItemUnitCost = 0;
+  serviceItemsUsedMessage = '';
+
   serviceActionMenuId: number | string | null = null;
   serviceActionMenuItem: any = null;
   serviceActionMenuStyle: Record<string, string> = {};
@@ -366,6 +385,13 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
   showResultCbcForm = false;
   showResultParasitologyStoolForm = false;
   showResultScanForm = false;
+  showResultClinicalForm = false;
+  serviceReportCanEdit = false;
+  isSavingServiceReport = false;
+  serviceReportRecordId: number | null = null;
+  clinicalReportKindName: 'antenatal' | 'delivery' | 'tooth-extraction' | null = null;
+  clinicalReportFields: { key: string; label: string; wide?: boolean; inputType?: string; options?: string[] }[] = [];
+  clinicalReportValues: Record<string, string> = {};
   generalResult: { result: string; notes: string; recommendation: string } = {
     result: '',
     notes: '',
@@ -435,6 +461,9 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
   availableQuantity = 0;
   pharmacyStockDistributionTotal = 0;
   readonly dosageUnitOptions: readonly string[] = DOSAGE_UNIT_SELECT_OPTIONS;
+  /** When off, dosage, frequency, and duration are hidden and only total qty is saved. */
+  pharmacyUsePrescribing = true;
+  readonly statPeriodUnit = STAT_PERIOD_UNIT;
   pharmacyForm = {
     quantity: 1,
     totalUnits: 1,
@@ -515,6 +544,12 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
   };
   /** Visit-specific balance due shown in receive-payment modal. */
   paymentVisitDueHint: number | null = null;
+  paymentTarget: {
+    label: string;
+    due: number;
+    procedureRequestedIds: number[];
+    treatmentRequestedIds: number[];
+  } | null = null;
   taxDiscountForm = {
     discount: null as number | null,
     tax: null as number | null,
@@ -624,7 +659,8 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
     private api: ApiService,
     private router: Router,
     private accessControl: AccessControlService,
-    private facilityBranding: FacilityBrandingService
+    private facilityBranding: FacilityBrandingService,
+    private pharmacyVisitSync: PharmacyVisitSyncService
   ) {}
 
   ngOnInit(): void {
@@ -1153,6 +1189,15 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
 
   // ── Queue client modal ──────────────────────────────────────────────
 
+  /** From department is the page currently open (Consultation on this screen). */
+  private queueFromModuleIdForCurrentPage(modules: any[]): number | null {
+    const pageId = resolveModuleIdForUrl(this.router.url, modules);
+    if (pageId != null) {
+      applyQueuePageModuleToSession(pageId);
+    }
+    return pickDefaultFromModuleId(modules, pageId);
+  }
+
   openQueueClientModal(): void {
     if (!this.patientId) {
       this.showStatusMessage('No patient loaded. Open a patient visit first.', 'error');
@@ -1165,7 +1210,7 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
       (g: any) => g?.groupName === schemeName || g?.groupNameShortForm === schemeName
     );
     this.queueClientForm = {
-      fromModuleId: pickDefaultFromModuleId(this.queueClientModules),
+      fromModuleId: this.queueFromModuleIdForCurrentPage(this.queueClientModules),
       toModuleId: null,
       clinicId: null,
       note: '',
@@ -2066,6 +2111,163 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
     return fromCatalog || '—';
   }
 
+  openServiceItemsUsed(item: any): void {
+    this.closeServiceActionMenu();
+    const procedureId = Number(item?.procedureId ?? item?.procedure?.id);
+    if (!Number.isFinite(procedureId) || procedureId <= 0) {
+      this.showStatusMessage('This service is not linked to a catalog procedure, so items used cannot be saved.', 'error');
+      return;
+    }
+    this.serviceItemsUsedTarget = item;
+    this.serviceItemsUsedRows = [];
+    this.serviceItemSearch = '';
+    this.serviceItemPick = null;
+    this.serviceItemQty = 1;
+    this.serviceItemUnitCost = 0;
+    this.serviceItemsUsedMessage = '';
+    this.showServiceItemsUsedModal = true;
+    this.openCv2ModalLayer();
+    if (!this.pharmacyItemList.length) {
+      this.loadPharmacyDrugList();
+    }
+    this.loadServiceItemsUsed();
+  }
+
+  closeServiceItemsUsed(): void {
+    if (this.serviceItemsUsedSaving) {
+      return;
+    }
+    this.showServiceItemsUsedModal = false;
+    this.serviceItemsUsedTarget = null;
+    this.serviceItemPick = null;
+    this.serviceItemSearch = '';
+    this.restoreBodyScrollUnlessModalOpen();
+  }
+
+  onServiceItemSearch(value: string): void {
+    this.serviceItemPick = null;
+    this.serviceItemSearch = value || '';
+  }
+
+  serviceItemLabel(item: any): string {
+    return String(item?.title ?? item?.name ?? item?.itemName ?? 'Item').trim();
+  }
+
+  serviceItemCost(item: any): number {
+    return Number(item?.costPrice ?? item?.unitCostPrice ?? item?.unitBuy ?? 0) || 0;
+  }
+
+  filteredServiceItemOptions(): any[] {
+    const q = this.serviceItemSearch.trim().toLowerCase();
+    if (!q) {
+      return [];
+    }
+    return (this.pharmacyItemList || [])
+      .filter((item) => this.serviceItemLabel(item).toLowerCase().includes(q))
+      .slice(0, 12);
+  }
+
+  pickServiceItem(item: any): void {
+    this.serviceItemPick = item;
+    this.serviceItemSearch = '';
+    this.serviceItemUnitCost = this.serviceItemCost(item);
+    if (!(Number(this.serviceItemQty) > 0)) {
+      this.serviceItemQty = 1;
+    }
+  }
+
+  serviceItemUsedLineCost(row: any): number {
+    return (Number(row?.quantityUsed) || 0) * (Number(row?.unitCostPrice) || 0);
+  }
+
+  serviceItemsUsedTotal(): number {
+    return this.serviceItemsUsedRows.reduce((sum, row) => sum + this.serviceItemUsedLineCost(row), 0);
+  }
+
+  addServiceItemUsed(): void {
+    const procedureId = Number(this.serviceItemsUsedTarget?.procedureId ?? this.serviceItemsUsedTarget?.procedure?.id);
+    const itemId = Number(this.serviceItemPick?.id);
+    const qty = Math.floor(Number(this.serviceItemQty) || 0);
+    const unitCost = Number(this.serviceItemUnitCost);
+    if (!Number.isFinite(procedureId) || procedureId <= 0 || !Number.isFinite(itemId) || itemId <= 0) {
+      this.serviceItemsUsedMessage = 'Select an item first.';
+      return;
+    }
+    if (qty <= 0) {
+      this.serviceItemsUsedMessage = 'Enter a quantity greater than zero.';
+      return;
+    }
+    if (!Number.isFinite(unitCost) || unitCost < 0) {
+      this.serviceItemsUsedMessage = 'Enter a unit cost of zero or more.';
+      return;
+    }
+    this.serviceItemsUsedSaving = true;
+    this.serviceItemsUsedMessage = '';
+    this.api
+      .saveItemUsedInService({
+        procedureId,
+        itemId,
+        quantityUsed: qty,
+        unitCostPrice: unitCost,
+      })
+      .subscribe({
+        next: () => {
+          this.serviceItemsUsedSaving = false;
+          this.serviceItemPick = null;
+          this.serviceItemSearch = '';
+          this.serviceItemQty = 1;
+          this.serviceItemUnitCost = 0;
+          this.loadServiceItemsUsed();
+          this.loadServices();
+        },
+        error: (err) => {
+          this.serviceItemsUsedSaving = false;
+          this.serviceItemsUsedMessage =
+            err?.error?.message || err?.message || 'Could not add this item.';
+        },
+      });
+  }
+
+  removeServiceItemUsed(row: any): void {
+    const id = Number(row?.id);
+    if (!Number.isFinite(id) || id <= 0 || this.serviceItemsUsedSaving) {
+      return;
+    }
+    this.serviceItemsUsedSaving = true;
+    this.serviceItemsUsedMessage = '';
+    this.api.deleteItemUsedById(id).subscribe({
+      next: () => {
+        this.serviceItemsUsedSaving = false;
+        this.loadServiceItemsUsed();
+        this.loadServices();
+      },
+      error: (err) => {
+        this.serviceItemsUsedSaving = false;
+        this.serviceItemsUsedMessage = err?.error?.message || 'Could not remove this item.';
+      },
+    });
+  }
+
+  private loadServiceItemsUsed(): void {
+    const procedureId = Number(this.serviceItemsUsedTarget?.procedureId ?? this.serviceItemsUsedTarget?.procedure?.id);
+    if (!Number.isFinite(procedureId) || procedureId <= 0) {
+      this.serviceItemsUsedRows = [];
+      return;
+    }
+    this.serviceItemsUsedLoading = true;
+    this.api.getAllItemsUsedInProcedure(procedureId).subscribe({
+      next: (rows: any) => {
+        this.serviceItemsUsedRows = Array.isArray(rows) ? rows : [];
+        this.serviceItemsUsedLoading = false;
+      },
+      error: () => {
+        this.serviceItemsUsedRows = [];
+        this.serviceItemsUsedLoading = false;
+        this.serviceItemsUsedMessage = 'Could not load items used.';
+      },
+    });
+  }
+
   serviceLineTotalCost(item: any): number {
     const qty = Number(item?.quantity ?? 1) || 1;
     const unitCost = Number(item?.unitCostPrice ?? item?.cost ?? item?.price ?? 0) || 0;
@@ -2166,8 +2368,8 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
     if (!rect) {
       return;
     }
-    const popWidth = 140;
-    const popHeight = 96;
+    const popWidth = 188;
+    const popHeight = 148;
     const gap = 4;
     let top = rect.bottom + gap;
     if (top + popHeight > window.innerHeight - 8) {
@@ -2259,6 +2461,12 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
     this.showResultCbcForm = false;
     this.showResultParasitologyStoolForm = false;
     this.showResultScanForm = false;
+    this.showResultClinicalForm = false;
+    this.serviceReportCanEdit = this.userCanEditServiceReport(item);
+    this.serviceReportRecordId = null;
+    this.clinicalReportKindName = null;
+    this.clinicalReportFields = [];
+    this.clinicalReportValues = {};
     this.generalResult = { result: '', notes: '', recommendation: '' };
     this.mrdtResult = { bs: '', mrdt: '', notes: '', recommendation: '', result: '' };
     this.urinalysisResult = {};
@@ -2269,8 +2477,15 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
 
     const category = (item.category || '').toString().toLowerCase().trim();
     const requestName = normalizeProcedureRequestedNameForLabRouting(item);
+    const clinicalKind = this.resolveClinicalServiceReportKind(item);
 
-    if (category === 'imaging' || isUltrasoundScanCategoryProcedure(item)) {
+    if (clinicalKind) {
+      this.showResultClinicalForm = true;
+      this.clinicalReportKindName = clinicalKind;
+      this.clinicalReportFields = this.fieldsForClinicalReport(clinicalKind);
+      this.clinicalReportValues = this.emptyClinicalReportValues(this.clinicalReportFields);
+      this.loadGeneralLabResultsForModal(item.id);
+    } else if (category === 'imaging' || isUltrasoundScanCategoryProcedure(item)) {
       this.showResultScanForm = true;
       this.loadScanResultsForModal(item.id);
     } else if (category === 'malaria test' || getProcedureReportKindForPdf(item) === 'mrdt') {
@@ -2306,11 +2521,55 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
   }
 
   printServiceResultsFromModal(): void {
+    if (this.showResultClinicalForm || this.showResultGeneralForm) {
+      this.printVisibleServiceReport();
+      return;
+    }
     const id = this.selectedProcedureResult?.id;
     if (id == null) {
       return;
     }
     this.printScanResults(id);
+  }
+
+  saveServiceReportFromModal(): void {
+    if (!this.serviceReportCanEdit || !this.selectedProcedureResult?.id || this.isSavingServiceReport) {
+      return;
+    }
+    const requestId = Number(this.selectedProcedureResult.id);
+    const body = this.showResultClinicalForm
+      ? {
+          doneBy: this.userName,
+          result: JSON.stringify(this.clinicalReportValues),
+          notes: this.generalResult.notes || '',
+          recommendation: this.generalResult.recommendation || '',
+          labReportTitle: this.procedureResultsLabReportTitle || '',
+        }
+      : {
+          doneBy: this.userName,
+          result: this.generalResult.result || '',
+          notes: this.generalResult.notes || '',
+          recommendation: this.generalResult.recommendation || '',
+          labReportTitle: this.procedureResultsLabReportTitle || '',
+        };
+    const request = this.serviceReportRecordId
+      ? this.api.updateGeneralLabReport(this.serviceReportRecordId, body)
+      : this.api.createGeneralLabReportByRequestId(requestId, body);
+    this.isSavingServiceReport = true;
+    request.subscribe({
+      next: (res: any) => {
+        this.isSavingServiceReport = false;
+        const data = res?.data ?? res;
+        if (data?.id) {
+          this.serviceReportRecordId = Number(data.id);
+        }
+        this.showStatusMessage(res?.message || 'Service report saved.', 'success');
+      },
+      error: (err) => {
+        this.isSavingServiceReport = false;
+        this.showStatusMessage(err?.error?.message || err?.message || 'Could not save the service report.', 'error');
+      },
+    });
   }
 
   private setProcedureResultsLabReportTitleFromReport(report: any): void {
@@ -2369,6 +2628,19 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
         this.isLoadingProcedureResults = false;
         const report = res?.data ?? res ?? {};
         this.setProcedureResultsLabReportTitleFromReport(report);
+        this.serviceReportRecordId = report?.id != null ? Number(report.id) : null;
+        if (this.showResultClinicalForm) {
+          this.clinicalReportValues = {
+            ...this.emptyClinicalReportValues(this.clinicalReportFields),
+            ...this.parseClinicalReportValues(report.result || report.report || report.findings || ''),
+          };
+          this.generalResult = {
+            result: '',
+            notes: report.notes || '',
+            recommendation: report.recommendation || '',
+          };
+          return;
+        }
         this.generalResult = {
           result: report.result || report.report || report.findings || '',
           notes: report.notes || '',
@@ -2500,6 +2772,189 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
         this.showStatusMessage('Could not load parasitology results.', 'error');
       },
     });
+  }
+
+  private userCanEditServiceReport(item: any): boolean {
+    const allowed = String(item?.reportEditorRoles || '')
+      .split(',')
+      .map((role) => role.trim().toLowerCase())
+      .filter((role) => !!role);
+    if (!allowed.length) {
+      return false;
+    }
+    const primary = (sessionStorage.getItem('userrole') || sessionStorage.getItem('userRole') || '')
+      .toLowerCase()
+      .trim();
+    const secondary = (sessionStorage.getItem('userSecondaryRoles') || sessionStorage.getItem('usersecondaryroles') || '')
+      .toLowerCase()
+      .split(/[,|]/)
+      .map((role) => role.trim())
+      .filter((role) => !!role);
+    const mine = [primary, ...secondary].filter((role) => !!role);
+    return mine.some((role) => allowed.includes(role));
+  }
+
+  private resolveClinicalServiceReportKind(item: any): 'antenatal' | 'delivery' | 'tooth-extraction' | null {
+    const name = `${normalizeProcedureRequestedNameForLabRouting(item)} ${item?.procedureRequestedName || ''} ${item?.exam || ''}`.toLowerCase();
+    if (/tooth extraction|dental extraction|extraction of tooth|exodontia/.test(name)) {
+      return 'tooth-extraction';
+    }
+    const mchKind = mchClinicalFormKind(item);
+    return mchKind === 'general' ? null : mchKind;
+  }
+
+  private fieldsForClinicalReport(kind: 'antenatal' | 'delivery' | 'tooth-extraction') {
+    if (kind === 'delivery') {
+      return [
+        { key: 'admissionDateTime', label: 'Admission date and time' },
+        { key: 'labourOnset', label: 'Onset of labour' },
+        { key: 'modeOfDelivery', label: 'Mode of delivery', options: ['Spontaneous vaginal', 'Assisted vaginal', 'Caesarean section'] },
+        { key: 'deliveryDateTime', label: 'Date and time of birth' },
+        { key: 'labourDuration', label: 'Duration of labour' },
+        { key: 'deliveryIndication', label: 'Indication if not spontaneous' },
+        { key: 'perineum', label: 'Perineum' },
+        { key: 'placenta', label: 'Placenta and membranes' },
+        { key: 'bloodLoss', label: 'Estimated blood loss' },
+        { key: 'motherCondition', label: 'Mother after delivery' },
+        { key: 'babySex', label: 'Baby sex', options: ['Female', 'Male'] },
+        { key: 'newbornWeight', label: 'Birth weight (kg)' },
+        { key: 'apgar1', label: 'Apgar at 1 minute' },
+        { key: 'apgar5', label: 'Apgar at 5 minutes' },
+        { key: 'resuscitation', label: 'Resuscitation' },
+        { key: 'feeding', label: 'Breastfeeding within 1 hour' },
+        { key: 'vitaminK', label: 'Vitamin K' },
+        { key: 'eyeProphylaxis', label: 'Eye prophylaxis' },
+        { key: 'motherOutcome', label: 'Outcome of mother' },
+        { key: 'babyOutcome', label: 'Outcome of baby' },
+        { key: 'complications', label: 'Complications', wide: true },
+      ];
+    }
+    if (kind === 'tooth-extraction') {
+      return [
+        { key: 'tooth', label: 'Tooth (FDI)' },
+        { key: 'indication', label: 'Indication' },
+        { key: 'anaesthesia', label: 'Anaesthesia' },
+        { key: 'technique', label: 'Technique' },
+        { key: 'elevation', label: 'Elevation / forceps' },
+        { key: 'socket', label: 'Socket condition' },
+        { key: 'haemostasis', label: 'Haemostasis' },
+        { key: 'sutures', label: 'Sutures' },
+        { key: 'complications', label: 'Complications', wide: true },
+        { key: 'medication', label: 'Medication given', wide: true },
+        { key: 'postOp', label: 'Post-extraction instructions', wide: true },
+        { key: 'review', label: 'Review date', inputType: 'date' },
+      ];
+    }
+    return [
+      { key: 'gravida', label: 'Gravida' },
+      { key: 'para', label: 'Para' },
+      { key: 'abortions', label: 'Abortions' },
+      { key: 'livingChildren', label: 'Living children' },
+      { key: 'lnmp', label: 'LNMP', inputType: 'date' },
+      { key: 'edd', label: 'EDD', inputType: 'date' },
+      { key: 'gestationalAge', label: 'Gestational age' },
+      { key: 'weight', label: 'Weight (kg)' },
+      { key: 'muac', label: 'MUAC (cm)' },
+      { key: 'bloodPressure', label: 'Blood pressure' },
+      { key: 'fundalHeight', label: 'Fundal height (cm)' },
+      { key: 'liePresentation', label: 'Lie and presentation' },
+      { key: 'fetalHeartRate', label: 'Fetal heart rate' },
+      { key: 'edema', label: 'Oedema' },
+      { key: 'bloodGroupRh', label: 'Blood group and Rh' },
+      { key: 'hemoglobin', label: 'Haemoglobin' },
+      { key: 'hivStatus', label: 'HIV status / eMTCT' },
+      { key: 'syphilisTest', label: 'Syphilis test' },
+      { key: 'urineProtein', label: 'Urine protein' },
+      { key: 'urineSugar', label: 'Urine sugar' },
+      { key: 'tdDose', label: 'Tetanus-diphtheria dose' },
+      { key: 'iptDose', label: 'IPT malaria dose' },
+      { key: 'ironFolate', label: 'Iron and folate' },
+      { key: 'deworming', label: 'Deworming' },
+      { key: 'insecticideNet', label: 'Insecticide-treated net' },
+      { key: 'riskStatus', label: 'Risk', options: ['Low risk', 'High risk'] },
+      { key: 'nextVisitDate', label: 'Next visit', inputType: 'date' },
+      { key: 'dangerSigns', label: 'Danger signs discussed', wide: true },
+    ];
+  }
+
+  private emptyClinicalReportValues(fields: { key: string }[]): Record<string, string> {
+    const values: Record<string, string> = {};
+    for (const field of fields) {
+      values[field.key] = '';
+    }
+    return values;
+  }
+
+  private parseClinicalReportValues(raw: unknown): Record<string, string> {
+    const text = String(raw || '').trim();
+    if (!text.startsWith('{')) {
+      return {};
+    }
+    try {
+      const parsed = JSON.parse(text);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return {};
+      }
+      const values: Record<string, string> = {};
+      Object.keys(parsed).forEach((key) => {
+        if (parsed[key] != null) {
+          values[key] = String(parsed[key]);
+        }
+      });
+      return values;
+    } catch {
+      return {};
+    }
+  }
+
+  clinicalReportHeading(): string {
+    if (this.clinicalReportKindName === 'delivery') {
+      return 'Delivery report';
+    }
+    if (this.clinicalReportKindName === 'tooth-extraction') {
+      return 'Tooth extraction report';
+    }
+    return 'Antenatal report';
+  }
+
+  private printVisibleServiceReport(): void {
+    const title = this.selectedProcedureResult?.procedureRequestedName || 'Service report';
+    const rows: { label: string; value: string }[] = [];
+    if (this.procedureResultsLabReportTitle) {
+      rows.push({ label: 'Report title', value: this.procedureResultsLabReportTitle });
+    }
+    if (this.showResultClinicalForm) {
+      for (const field of this.clinicalReportFields) {
+        rows.push({ label: field.label, value: this.clinicalReportValues[field.key] || '' });
+      }
+    } else {
+      rows.push({ label: 'Result', value: this.generalResult.result || '' });
+    }
+    rows.push({ label: 'Notes', value: this.generalResult.notes || '' });
+    rows.push({ label: 'Recommendation', value: this.generalResult.recommendation || '' });
+    const body = rows
+      .map((row) => `<tr><th>${this.escapeReportHtml(row.label)}</th><td>${this.escapeReportHtml(row.value || '—')}</td></tr>`)
+      .join('');
+    const popup = window.open('', '_blank', 'noopener,noreferrer,width=900,height=700');
+    if (!popup) {
+      this.showStatusMessage('Allow pop-ups to print this report.', 'error');
+      return;
+    }
+    popup.document.write(`<!DOCTYPE html><html><head><title>${this.escapeReportHtml(title)}</title>
+      <style>body{font-family:Arial,sans-serif;padding:24px;color:#0f172a}h1{font-size:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left;vertical-align:top}th{width:34%;background:#f8fafc}</style>
+      </head><body><h1>${this.escapeReportHtml(title)}</h1><table>${body}</table></body></html>`);
+    popup.document.close();
+    popup.focus();
+    popup.print();
+  }
+
+  private escapeReportHtml(value: string): string {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/\n/g, '<br>');
   }
 
   printScanResults(id: number | string | null | undefined): void {
@@ -2751,6 +3206,7 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
           this.showStatusMessage(res?.message || 'Sundry item added.', 'success');
           this.loadVisitSundries();
           this.loadInvoice();
+          this.notifyPharmacyPrescriptionChanged();
           this.sundryForm = {
             stockRefId: null,
             quantity: 1,
@@ -2840,6 +3296,7 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
         this.showStatusMessage(res?.message || 'Sundry item removed.', 'success');
         this.loadVisitSundries();
         this.loadInvoice();
+        this.notifyPharmacyPrescriptionChanged();
       },
       error: (err: any) => {
         this.isDeletingSundryId = null;
@@ -3038,6 +3495,7 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
       route: String(item.route || 'Oral'),
       diagnosisId: item.diagnosisId != null ? Number(item.diagnosisId) : null,
     };
+    this.pharmacyUsePrescribing = this.treatmentRowUsesPrescribing(item);
     this.refreshPharmacyUnitSellingMode(item);
     this.calculatePharmacyTotal();
   }
@@ -3409,11 +3867,73 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
   }
 
   pharmacyTreatmentStockMetricLabel(): string {
+    return String(this.pharmacyPrescribingStockOnHand());
+  }
+
+  pharmacyPrescribingStockOnHand(): number {
     const total = Number(this.pharmacyStockDistributionTotal);
     if (Number.isFinite(total) && total > 0) {
-      return String(total);
+      return Math.floor(total);
     }
-    return String(this.availableQuantity || 0);
+    return Math.max(0, Math.floor(Number(this.availableQuantity) || 0));
+  }
+
+  pharmacyPrescribingQtyExceedsStock(): boolean {
+    if (!this.currentItemId) {
+      return false;
+    }
+    const qty = Number(this.pharmacyForm?.quantity) || 0;
+    return qty > 0 && qty > this.pharmacyPrescribingStockOnHand();
+  }
+
+  pharmacyPrescribingStockWarning(): string {
+    const stock = this.pharmacyPrescribingStockOnHand();
+    const qty = Number(this.pharmacyForm?.quantity) || 0;
+    if (stock <= 0) {
+      return `Out of stock. Quantity is ${qty}.`;
+    }
+    return `Stock (${stock}) is less than quantity (${qty}).`;
+  }
+
+  treatmentRowQtyExceedsStock(item: any): boolean {
+    const qty = Number(item?.quantity) || 0;
+    if (qty <= 0 || !this.pharmacyStockListsReady()) {
+      return false;
+    }
+    return qty > this.treatmentRowStockOnHand(item);
+  }
+
+  treatmentRowStockWarning(item: any): string {
+    const stock = this.treatmentRowStockOnHand(item);
+    const qty = Number(item?.quantity) || 0;
+    if (stock <= 0) {
+      return 'Out of stock';
+    }
+    return `Stock ${stock} is less than qty ${qty}`;
+  }
+
+  private pharmacyStockListsReady(): boolean {
+    const list = this.pharmacyUseStockBatch ? this.pharmacyStockItemList : this.pharmacyItemList;
+    return Array.isArray(list) && list.length > 0;
+  }
+
+  private treatmentRowStockOnHand(item: any): number {
+    const list = this.pharmacyUseStockBatch ? this.pharmacyStockItemList : this.pharmacyItemList;
+    const stockBatchId = Number(item?.stockBatchId ?? item?.stock_batch_id);
+    const itemId = Number(item?.itemId ?? item?.stockItemId);
+    return Math.max(
+      0,
+      Math.floor(
+        getPharmacyItemTotalStock(
+          {
+            stockBatchId: Number.isFinite(stockBatchId) && stockBatchId > 0 ? stockBatchId : null,
+            itemId: Number.isFinite(itemId) && itemId > 0 ? itemId : null,
+            itemName: item?.itemName || item?.drugName || item?.stockItemName || '',
+          },
+          list
+        )
+      )
+    );
   }
 
   pharmacyUnitSellPrice(): number {
@@ -3467,17 +3987,80 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
   }
 
   calculatePharmacyTotalQty(): void {
-    const freq = Number(this.pharmacyForm.frequencyValue) || 0;
+    if (!this.pharmacyUsePrescribing) {
+      this.calculatePharmacyTotal();
+      return;
+    }
+    const freq = Number(this.pharmacyForm.frequencyValue) || (this.isPharmacyStatFrequency() ? 1 : 0);
     const dur = Number(this.pharmacyForm.durationValue) || 0;
     const dose = Number(this.pharmacyForm.amountPerFrequencyValue) || 0;
-    if (freq > 0 && dur > 0 && dose > 0 && this.lastUnitValue > 0) {
+    const stat = this.isPharmacyStatFrequency();
+    if (stat && dose > 0 && this.lastUnitValue > 0) {
+      this.pharmacyForm.quantity = (freq * dose) / this.lastUnitValue;
+    } else if (!stat && freq > 0 && dur > 0 && dose > 0 && this.lastUnitValue > 0) {
       this.pharmacyForm.quantity = (freq * dur * dose) / this.lastUnitValue;
     }
     this.calculatePharmacyTotal();
   }
 
   calculatePharmacyDurationUnit(): void {
+    if (this.isPharmacyStatFrequency()) {
+      this.pharmacyForm.durationValue = null;
+      this.pharmacyForm.durationUnit = null;
+      if (!(Number(this.pharmacyForm.frequencyValue) > 0)) {
+        this.pharmacyForm.frequencyValue = 1;
+      }
+      return;
+    }
     this.pharmacyForm.durationUnit = this.pharmacyForm.frequencyUnit;
+  }
+
+  isPharmacyStatFrequency(): boolean {
+    return isStatPeriodUnit(this.pharmacyForm.frequencyUnit);
+  }
+
+  onPharmacyPrescribingToggle(checked: boolean): void {
+    this.pharmacyUsePrescribing = checked;
+    if (!checked) {
+      this.calculatePharmacyTotal();
+      return;
+    }
+    this.calculatePharmacyTotalQty();
+  }
+
+  treatmentDosageCell(item: any): string {
+    if (!this.hasPrescribingAmount(item?.amountPerFrequencyValue)) {
+      return '';
+    }
+    const unit = String(item?.amountPerFrequencyUnit ?? '').trim();
+    return `${item.amountPerFrequencyValue}${unit ? ` ${unit}` : ''}`.trim();
+  }
+
+  treatmentDurationCell(item: any): string {
+    if (isStatPeriodUnit(item?.frequencyUnit) || !this.hasPrescribingAmount(item?.durationValue)) {
+      return '';
+    }
+    const unit = this.formatTreatmentPeriodUnit(item?.durationUnit);
+    return `${item.durationValue}${unit ? ` ${unit}` : ''}`.trim();
+  }
+
+  treatmentRowUsesPrescribing(item: any): boolean {
+    if (isStatPeriodUnit(item?.frequencyUnit)) {
+      return true;
+    }
+    return (
+      this.hasPrescribingAmount(item?.amountPerFrequencyValue) ||
+      this.hasPrescribingAmount(item?.frequencyValue) ||
+      this.hasPrescribingAmount(item?.durationValue)
+    );
+  }
+
+  private hasPrescribingAmount(value: unknown): boolean {
+    if (value == null || value === '') {
+      return false;
+    }
+    const n = Number(value);
+    return Number.isFinite(n) && n > 0;
   }
 
   calculatePharmacyTotal(): void {
@@ -3487,6 +4070,7 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
   }
 
   applyPharmacyStandardDosageOption(option: StandardDosageOption): void {
+    this.pharmacyUsePrescribing = true;
     this.pharmacyForm.amountPerFrequencyValue = option.doseValue;
     this.pharmacyForm.amountPerFrequencyUnit = normalizeDosageUnitForSelect(option.doseUnit);
     this.pharmacyForm.frequencyValue = option.frequencyValue;
@@ -3558,6 +4142,10 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
       .reduce((sum, row) => sum + Number(row?.stockAtHand ?? 0), 0);
   }
 
+  private notifyPharmacyPrescriptionChanged(): void {
+    this.pharmacyVisitSync.notifyPrescriptionChanged({ visitId: Number(this.visitId) });
+  }
+
   submitPharmacyPrescription(): void {
     if (!this.visitId || this.isSavingPharmacy) {
       return;
@@ -3586,6 +4174,7 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
         this.loadPharmacy();
         this.loadDiagnoses();
         this.loadInvoice();
+        this.notifyPharmacyPrescriptionChanged();
       },
       error: (err) => {
         this.isSavingPharmacy = false;
@@ -3634,6 +4223,7 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
         this.loadPharmacy();
         this.loadDiagnoses();
         this.loadInvoice();
+        this.notifyPharmacyPrescriptionChanged();
       },
       error: (err) => {
         this.isDeletingPharmacy = false;
@@ -3657,6 +4247,7 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
     this.pharmacyDrugSearchText = '';
     this.pharmacyDrugDropdownOpen = false;
     this.pharmacyDiagnosisDropdownOpen = false;
+    this.pharmacyUsePrescribing = true;
     this.pharmacyForm = {
       quantity: 1,
       totalUnits: 1,
@@ -3717,6 +4308,12 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
   }
 
   treatmentFrequencyShortLabel(item: any): string {
+    if (isStatPeriodUnit(item?.frequencyUnit)) {
+      return 'Stat';
+    }
+    if (!this.hasPrescribingAmount(item?.frequencyValue) && !String(item?.frequencyUnit ?? '').trim()) {
+      return '';
+    }
     const dose = this.formatTreatmentFrequencyPart(
       item?.totalUnits ?? item?.stockUnitsPerDose ?? item?.amountPerFrequencyValue
     );
@@ -3725,7 +4322,7 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
     if (dose && frequency) {
       return `${dose} X ${frequency}${frequencyUnit ? ` (${frequencyUnit})` : ''}`;
     }
-    return [dose, frequency].filter(Boolean).join(' X ') || '—';
+    return [dose, frequency].filter(Boolean).join(' X ');
   }
 
   private formatTreatmentFrequencyPart(value: unknown): string {
@@ -3746,7 +4343,147 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
       this.showStatusMessage('Select a visit first.', 'error');
       return;
     }
+    this.paymentTarget = null;
     this.openPaymentModalForVisit(this.visitId, this.visit);
+  }
+
+  openServiceLinePayment(item: any): void {
+    const id = Number(item?.id ?? item?.procedureRequestedId);
+    const due = this.lineAmountDue(item);
+    const name = String(item?.procedureRequestedName || item?.name || 'service');
+    this.openTargetedPayment({
+      label: name,
+      due,
+      procedureRequestedIds: Number.isFinite(id) && id > 0 ? [id] : [],
+      treatmentRequestedIds: [],
+      notes: `Payment for service: ${name}`,
+    });
+  }
+
+  openTreatmentLinePayment(item: any): void {
+    const id = Number(item?.id);
+    const due = this.lineAmountDue(item);
+    const name = String(item?.itemName || item?.drugName || item?.stockItemName || 'treatment');
+    this.openTargetedPayment({
+      label: name,
+      due,
+      procedureRequestedIds: [],
+      treatmentRequestedIds: Number.isFinite(id) && id > 0 ? [id] : [],
+      notes: `Payment for treatment: ${name}`,
+    });
+  }
+
+  openAllServicesPayment(): void {
+    if (!this.visitId) {
+      this.showStatusMessage('Select a visit first.', 'error');
+      return;
+    }
+    this.api.getOtherProceduresByVisit(this.visitId).subscribe({
+      next: (res: any) => {
+        const rows = Array.isArray(res) ? res : [];
+        this.proceduresList = rows;
+        this.openPaymentForLines(rows, 'all services', 'Payment for all services', 'service');
+      },
+      error: () => this.showStatusMessage('Could not load services to receive payment.', 'error'),
+    });
+  }
+
+  openAllTreatmentsPayment(): void {
+    if (!this.visitId) {
+      this.showStatusMessage('Select a visit first.', 'error');
+      return;
+    }
+    this.api.getTreatmentRequestedByVisit(this.visitId).subscribe({
+      next: (res: any) => {
+        const rows = (Array.isArray(res) ? res : []).filter((row) => this.treatmentCountsTowardPayment(row));
+        this.openPaymentForLines(rows, 'all treatments', 'Payment for all treatments', 'treatment');
+      },
+      error: () => this.showStatusMessage('Could not load treatments to receive payment.', 'error'),
+    });
+  }
+
+  private openPaymentForLines(
+    rows: any[],
+    label: string,
+    notes: string,
+    kind: 'service' | 'treatment'
+  ): void {
+    const payable = (rows || []).filter((row) => this.lineAmountDue(row) > 0);
+    const due = payable.reduce((sum, row) => sum + this.lineAmountDue(row), 0);
+    const ids = payable
+      .map((row) => Number(row?.id ?? row?.procedureRequestedId))
+      .filter((id) => Number.isFinite(id) && id > 0);
+    this.openTargetedPayment({
+      label,
+      due,
+      procedureRequestedIds: kind === 'service' ? ids : [],
+      treatmentRequestedIds: kind === 'treatment' ? ids : [],
+      notes,
+    });
+  }
+
+  private openTargetedPayment(target: {
+    label: string;
+    due: number;
+    procedureRequestedIds: number[];
+    treatmentRequestedIds: number[];
+    notes: string;
+  }): void {
+    if (!this.visitId) {
+      this.showStatusMessage('Select a visit first.', 'error');
+      return;
+    }
+    const amount = this.capPaymentByVisitBalance(target.due);
+    if (amount <= 0 || (!target.procedureRequestedIds.length && !target.treatmentRequestedIds.length)) {
+      this.showStatusMessage(`Nothing is due for ${target.label}.`, 'info');
+      return;
+    }
+    this.editingPaymentId = null;
+    this.paymentTarget = {
+      label: target.label,
+      due: amount,
+      procedureRequestedIds: target.procedureRequestedIds,
+      treatmentRequestedIds: target.treatmentRequestedIds,
+    };
+    this.paymentVisitDueHint = amount;
+    this.paymentForm = {
+      amountToPay: amount,
+      paymentForm: 'Cash At Hand',
+      notes: target.notes,
+      dateOfPayment: this.todayInputDate(),
+      timeOfPayment: this.nowInputTime(),
+    };
+    this.showPaymentModal = true;
+    this.openCv2ModalLayer();
+  }
+
+  lineAmountDue(item: any): number {
+    const total = Number(item?.totalAmount ?? 0);
+    const paid = Number(item?.amountPaid ?? 0);
+    if (!Number.isFinite(total) || total <= 0) {
+      return 0;
+    }
+    const due = total - (Number.isFinite(paid) ? paid : 0);
+    return due > 0 ? due : 0;
+  }
+
+  private treatmentCountsTowardPayment(item: any): boolean {
+    const status = String(item?.status || '').trim().toLowerCase();
+    if (status === 'cancelled') {
+      return false;
+    }
+    return item?.paid !== false;
+  }
+
+  private capPaymentByVisitBalance(amount: number): number {
+    const balance = Number(this.summaryBalanceDue);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return 0;
+    }
+    if (Number.isFinite(balance) && balance >= 0) {
+      return Math.min(amount, balance);
+    }
+    return amount;
   }
 
   /**
@@ -3790,6 +4527,7 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
     this.showPaymentModal = false;
     this.editingPaymentId = null;
     this.paymentVisitDueHint = null;
+    this.paymentTarget = null;
     this.restoreBodyScrollUnlessModalOpen();
   }
 
@@ -3821,6 +4559,10 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
       this.showStatusMessage('Enter a valid payment amount.', 'error');
       return;
     }
+    if (this.paymentTarget && amount > this.paymentTarget.due + 0.001) {
+      this.showStatusMessage('Amount is more than the balance due for this item.', 'error');
+      return;
+    }
 
     this.isSavingPayment = true;
     const payload: any = {
@@ -3832,6 +4574,10 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
       dateOfPayment: this.paymentForm.dateOfPayment || this.todayInputDate(),
       timeOfPayment: this.toApiTime(this.paymentForm.timeOfPayment),
     };
+    if (this.paymentTarget && this.editingPaymentId == null) {
+      payload.procedureRequestedIds = this.paymentTarget.procedureRequestedIds;
+      payload.treatmentRequestedIds = this.paymentTarget.treatmentRequestedIds;
+    }
 
     const request$ =
       this.editingPaymentId != null
@@ -3849,6 +4595,8 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
         this.loadPayments();
         this.loadInvoice();
         this.refreshPatientTotalDebt();
+        this.loadServices();
+        this.loadPharmacy();
       },
       error: (err) => {
         this.isSavingPayment = false;
@@ -4412,6 +5160,65 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
       });
   }
 
+  toggleConsultationPlainText(): void {
+    this.consultationPlainText = !this.consultationPlainText;
+    try {
+      localStorage.setItem('cv2-consultation-plain-text', this.consultationPlainText ? '1' : '0');
+    } catch {
+      // Preference is optional if storage is blocked.
+    }
+    if (this.consultationPlainText) {
+      this.seedPlainConsultationFields();
+    }
+  }
+
+  private readConsultationPlainTextPref(): boolean {
+    try {
+      return localStorage.getItem('cv2-consultation-plain-text') === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  /** Fill empty plain-text fields from structured entries so nothing already recorded is hidden. */
+  private seedPlainConsultationFields(): void {
+    if (!String(this.consultationForm.chiefComplaint || '').trim()) {
+      const text = (this.presentingComplaintsList || [])
+        .map((pc) => String(pc?.complaint || '').trim())
+        .filter(Boolean)
+        .join('\n');
+      if (text) {
+        this.consultationForm.chiefComplaint = text;
+      }
+    }
+    if (!String(this.consultationForm.clinicalExamination || '').trim()) {
+      const text = (this.physicalExaminationsList || [])
+        .map((pe) => {
+          const system = String(pe?.system || '').trim();
+          const findings = String(pe?.findings || '').trim();
+          if (system && findings) {
+            return `${system}: ${findings}`;
+          }
+          return system || findings;
+        })
+        .filter(Boolean)
+        .join('\n');
+      if (text) {
+        this.consultationForm.clinicalExamination = text;
+      }
+    }
+    if (!String(this.consultationForm.diagnosis || '').trim()) {
+      const text = (this.diagnosesList || [])
+        .map((dx) => this.formatDiagnosisStatement(dx))
+        .map((line) => String(line || '').trim())
+        .filter(Boolean)
+        .join('\n');
+      if (text) {
+        this.consultationForm.diagnosis = text;
+      }
+    }
+  }
+
   saveConsultation(): void {
     if (!this.visitId) {
       this.showStatusMessage('Select a visit before saving consultation.', 'error');
@@ -4442,8 +5249,12 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
       .join('; ');
     const payload = {
       ...this.consultationForm,
-      chiefComplaint: chiefFromPcs || this.consultationForm.chiefComplaint || '',
-      clinicalExamination: examFromList || this.consultationForm.clinicalExamination || '',
+      chiefComplaint: this.consultationPlainText
+        ? (this.consultationForm.chiefComplaint || '')
+        : (chiefFromPcs || this.consultationForm.chiefComplaint || ''),
+      clinicalExamination: this.consultationPlainText
+        ? (this.consultationForm.clinicalExamination || '')
+        : (examFromList || this.consultationForm.clinicalExamination || ''),
       doneBy: this.userName,
       complaints: [],
     };
@@ -4689,13 +5500,9 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
     this.api.getAllHospitalModules().subscribe({
       next: (res: any) => {
         this.queueClientModules = normalizeHospitalModules(res);
-        this.queueClientForm.fromModuleId = ensureFromModuleInList(
-          this.queueClientForm.fromModuleId,
+        this.queueClientForm.fromModuleId = this.queueFromModuleIdForCurrentPage(
           this.queueClientModules
         );
-        if (!this.queueClientForm.fromModuleId) {
-          this.queueClientForm.fromModuleId = pickDefaultFromModuleId(this.queueClientModules);
-        }
       },
       error: () => {
         this.queueClientModules = [];
@@ -5279,43 +6086,46 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
 
     const f = this.pharmacyForm;
     const quantity = Number(f.quantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return null;
+    }
+
+    const usePrescribing = this.pharmacyUsePrescribing;
+    const stat = usePrescribing && this.isPharmacyStatFrequency();
     const totalUnits = Number(f.totalUnits);
     const durationValue = Number(f.durationValue);
     const durationUnit = parseTreatmentPeriodUnitToDayFraction(f.durationUnit) ?? Number(f.durationUnit);
-    const frequencyValue = Number(f.frequencyValue);
+    const frequencyValue = Number(f.frequencyValue) || (stat ? 1 : 0);
     const frequencyUnit = parseTreatmentPeriodUnitToDayFraction(f.frequencyUnit) ?? Number(f.frequencyUnit);
     const amountPerFrequencyValue = Number(f.amountPerFrequencyValue);
 
-    if (
-      !Number.isFinite(quantity) ||
-      quantity <= 0 ||
-      !Number.isFinite(totalUnits) ||
-      totalUnits <= 0 ||
-      !Number.isFinite(durationValue) ||
-      durationValue < 0 ||
-      !Number.isFinite(frequencyValue) ||
-      frequencyValue <= 0 ||
-      !Number.isFinite(amountPerFrequencyValue) ||
-      amountPerFrequencyValue <= 0 ||
-      !Number.isFinite(durationUnit) ||
-      durationUnit <= 0 ||
-      !Number.isFinite(frequencyUnit) ||
-      frequencyUnit <= 0
-    ) {
-      return null;
+    if (usePrescribing) {
+      const durationOk = stat || (Number.isFinite(durationValue) && durationValue > 0 && Number.isFinite(durationUnit) && durationUnit > 0);
+      if (
+        !Number.isFinite(amountPerFrequencyValue) ||
+        amountPerFrequencyValue <= 0 ||
+        !Number.isFinite(frequencyValue) ||
+        frequencyValue <= 0 ||
+        !Number.isFinite(frequencyUnit) ||
+        (frequencyUnit === 0) ||
+        !durationOk
+      ) {
+        return null;
+      }
     }
 
     const payload: {
       quantity: number;
       itemId: number;
       visitId: number;
-      durationValue: number;
-      durationUnit: number;
-      amountPerFrequencyValue: number;
-      amountPerFrequencyUnit: string;
-      frequencyValue: number;
-      totalUnits: number;
-      frequencyUnit: number;
+      usePrescribing: boolean;
+      durationValue: number | null;
+      durationUnit: number | null;
+      amountPerFrequencyValue: number | null;
+      amountPerFrequencyUnit: string | null;
+      frequencyValue: number | null;
+      totalUnits: number | null;
+      frequencyUnit: number | null;
       estimatedUnits: number;
       totalAmount: number;
       unitSellingModelId?: number;
@@ -5329,14 +6139,15 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
       quantity,
       itemId,
       visitId,
-      durationValue,
-      durationUnit,
-      amountPerFrequencyValue,
-      amountPerFrequencyUnit: String(f.amountPerFrequencyUnit || 'tablet').trim(),
-      frequencyValue,
-      totalUnits,
-      frequencyUnit,
-      estimatedUnits: Number(f.estimatedUnits) || Math.round(totalUnits || 0),
+      usePrescribing,
+      durationValue: usePrescribing && !stat && Number.isFinite(durationValue) ? durationValue : null,
+      durationUnit: usePrescribing && !stat && Number.isFinite(durationUnit) ? durationUnit : null,
+      amountPerFrequencyValue: usePrescribing && Number.isFinite(amountPerFrequencyValue) ? amountPerFrequencyValue : null,
+      amountPerFrequencyUnit: usePrescribing ? String(f.amountPerFrequencyUnit || 'tablet').trim() : null,
+      frequencyValue: usePrescribing ? frequencyValue : null,
+      totalUnits: Number.isFinite(totalUnits) && totalUnits > 0 ? totalUnits : quantity,
+      frequencyUnit: usePrescribing && Number.isFinite(frequencyUnit) ? frequencyUnit : null,
+      estimatedUnits: Number(f.estimatedUnits) || Math.round((Number.isFinite(totalUnits) && totalUnits > 0 ? totalUnits : quantity) || 0),
       totalAmount: Number(f.totalAmount) || 0,
       unitSellingModelId: this.selectedUnitSellingModelId ?? undefined,
       unitBuy: this.unitBuy || undefined,
@@ -5362,13 +6173,24 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
       return 'Select a drug or item first.';
     }
     const f = this.pharmacyForm;
-    if (!parseTreatmentPeriodUnitToDayFraction(f.frequencyUnit) && !(Number(f.frequencyUnit) > 0)) {
-      return 'Select a frequency unit (Minute / Hour / Day / Week / Month).';
+    if (!(Number(f.quantity) > 0)) {
+      return 'Enter a total quantity greater than zero.';
     }
-    if (!parseTreatmentPeriodUnitToDayFraction(f.durationUnit) && !(Number(f.durationUnit) > 0)) {
-      return 'Select a duration unit (Minute / Hour / Day / Week / Month).';
+    if (!this.pharmacyUsePrescribing) {
+      return 'Enter a total quantity greater than zero.';
     }
-    if (!(Number(f.quantity) > 0) || !(Number(f.frequencyValue) > 0) || !(Number(f.amountPerFrequencyValue) > 0)) {
+    if (!isStatPeriodUnit(f.frequencyUnit) && !parseTreatmentPeriodUnitToDayFraction(f.frequencyUnit) && !(Number(f.frequencyUnit) > 0)) {
+      return 'Select a frequency unit (Stat / Minute / Hour / Day / Week / Month).';
+    }
+    if (!this.isPharmacyStatFrequency()) {
+      if (!parseTreatmentPeriodUnitToDayFraction(f.durationUnit) && !(Number(f.durationUnit) > 0)) {
+        return 'Select a duration unit (Minute / Hour / Day / Week / Month).';
+      }
+      if (!(Number(f.durationValue) > 0)) {
+        return 'Enter a duration before saving.';
+      }
+    }
+    if (!(Number(f.frequencyValue) > 0) || !(Number(f.amountPerFrequencyValue) > 0)) {
       return 'Complete dose, frequency, and quantity before saving.';
     }
     return 'Complete prescription details before saving.';
@@ -5878,6 +6700,9 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
           this.diagnosesList = embedded;
         } else {
           this.loadDiagnoses();
+        }
+        if (this.consultationPlainText) {
+          this.seedPlainConsultationFields();
         }
         this.isLoadingConsultation = false;
       },
@@ -6940,6 +7765,9 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
     this.api.getPresentingComplaintsByVisit(this.visitId).subscribe({
       next: (res: any) => {
         this.presentingComplaintsList = Array.isArray(res) ? res : [];
+        if (this.consultationPlainText) {
+          this.seedPlainConsultationFields();
+        }
       },
       error: () => {
         this.presentingComplaintsList = [];
@@ -7099,6 +7927,9 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
     this.api.getPhysicalExaminationsByVisit(this.visitId).subscribe({
       next: (res: any) => {
         this.physicalExaminationsList = Array.isArray(res) ? res : [];
+        if (this.consultationPlainText) {
+          this.seedPlainConsultationFields();
+        }
       },
       error: () => {
         this.physicalExaminationsList = [];
@@ -7216,6 +8047,9 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
     this.api.getDiagnosesByVisit(this.visitId).subscribe({
       next: (res: any) => {
         this.diagnosesList = Array.isArray(res) ? res : [];
+        if (this.consultationPlainText) {
+          this.seedPlainConsultationFields();
+        }
       },
       error: () => {
         this.diagnosesList = [];
@@ -7454,6 +8288,7 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
       return;
     }
     const previous = {
+      prescribed: item.prescribed !== false,
       paid: item.paid !== false,
       dispensed: item.dispensed === true,
       administered: item.administered === true,
@@ -7478,8 +8313,10 @@ export class ConsultationV2Component implements OnInit, OnDestroy {
           applyTreatmentLifecycleFlags(Object.assign(item, dto));
         }
         this.loadVisitBillingSummary();
+        this.notifyPharmacyPrescriptionChanged();
       },
       error: () => {
+        item.prescribed = previous.prescribed;
         item.paid = previous.paid;
         item.dispensed = previous.dispensed;
         item.administered = previous.administered;

@@ -561,6 +561,8 @@
 .modern-table td:nth-child(2) {
   min-width: 350px;
   width: 350px;
+  max-width: 350px;
+  white-space: normal;
 }
 
 .modern-table th.store-column,
@@ -589,7 +591,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-width: 350px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .item-title {
@@ -597,10 +600,10 @@
   color: #0f172a;
   font-size: 14px;
   text-transform: capitalize;
-  max-width: 350px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .item-meta {
@@ -1156,6 +1159,91 @@
   color: #fca5a5;
 }
 
+.stock-receive-menu-cell {
+  text-align: center;
+}
+
+.stock-receive-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+}
+
+.stock-receive-menu-btn:hover,
+.stock-receive-menu-btn--active {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1d4ed8;
+}
+
+.stock-receive-pop {
+  width: 168px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+}
+
+.stock-receive-dates-pop {
+  width: 240px;
+  padding: 10px 12px;
+}
+
+.stock-receive-pop-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stock-receive-pop-row strong {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.stock-receive-pop button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stock-receive-pop button:hover {
+  background: #f1f5f9;
+}
+
+.stock-receive-pop button.danger {
+  color: #dc2626;
+}
+
+.stock-receive-pop button.danger:hover {
+  background: #fef2f2;
+}
+
 .stock-receive-page.dark .btn-icon {
   background: #1e293b;
   color: #94a3b8;
@@ -1174,6 +1262,45 @@
 .stock-receive-page.dark .btn-icon.delete:hover {
   background: #450a0a;
   color: #fca5a5;
+}
+
+.stock-receive-page.dark .stock-receive-menu-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+.stock-receive-page.dark .stock-receive-menu-btn:hover,
+.stock-receive-page.dark .stock-receive-menu-btn--active {
+  background: #334155;
+  border-color: #475569;
+  color: #93c5fd;
+}
+
+.stock-receive-page.dark .stock-receive-pop {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.stock-receive-page.dark .stock-receive-pop-row {
+  color: #94a3b8;
+}
+
+.stock-receive-page.dark .stock-receive-pop-row strong,
+.stock-receive-page.dark .stock-receive-pop button {
+  color: #e2e8f0;
+}
+
+.stock-receive-page.dark .stock-receive-pop button:hover {
+  background: #334155;
+}
+
+.stock-receive-page.dark .stock-receive-pop button.danger {
+  color: #fca5a5;
+}
+
+.stock-receive-page.dark .stock-receive-pop button.danger:hover {
+  background: #450a0a;
 }
 
 .stock-receive-page.dark .no-data {

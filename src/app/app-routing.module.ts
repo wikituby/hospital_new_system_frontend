@@ -16,7 +16,6 @@ import { FormarrayexampleComponent } from './formarrayexample/formarrayexample.c
 import { Login2Component } from './login2/login2.component';
 import { Login3Component } from './login3/login3.component';
 import { Login4Component } from './auth/login4/login4.component';
-import { PatientComponent } from './patient/patient.component';
 import { PatientVisitComponent } from './patient-visit/patient-visit.component';
 import { ServicesOfferedComponent } from './services-offered/services-offered.component';
 import { OverviewComponent } from './overview/overview.component';
@@ -51,7 +50,6 @@ import { ServiceDetailComponent } from './service-detail/service-detail.componen
 import { AboutPageComponent } from './about-page/about-page.component';
 import { BookAppointmentComponent } from './book-appointment/book-appointment.component';
 import { ContactPageComponent } from './contact-page/contact-page.component';
-import { ConsultationsCenterComponent } from './overview/pages/consultations-center/consultations-center.component';
 import { ConsultationV2Component } from './overview/pages/consultation-v2/consultation-v2.component';
 import { ScanV2Component } from './overview/pages/scan-v2/scan-v2.component';
 import { LabV2Component } from './overview/pages/lab-v2/lab-v2.component';
@@ -376,7 +374,7 @@ const routes: Routes = [
       {path: 'equipment-maintenance', component: EquipmentMaintenanceComponent},
       {path: 'business-intelligence', component: BusinessIntelligenceComponent},
       {path: 'integration-hub', component: IntegrationHubComponent},
-      {path:'consultations-center', component: ConsultationsCenterComponent},
+      {path:'consultations-center', redirectTo: 'consultation-v2', pathMatch: 'full'},
       {path:'consultation-v2', component: ConsultationV2Component},
       {path: 'scan-v2', component: ScanV2Component},
       {path: 'lab-v2', component: LabV2Component},
@@ -397,7 +395,7 @@ const routes: Routes = [
       {path: 'legacy-dashboard', component: DashboardComponent, canActivate: [blockDashboardForClinicalRoleGuard]}
     ]
   },
-  {path:'patient', component:PatientComponent, canActivate: [subscriptionGuard, topLevelPageAccessGuard]},
+  {path:'patient', redirectTo: 'overview/all-patients', pathMatch: 'full'},
   {path:'scan', redirectTo: 'overview/scan-v2', pathMatch: 'full'},
   {path:'lab', redirectTo: 'overview/lab-v2', pathMatch: 'full'},
   {path:'dental', redirectTo: 'overview/dental-v2', pathMatch: 'full'},

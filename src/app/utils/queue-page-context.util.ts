@@ -101,6 +101,7 @@ function findConsultationModule(list: QueueRouteModule[]): QueueRouteModule | un
       rk === 'patient-visit' ||
       rk === 'consultations-center' ||
       rk === 'consultation' ||
+      rk === 'consultation-v2' ||
       rk === 'triage' ||
       code === 'CONSULTATION' ||
       code === 'TRIAGE' ||
@@ -108,6 +109,21 @@ function findConsultationModule(list: QueueRouteModule[]): QueueRouteModule | un
       norm(m.name).includes('triage')
     );
   });
+}
+
+/** Doctor consultation page — do not treat Triage as the current department. */
+function findDoctorConsultationModule(list: QueueRouteModule[]): QueueRouteModule | undefined {
+  return (
+    findModule(list, (m) => norm(m.code).toUpperCase() === 'CONSULTATION') ||
+    findModule(list, (m) => {
+      const rk = norm(m.routeKey);
+      return rk === 'patient-visit' || rk === 'consultation-v2' || rk === 'consultations-center' || rk === 'consultation';
+    }) ||
+    findModule(list, (m) => {
+      const name = norm(m.name);
+      return name.includes('consultation') && !name.includes('triage');
+    })
+  );
 }
 
 function findFinanceModule(list: QueueRouteModule[]): QueueRouteModule | undefined {
@@ -153,6 +169,7 @@ const OVERVIEW_SEGMENT_MODULE: Record<string, (list: QueueRouteModule[]) => Queu
   'opd-diagnosis': findConsultationModule,
   'opd-follow-ups': findConsultationModule,
   'consultations-center': findConsultationModule,
+  'consultation-v2': findDoctorConsultationModule,
   'patient-billing': findFinanceModule,
   'expenses': findFinanceModule,
   'finance-dashboard': findFinanceModule,
@@ -224,6 +241,17 @@ export function resolvePageContextFromUrl(
           return { moduleId, departmentLabel, pageLabel: departmentLabel };
         }
       }
+    }
+
+    if (path.includes('consultation-v2')) {
+      const visitMod = findDoctorConsultationModule(list);
+      moduleId = toModuleId(visitMod);
+      departmentLabel = visitMod?.name || 'Consultation';
+      return {
+        moduleId,
+        departmentLabel,
+        pageLabel: departmentLabel,
+      };
     }
 
     if (path.includes('patient-visit') || path.includes('consultations-center')) {

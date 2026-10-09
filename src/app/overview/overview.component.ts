@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, HostListener, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, AfterViewChecked, HostListener, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { merge, Subscription } from 'rxjs';
 import { ThemeService } from '../services/theme.service';
@@ -15,12 +15,15 @@ import { defaultContactValue } from '../utils/phone-contact.util';
   styleUrls: ['./overview.component.css'],
   preserveWhitespaces: false
 })
-export class OverviewComponent implements OnInit, OnDestroy, AfterViewInit {
+export class OverviewComponent implements OnInit, OnDestroy, AfterViewInit, AfterViewChecked {
   /**
    * Stacked mode: false = expanded docked sidebar, true = icon rail (72px) with hover flyouts.
    * Non-stacked mode: defaults to icon rail; false = full docked sidebar (260px).
    */
   isSidebarCollapsed: boolean = false;
+  sidebarMenuQuery = '';
+  private sidebarSearchFocused = false;
+  private sidebarSearchFilterApplied = '';
   /** From business settings — sidebar shares space with content (default on). */
   sidebarStacked = true;
   /** Phone/tablet shell: drawer menu instead of a docked sidebar. */
@@ -291,6 +294,9 @@ export class OverviewComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
     if (!this.sidebarStacked) {
+      if (this.sidebarMenuQuery.trim() || this.sidebarSearchFocused) {
+        return;
+      }
       this.sidebarRailExpanded = false;
       this.openMenus.clear();
     }
@@ -830,6 +836,9 @@ export class OverviewComponent implements OnInit, OnDestroy, AfterViewInit {
   }
   
   isMenuOpen(menuKey: string): boolean {
+    if (this.sidebarMenuQuery.trim() && !this.collapsedFlyoutMode) {
+      return true;
+    }
     return this.openMenus.has(menuKey);
   }
 
@@ -842,7 +851,130 @@ export class OverviewComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   isSubMenuOpen(subMenuKey: string): boolean {
+    if (this.sidebarMenuQuery.trim() && !this.collapsedFlyoutMode) {
+      return true;
+    }
     return this.openSubMenus.has(subMenuKey);
+  }
+
+  onSidebarSearchFocus(): void {
+    this.sidebarSearchFocused = true;
+    if (this.isMobileViewport) {
+      return;
+    }
+    if (this.sidebarStacked && this.isSidebarCollapsed) {
+      this.isSidebarCollapsed = false;
+      this.cdr.detectChanges();
+      this.syncHeaderSidebarOffset();
+      return;
+    }
+    if (!this.sidebarStacked) {
+      this.sidebarRailExpanded = true;
+    }
+  }
+
+  onSidebarSearchBlur(): void {
+    this.sidebarSearchFocused = false;
+  }
+
+  onSidebarMenuSearch(): void {
+    const query = this.sidebarMenuQuery.trim().toLowerCase();
+    if (!query) {
+      this.clearSidebarSearchHidden();
+      this.sidebarSearchFilterApplied = '';
+    }
+  }
+
+  clearSidebarMenuSearch(): void {
+    this.sidebarMenuQuery = '';
+    this.clearSidebarSearchHidden();
+    this.sidebarSearchFilterApplied = '';
+  }
+
+  ngAfterViewChecked(): void {
+    const query = this.sidebarMenuQuery.trim().toLowerCase();
+    if (!query) {
+      if (this.sidebarSearchFilterApplied) {
+        this.clearSidebarSearchHidden();
+        this.sidebarSearchFilterApplied = '';
+      }
+      return;
+    }
+    this.applySidebarMenuFilter(query);
+    this.sidebarSearchFilterApplied = query;
+  }
+
+  private applySidebarMenuFilter(query: string): void {
+    const nav: HTMLElement | null = this.elementRef.nativeElement.querySelector('nav.nav');
+    if (!nav) {
+      return;
+    }
+    const groups = Array.from(nav.querySelectorAll(':scope > .nav-group')) as HTMLElement[];
+    let visibleGroups = 0;
+    groups.forEach((group) => {
+      const title = this.sidebarSearchText(group.querySelector('.nav-group-title > span'));
+      const groupMatch = title.includes(query);
+      const items = Array.from(group.querySelectorAll(':scope > .submenu > li')) as HTMLElement[];
+      let anyItem = false;
+      items.forEach((item) => {
+        if (item.classList.contains('submenu-item')) {
+          const header = this.sidebarSearchText(item.querySelector('.submenu-header > span'));
+          const headerMatch = header.includes(query);
+          const nested = Array.from(item.querySelectorAll(':scope > .nested-submenu > li')) as HTMLElement[];
+          let anyNested = false;
+          nested.forEach((child) => {
+            const text = this.sidebarSearchText(child);
+            const show = groupMatch || headerMatch || text.includes(query);
+            child.classList.toggle('sidebar-search-hidden', !show);
+            if (text.includes(query)) {
+              anyNested = true;
+            }
+          });
+          const showBranch = groupMatch || headerMatch || anyNested;
+          item.classList.toggle('sidebar-search-hidden', !showBranch);
+          if (headerMatch || anyNested) {
+            anyItem = true;
+          }
+          return;
+        }
+        const text = this.sidebarSearchText(item);
+        const show = groupMatch || text.includes(query);
+        item.classList.toggle('sidebar-search-hidden', !show);
+        if (text.includes(query)) {
+          anyItem = true;
+        }
+      });
+      const showGroup = groupMatch || anyItem;
+      group.classList.toggle('sidebar-search-hidden', !showGroup);
+      if (showGroup) {
+        visibleGroups += 1;
+      }
+    });
+    const empty = this.elementRef.nativeElement.querySelector('.sidebar-search-empty') as HTMLElement | null;
+    if (empty) {
+      empty.hidden = visibleGroups > 0;
+    }
+  }
+
+  private clearSidebarSearchHidden(): void {
+    const nav: HTMLElement | null = this.elementRef.nativeElement.querySelector('nav.nav');
+    if (!nav) {
+      return;
+    }
+    nav.querySelectorAll('.sidebar-search-hidden').forEach((el) => {
+      el.classList.remove('sidebar-search-hidden');
+    });
+    const empty = this.elementRef.nativeElement.querySelector('.sidebar-search-empty') as HTMLElement | null;
+    if (empty) {
+      empty.hidden = true;
+    }
+  }
+
+  private sidebarSearchText(el: Element | null): string {
+    if (!el) {
+      return '';
+    }
+    return (el.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
   }
 
   navigateTo(route: string, event?: MouseEvent): void {

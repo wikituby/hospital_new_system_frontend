@@ -70,6 +70,19 @@ export function userHasAnyRole(
   return roleNames.some((name) => userHasRole(name, user));
 }
 
+/** Primary role plus secondaries, ignoring blank and placeholder values. */
+const UNASSIGNED_ROLE_NAMES = new Set(['undefined', 'null', 'none', 'n/a', 'unassigned', '-']);
+
+export function userHasAssignedRole(user?: { role?: string; secondaryRoles?: string } | null): boolean {
+  return getAllUserRoles(user).some((role) => {
+    const key = role.toLowerCase().trim();
+    return !!key && !UNASSIGNED_ROLE_NAMES.has(key);
+  });
+}
+
+export const NO_ROLE_ASSIGNED_MESSAGE =
+  'Your account has no role assigned. Contact an administrator to get a role assigned.';
+
 /** Persist primary + secondary roles after login (or profile refresh). */
 export function persistUserRolesToSession(user: { role?: string; secondaryRoles?: string } | null | undefined): void {
   const primary = (user?.role || '').toString().trim();

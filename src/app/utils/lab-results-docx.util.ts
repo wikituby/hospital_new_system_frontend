@@ -113,17 +113,43 @@ export function getProcedureReportKindForPdf(item: any): ProcedureReportKind {
   return 'general';
 }
 
+function categoryLabel(value: any): string {
+  if (value == null) {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  return String(value.name || value.categoryName || value.title || '');
+}
+
 function isMchOrMaternityCategoryName(name: string): boolean {
-  const normalized = String(name || '').trim().toLowerCase();
+  const normalized = String(name || '')
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (!normalized) {
     return false;
   }
-  return (
-    normalized === 'maternity' ||
-    normalized === 'mch' ||
-    normalized.includes('maternity') ||
-    normalized.includes('mch')
-  );
+  const needles = [
+    'maternity',
+    'mch',
+    'antenatal',
+    'postnatal',
+    'immunisation',
+    'immunization',
+    'maternal child',
+    'maternal and child',
+    'obstetric',
+    'gynaecolog',
+    'gynecolog',
+    'gynae',
+    'obs and gyn',
+  ];
+  return needles.some((needle) => normalized.includes(needle));
 }
 
 /** True when a requested procedure belongs to MCH / maternity service categories. */
@@ -145,7 +171,7 @@ export function isMaternityProcedureRequest(r: any): boolean {
     r?.category,
     r?.categoryName,
   ];
-  if (vals.some((v) => isMchOrMaternityCategoryName(String(v || '')))) {
+  if (vals.some((v) => isMchOrMaternityCategoryName(categoryLabel(v)))) {
     return true;
   }
   const joined = [
@@ -153,6 +179,9 @@ export function isMaternityProcedureRequest(r: any): boolean {
     r?.parentCategoryName,
     r?.procedure?.categoryName,
     r?.procedureRequestedName,
+    r?.procedureName,
+    r?.name,
+    r?.title,
     r?.exam,
   ]
     .filter(Boolean)
@@ -163,21 +192,57 @@ export function isMaternityProcedureRequest(r: any): boolean {
     joined.includes('mch') ||
     joined.includes('antenatal') ||
     joined.includes('postnatal') ||
-    joined.includes('obstetric')
+    joined.includes('immunisation') ||
+    joined.includes('immunization') ||
+    joined.includes('maternal child') ||
+    joined.includes('maternal and child') ||
+    joined.includes('obstetric') ||
+    joined.includes('gynaecolog') ||
+    joined.includes('gynecolog') ||
+    joined.includes('gynae') ||
+    joined.includes('obs and gyn') ||
+    joined.includes('obs & gyn')
   );
 }
 
-/** Structured antenatal/postnatal form; other maternity services use the general report layout. */
-export function usesAntenatalStructuredMchReport(item: any): boolean {
-  const name = normalizeProcedureRequestedNameForLabRouting(item);
-  const parent = String(item?.categoryParent || item?.parentCategory || '').toLowerCase();
-  if (parent === 'maternity' || parent === 'mch') {
-    const keywords = ['antenatal', 'postnatal', 'anc', 'obstetric', 'maternity visit'];
-    if (keywords.some((k) => name.includes(k))) {
-      return true;
-    }
+export type MchClinicalFormKind = 'antenatal' | 'delivery' | 'general';
+
+/** Antenatal and delivery use Ministry of Health style forms; other MCH services stay general. */
+export function mchClinicalFormKind(item: any): MchClinicalFormKind {
+  if (!item) {
+    return 'general';
   }
-  return ['antenatal', 'postnatal', 'anc visit', 'maternity visit'].some((k) => name.includes(k));
+  const name = normalizeProcedureRequestedNameForLabRouting(item);
+  const categoryText = [
+    item?.categoryParent,
+    item?.parentCategory,
+    item?.category,
+    item?.procedureRequestedName,
+    item?.exam,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  const text = `${name} ${categoryText}`;
+  if (
+    /deliver|labour|labor|childbirth|partograph|caesarean|cesarean|c-section|vaginal birth/.test(
+      text
+    )
+  ) {
+    return 'delivery';
+  }
+  if (/antenatal|\banc\b|prenatal|postnatal/.test(text)) {
+    return 'antenatal';
+  }
+  return 'general';
+}
+
+export function usesAntenatalStructuredMchReport(item: any): boolean {
+  return mchClinicalFormKind(item) === 'antenatal';
+}
+
+export function usesDeliveryStructuredMchReport(item: any): boolean {
+  return mchClinicalFormKind(item) === 'delivery';
 }
 
 /** Non-imaging, non-specialized-lab procedures use GeneralLabReport. */

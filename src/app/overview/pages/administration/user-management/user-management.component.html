@@ -8,6 +8,10 @@
       <p class="page-subtitle">Manage system users, roles, and account status</p>
     </div>
     <div class="header-right">
+      <button class="btn-secondary" type="button" (click)="openNewRoleFromPage()">
+        <i class="bi bi-person-badge"></i>
+        Add new role
+      </button>
       <button class="btn-secondary" (click)="refreshList()" [disabled]="isLoading">
         <i class="bi bi-arrow-clockwise"></i>
         Refresh
@@ -585,7 +589,10 @@
       </div>
       <form #newRoleForm="ngForm" (ngSubmit)="saveNewRoleFromModal()" class="user-modal-form">
         <div class="user-modal-body">
-          <p class="user-modal-subtitle">
+          <p class="user-modal-subtitle" *ngIf="newRoleModalContext === 'page'">
+            Enter a role name. It will be added to the role list.
+          </p>
+          <p class="user-modal-subtitle" *ngIf="newRoleModalContext !== 'page'">
             Enter a role name. It will be added to the list and selected for this user.
           </p>
           <div class="form-field">
@@ -604,7 +611,7 @@
           <button type="button" class="btn-secondary" (click)="closeNewRoleModal()">Cancel</button>
           <button type="submit" class="btn-primary" [disabled]="!newRoleName?.trim() || isRoleActionInProgress">
             <i class="bi bi-check-lg" *ngIf="!isRoleActionInProgress"></i>
-            <span *ngIf="!isRoleActionInProgress">Add &amp; select</span>
+            <span *ngIf="!isRoleActionInProgress">{{ newRoleModalContext === 'page' ? 'Add role' : 'Add & select' }}</span>
             <span *ngIf="isRoleActionInProgress">Saving...</span>
           </button>
         </div>

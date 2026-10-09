@@ -765,38 +765,47 @@
 
         <div class="rx-studio-layout" *ngIf="!loadingDoctorPrescriptions && !doctorPrescriptionsError">
           <aside class="rx-studio-queue" aria-label="Prescription visits">
-            <ng-container *ngIf="groupedPrescriptionVisits().length; else noDoctorRxQueue">
+            <label class="rx-studio-search">
+              <i class="bi bi-search" aria-hidden="true"></i>
+              <input
+                type="search"
+                class="rx-studio-search-input"
+                placeholder="Search patient"
+                [(ngModel)]="prescriptionPatientQuery"
+                name="prescriptionPatientQuery"
+                aria-label="Search patients" />
+            </label>
+            <div class="rx-studio-queue-scroll">
+            <ng-container *ngIf="filteredPrescriptionVisits().length; else noDoctorRxQueue">
               <div
                 class="rx-visit-card"
-                *ngFor="let group of groupedPrescriptionVisits()"
+                *ngFor="let group of filteredPrescriptionVisits(); trackBy: trackPrescriptionVisit"
                 [class.rx-visit-card--active]="selectedPrescriptionVisitId === group.visitId"
                 [class.rx-visit-card--done]="isPrescriptionVisitSaleDone(group.visitId)"
-                (click)="selectPrescriptionVisitCard(group)">
+                (click)="selectPrescriptionVisitCard(group, $event)">
                 <div class="rx-visit-card-top">
-                  <span class="rx-visit-avatar" aria-hidden="true">{{ (group.patientName || 'P').charAt(0) }}</span>
                   <div class="rx-visit-meta">
-                    <div class="rx-visit-name-row">
-                      <span class="rx-visit-name">{{ group.patientName }}</span>
-                      <button
-                        type="button"
-                        class="rx-visit-queue-btn"
-                        title="Queue patient"
-                        (click)="openRxQueueModal(group, $event)">
-                        <i class="bi bi-list-ol" aria-hidden="true"></i>
-                        Queue
-                      </button>
-                    </div>
-                    <span class="rx-visit-visit">Visit {{ group.visitNumber || group.visitId }}</span>
+                    <span class="rx-visit-name">{{ group.patientName }}</span>
+                    <span class="rx-visit-date">
+                      <i class="bi bi-calendar3"></i>
+                      {{ group.visitDate }}<ng-container *ngIf="prescriptionVisitClock(group.visitTime)"> · {{ prescriptionVisitClock(group.visitTime) }}</ng-container>
+                    </span>
                   </div>
-                  <span class="rx-visit-badge" [ngClass]="prescriptionVisitOrderStatusClass(group)">
-                    {{ prescriptionVisitOrderStatusLabel(group) }}
-                  </span>
                 </div>
                 <div class="rx-visit-card-bottom">
-                  <span class="rx-visit-date">
-                    <i class="bi bi-calendar3"></i>
-                    {{ group.visitDate }}<ng-container *ngIf="group.visitTime"> · {{ group.visitTime }}</ng-container>
-                  </span>
+                  <div class="rx-visit-actions-row">
+                    <button
+                      type="button"
+                      class="rx-visit-queue-btn"
+                      title="Queue patient"
+                      (click)="openRxQueueModal(group, $event)">
+                      <i class="bi bi-list-ol" aria-hidden="true"></i>
+                      Queue
+                    </button>
+                    <span class="rx-visit-badge" [ngClass]="prescriptionVisitOrderStatusClass(group)">
+                      {{ prescriptionVisitOrderStatusLabel(group) }}
+                    </span>
+                  </div>
                   <span class="rx-visit-lines">{{ group.rows.length }} line{{ group.rows.length === 1 ? '' : 's' }}</span>
                 </div>
               </div>
@@ -804,21 +813,23 @@
             <ng-template #noDoctorRxQueue>
               <div class="rx-studio-empty">
                 <i class="bi bi-inbox"></i>
-                <p>No pending prescriptions.</p>
+                <p>{{ prescriptionPatientQuery.trim() ? 'No matching patients.' : 'No pending prescriptions.' }}</p>
               </div>
             </ng-template>
+            </div>
           </aside>
 
           <main class="rx-studio-detail" id="otc-rx-drugs-section" aria-label="Prescription details">
-            <ng-container *ngIf="selectedPrescriptionGroup() as sel; else rxNoSelection">
+            <ng-container *ngIf="selectedPrescriptionHeader as sel; else rxNoSelection">
+              <div
+                class="rx-dispense-split"
+                [class.rx-dispense-split--pay]="!isPrescriptionVisitSaleDone(sel.visitId)">
               <section class="rx-detail-section">
                 <div class="rx-detail-section-head">
                   <div class="rx-detail-section-head-line">
                     <h4>Items to dispense</h4>
                     <span class="rx-detail-inline-meta">
                       <span class="rx-detail-inline-name">{{ sel.patientName }}</span>
-                      <span class="rx-detail-dot">·</span>
-                      <span>Visit {{ sel.visitNumber || sel.visitId }}</span>
                       <span class="rx-detail-dot">·</span>
                       <span>{{ sel.visitDate }}<ng-container *ngIf="sel.visitTime"> · {{ sel.visitTime }}</ng-container></span>
                       <span
@@ -828,86 +839,84 @@
                       </span>
                     </span>
                   </div>
-                  <span class="rx-detail-count">{{ selectedPrescriptionDetailRows.length }} items</span>
+                  <span class="rx-detail-count">{{ dispenseRowsForView().length }} items</span>
                 </div>
-                <div class="rx-table-wrap" *ngIf="selectedPrescriptionDetailRows.length; else noSelectedRxLines">
-                  <table class="rx-table otc-cart-table otc-cart-table--prescribing">
-                    <thead>
-                      <tr>
-                        <th class="text-center otc-rx-dsp-head" title="Dispensed (set when you complete a dispense)">
-                          DSP
-                        </th>
-                        <th>Item</th>
-                        <th>Dosage</th>
-                        <th>Frequency</th>
-                        <th>Duration</th>
-                        <th>Qty</th>
-                        <th *ngIf="canViewPharmacyCostColumns()">Cost</th>
-                        <th>Sell</th>
-                        <th *ngIf="canViewPharmacyCostColumns()">TT Cost</th>
-                        <th>TT Sell</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr *ngFor="let row of selectedPrescriptionDetailRows" [class.otc-cart-row-not-given]="row.dispensed !== true">
-                        <td class="text-center otc-cart-given-cell">
-                          <app-pd-dsp-adm
-                            [item]="row"
-                            [inputIdPrefix]="'otc-rx'"
-                            mode="dispensed-only"
-                            [disabled]="true"
-                            [dispensedReadonly]="true">
-                          </app-pd-dsp-adm>
-                        </td>
-                        <td class="otc-cart-treatment-cell">
-                          {{ row.itemName | uppercase }}
-                          <span class="otc-rx-sundry-tag" *ngIf="isSundryPrescriptionRow(row)">Sundry</span>
-                        </td>
-                        <td>{{ prescriptionRowDosage(row) }}</td>
-                        <td>{{ prescriptionRowFrequency(row) }}</td>
-                        <td>{{ prescriptionRowDuration(row) }}</td>
-                        <td class="otc-rx-qty-cell">
+                <div class="rx-line-list">
+                  <div class="rx-line-list-scroll">
+                  <div class="rx-line-card" *ngFor="let row of dispenseRowsForView()">
+                    <div class="rx-line-thumb" aria-hidden="true">
+                      <i class="bi" [ngClass]="row.route === 'SUNDRY' ? 'bi-box-seam' : 'bi-capsule'"></i>
+                    </div>
+                    <div class="rx-line-body">
+                      <div class="rx-line-name">
+                        {{ row.itemName }}
+                        <span class="otc-rx-sundry-tag" *ngIf="row.route === 'SUNDRY'">Sundry</span>
+                      </div>
+                      <div class="rx-line-rx" *ngIf="row.route !== 'SUNDRY'">
+                        {{ prescriptionRowDosage(row) }} · {{ prescriptionRowFrequency(row) }} · {{ prescriptionRowDuration(row) }}
+                        <label
+                          class="rx-given-switch"
+                          [class.on]="row.given !== false"
+                          [attr.title]="row.given !== false ? 'Given' : 'Not given'">
                           <input
-                            type="number"
-                            class="form-control form-control-sm otc-rx-qty-input"
-                            [ngModel]="row.quantity"
-                            (ngModelChange)="onPrescriptionQuantityChange(row, $event)"
-                            [ngModelOptions]="{ standalone: true }"
-                            min="0"
-                            step="1"
-                            inputmode="numeric"
-                            [disabled]="processing || isPrescriptionVisitSaleDone(sel.visitId) || isSundryPrescriptionRow(row)"
-                            [attr.aria-label]="'Quantity for ' + row.itemName" />
-                          <span class="otc-rx-qty-hint text-muted" *ngIf="isSundryPrescriptionRow(row)">
-                            Stock deducted when recorded
-                          </span>
-                          <span class="otc-rx-qty-hint text-muted" *ngIf="!isSundryPrescriptionRow(row) && !prescriptionQtyExceedsStock(row)">
-                            Stock: {{ prescriptionItemTotalStock(row) }}
-                          </span>
-                          <span class="otc-rx-qty-hint text-danger" *ngIf="!isSundryPrescriptionRow(row) && prescriptionQtyExceedsStock(row)">
-                            Exceeds stock · {{ prescriptionItemTotalStock(row) }}
-                          </span>
-                        </td>
-                        <td *ngIf="canViewPharmacyCostColumns()">{{ row.unitBuy }}</td>
-                        <td>{{ row.unitSellingPrice }}</td>
-                        <td *ngIf="canViewPharmacyCostColumns()">{{ prescriptionRowTtCost(row) }}</td>
-                        <td [class.text-muted]="!row.given">{{ row.given ? prescriptionRowTtSell(row) : '—' }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <ng-template #noSelectedRxLines>
-                  <div class="rx-studio-empty rx-studio-empty--compact">
-                    <p>No prescription or sundry lines for this visit.</p>
+                            type="checkbox"
+                            [checked]="row.given !== false"
+                            [disabled]="processing || isPrescriptionVisitSaleDone(sel.visitId)"
+                            (change)="onPrescriptionLineGivenChange(row, $any($event.target).checked)" />
+                        </label>
+                      </div>
+                      <div class="rx-line-price">
+                        <i class="bi bi-tag" aria-hidden="true"></i>
+                        <strong>{{ row.unitSellingPrice }}</strong>
+                        <span class="rx-line-price-extra">Qty {{ row.quantity }}</span>
+                        <span class="rx-line-price-extra">TT Sell {{ formatSoldMoney(prescriptionRowTtSell(row)) }}</span>
+                        <span class="rx-line-stock">{{ row.dispensed ? 'Dispensed' : 'Not dispensed' }}</span>
+                      </div>
+                    </div>
+                    <div class="rx-line-side">
+                      <div class="rx-stepper-wrap">
+                        <div class="rx-stepper">
+                          <button
+                            type="button"
+                            class="rx-stepper-btn"
+                            (click)="stepPrescriptionQuantity(row, -1)"
+                            [disabled]="processing || isPrescriptionVisitSaleDone(sel.visitId) || row.route === 'SUNDRY' || row.quantity <= 0">
+                            <i class="bi bi-dash"></i>
+                          </button>
+                          <span class="rx-stepper-value">{{ row.quantity }}</span>
+                          <button
+                            type="button"
+                            class="rx-stepper-btn"
+                            (click)="stepPrescriptionQuantity(row, 1)"
+                            [disabled]="processing || isPrescriptionVisitSaleDone(sel.visitId) || row.route === 'SUNDRY'">
+                            <i class="bi bi-plus"></i>
+                          </button>
+                        </div>
+                        <span
+                          class="rx-stepper-stock"
+                          [class.rx-stepper-stock--low]="prescriptionDisplayStockShort(row)">
+                          In stock {{ prescriptionDisplayStock(row) }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </ng-template>
+                  <p class="rx-line-empty" *ngIf="!dispenseRowsForView().length">No prescription or sundry lines for this visit.</p>
+                  </div>
+                </div>
               </section>
 
-              <footer class="rx-checkout" *ngIf="!isPrescriptionVisitSaleDone(sel.visitId)">
+              <aside class="rx-checkout" *ngIf="!isPrescriptionVisitSaleDone(sel.visitId)" aria-label="Payment">
+                <h4 class="rx-checkout-title">Payment</h4>
                 <div class="rx-checkout-grid">
                   <label class="rx-checkout-field">
                     <span>Total due</span>
-                    <strong>{{ formatPaymentTotal(prescriptionSubtotal) }}</strong>
+                    <input
+                      class="rx-checkout-input rx-checkout-input--readonly"
+                      [value]="formatPaymentTotal(prescriptionSubtotal)"
+                      readonly
+                      tabindex="-1"
+                      aria-readonly="true"
+                      aria-label="Total due" />
                   </label>
                   <label class="rx-checkout-field">
                     <span>Payment method</span>
@@ -935,8 +944,17 @@
                   </label>
                   <label class="rx-checkout-field">
                     <span>Change</span>
-                    <strong>{{ formatMoney(prescriptionChangeDue) }}</strong>
+                    <input
+                      class="rx-checkout-input rx-checkout-input--readonly"
+                      [value]="formatMoney(prescriptionChangeDue)"
+                      readonly
+                      tabindex="-1"
+                      aria-readonly="true"
+                      aria-label="Change" />
                   </label>
+                  <p class="rx-checkout-stock-block" *ngIf="prescriptionStockBlockMessage() as stockBlock">
+                    {{ stockBlock }}
+                  </p>
                   <div class="rx-checkout-actions">
                     <button
                       type="button"
@@ -956,7 +974,8 @@
                     </button>
                   </div>
                 </div>
-              </footer>
+              </aside>
+              </div>
             </ng-container>
 
             <ng-template #rxNoSelection>
@@ -971,6 +990,45 @@
       </div>
     </div>
   </div>
+  </div>
+</div>
+
+<div class="otc-queue-modal-overlay" *ngIf="showUnpaidDispenseModal" (click)="closeUnpaidDispenseModal()">
+  <div class="otc-queue-modal" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="otcUnpaidDispenseTitle">
+    <div class="otc-queue-modal-head">
+      <h3 class="otc-queue-modal-title" id="otcUnpaidDispenseTitle">Unpaid items</h3>
+      <button type="button" class="btn btn-light btn-sm" (click)="closeUnpaidDispenseModal()" [disabled]="processing">Close</button>
+    </div>
+    <p class="otc-unpaid-lead">
+      Amount received does not cover these items. Confirm to dispense them and leave the balance unpaid.
+    </p>
+    <div class="otc-unpaid-summary">
+      <div><span>Total due</span><strong>{{ formatMoney(unpaidDispenseTotal) }}</strong></div>
+      <div><span>Amount received</span><strong>{{ formatMoney(unpaidDispenseReceived) }}</strong></div>
+      <div><span>Still unpaid</span><strong>{{ formatMoney(unpaidDispenseBalance()) }}</strong></div>
+    </div>
+    <table class="otc-unpaid-table">
+      <thead>
+        <tr>
+          <th class="no-sort">Item</th>
+          <th class="num no-sort">Amount</th>
+          <th class="num no-sort">Unpaid</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let line of unpaidDispenseLines">
+          <td>{{ line.itemName }}</td>
+          <td class="num">{{ formatMoney(line.lineTotal) }}</td>
+          <td class="num">{{ formatMoney(line.unpaid) }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="otc-queue-modal-actions">
+      <button type="button" class="btn btn-light btn-sm" (click)="closeUnpaidDispenseModal()" [disabled]="processing">Cancel</button>
+      <button type="button" class="btn btn-success btn-sm" (click)="confirmUnpaidDispense()" [disabled]="processing">
+        {{ processing ? 'Dispensing…' : 'Dispense with unpaid balance' }}
+      </button>
+    </div>
   </div>
 </div>
 

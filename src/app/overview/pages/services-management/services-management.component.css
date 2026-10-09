@@ -289,6 +289,43 @@
   width: 8%;
 }
 
+.service-action-pop {
+  width: 210px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+}
+
+.service-action-pop button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.service-action-pop button:hover {
+  background: #f1f5f9;
+}
+
+.service-action-pop button.danger {
+  color: #dc2626;
+}
+
+.service-action-pop button.danger:hover {
+  background: #fef2f2;
+}
+
 .modern-table thead {
   background: #f8fafc;
 }
@@ -677,6 +714,16 @@
   border-color: #bfdbfe;
 }
 
+.unit-sell-model-action-btn--items {
+  color: #059669;
+}
+
+.unit-sell-model-action-btn--items:hover {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #047857;
+}
+
 .unit-sell-model-action-btn--danger {
   color: #dc2626;
 }
@@ -804,9 +851,241 @@
   color: #1d4ed8;
 }
 
+.btn-icon.items {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.btn-icon.items:hover {
+  background: #d1fae5;
+  color: #047857;
+}
+
 .btn-icon.delete:hover {
   background: #fee2e2;
   color: #dc2626;
+}
+
+.items-used-modal-container {
+  max-width: 760px;
+}
+
+.items-used-modal {
+  min-height: 420px;
+}
+
+.items-used-lead {
+  margin: 0 0 12px;
+  color: #475569;
+  font-size: 13px;
+}
+
+.items-used-add {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.items-used-add > label {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.items-used-add > label:nth-child(2) {
+  width: 88px;
+}
+
+.items-used-add > label:nth-child(3) {
+  width: 120px;
+}
+
+.items-used-add input,
+.items-used-add-btn {
+  height: 34px;
+  min-height: 34px;
+  max-height: 34px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.items-used-add input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 8px;
+  font-size: 13px;
+}
+
+.items-used-search {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.items-used-search > label {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.items-used-results {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  max-height: 220px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.items-used-results button {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.items-used-results button:hover {
+  background: #f8fafc;
+}
+
+.items-used-results p {
+  margin: 8px 10px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.items-used-add-btn {
+  flex: 0 0 auto;
+  align-self: flex-end;
+  width: 118px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: #059669;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 34px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.items-used-add-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.items-used-message {
+  margin: 0 0 8px;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.items-used-line-input {
+  width: 100%;
+  height: 32px;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0 6px;
+}
+
+.items-used-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.items-used-tag--edited {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.items-used-tag--added {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.items-used-tag--fee {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.items-used-add > label.items-used-fee-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.items-used-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+
+.items-used-table th,
+.items-used-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.items-used-table th:nth-child(2),
+.items-used-table td:nth-child(2) {
+  width: 64px;
+}
+
+.items-used-table th:nth-child(3),
+.items-used-table td:nth-child(3) {
+  width: 84px;
+}
+
+.items-used-table th:nth-child(4),
+.items-used-table td:nth-child(4) {
+  width: 84px;
+}
+
+.items-used-table th:nth-child(5),
+.items-used-table td:nth-child(5) {
+  width: 42px;
+}
+
+.items-used-total {
+  margin: 12px 0 0;
+  font-weight: 800;
+  color: #0f172a;
 }
 
 .no-data {
@@ -1728,6 +2007,27 @@
   color: #cbd5e1;
 }
 
+.service-management-page.dark .service-action-pop {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.service-management-page.dark .service-action-pop button {
+  color: #e2e8f0;
+}
+
+.service-management-page.dark .service-action-pop button:hover {
+  background: #334155;
+}
+
+.service-management-page.dark .service-action-pop button.danger {
+  color: #fca5a5;
+}
+
+.service-management-page.dark .service-action-pop button.danger:hover {
+  background: #450a0a;
+}
+
 .service-management-page.dark .unit-sell-menu-btn:hover,
 .service-management-page.dark .unit-sell-menu-btn--active {
   background: #334155;
@@ -1860,9 +2160,48 @@
   color: #93c5fd;
 }
 
+.service-management-page.dark .btn-icon.items {
+  background: #064e3b;
+  color: #6ee7b7;
+}
+
+.service-management-page.dark .btn-icon.items:hover {
+  background: #065f46;
+  color: #a7f3d0;
+}
+
 .service-management-page.dark .btn-icon.delete:hover {
   background: #450a0a;
   color: #fca5a5;
+}
+
+.unit-sell-models-modal-overlay.dark .items-used-modal {
+  background: #1e293b;
+}
+
+.unit-sell-models-modal-overlay.dark .items-used-lead,
+.unit-sell-models-modal-overlay.dark .items-used-add label,
+.unit-sell-models-modal-overlay.dark .items-used-total {
+  color: #e2e8f0;
+}
+
+.unit-sell-models-modal-overlay.dark .items-used-add input,
+.unit-sell-models-modal-overlay.dark .items-used-results {
+  background: #0f172a;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+.unit-sell-models-modal-overlay.dark .items-used-results button {
+  background: #0f172a;
+  color: #e2e8f0;
+  border-bottom-color: #334155;
+}
+
+.unit-sell-models-modal-overlay.dark .items-used-table th,
+.unit-sell-models-modal-overlay.dark .items-used-table td {
+  border-bottom-color: #334155;
+  color: #e2e8f0;
 }
 
 .service-management-page.dark .no-data {
@@ -2368,4 +2707,85 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+.service-role-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.service-role-toolbar,
+.service-role-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.service-role-toolbar .service-form-input,
+.service-role-add-row .service-form-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.service-role-add-row {
+  margin-top: 8px;
+}
+
+.service-role-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #19885a;
+  border-radius: 8px;
+  background: #19885a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.service-role-add-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.service-role-feedback {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #19885a;
+}
+
+.service-role-feedback.error {
+  color: #dc2626;
+}
+
+.service-role-list {
+  max-height: 180px;
+  margin-top: 8px;
+  padding: 8px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.service-role-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 4px;
+  font-size: 14px;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.service-role-empty {
+  margin: 8px 4px;
+  color: #64748b;
+  font-size: 13px;
 }

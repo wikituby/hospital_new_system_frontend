@@ -54,6 +54,14 @@
               <span class="usm-model-summary">{{ modelSummary(model) }}</span>
             </button>
             <span class="usm-row-actions">
+              <button
+                type="button"
+                class="btn btn-link btn-sm p-0 usm-items-used-btn"
+                *ngIf="showItemsUsed && procedureId"
+                title="Items used and fees"
+                (click)="requestItemsUsed(model, $event)">
+                <i class="bi bi-box-seam"></i>
+              </button>
               <button type="button" class="btn btn-link btn-sm p-0" title="Edit" (click)="openEditEditor(model, $event)">
                 <i class="bi bi-pencil-square"></i>
               </button>
@@ -79,6 +87,7 @@
         </button>
       </div>
       <div class="usm-editor-body">
+        <p class="usm-unit-cost-label">Unit buy / unit cost: <strong>{{ unitCostDisplay || '0.00' }}</strong></p>
         <div class="usm-form-grid">
           <div class="usm-form-field usm-form-field--full">
             <label class="usm-form-label" for="usmEditorName">Model name</label>
@@ -105,6 +114,18 @@
           </div>
 
           <div class="usm-form-field">
+            <label class="usm-form-label" for="usmEditorProfitMargin">Profit margin</label>
+            <input
+              id="usmEditorProfitMargin"
+              type="text"
+              inputmode="decimal"
+              class="usm-form-input"
+              [ngModel]="editorProfitText"
+              (ngModelChange)="onProfitInput($event)"
+              placeholder="e.g. 200" />
+          </div>
+
+          <div class="usm-form-field">
             <label class="usm-form-label" for="usmEditorBundlePrice">Bundle price</label>
             <input
               id="usmEditorBundlePrice"
@@ -126,21 +147,11 @@
               readonly
               tabindex="-1" />
           </div>
-
-          <div class="usm-form-field">
-            <label class="usm-form-label" for="usmEditorProfitMargin">Profit margin</label>
-            <input
-              id="usmEditorProfitMargin"
-              type="number"
-              class="usm-form-input usm-form-input--readonly"
-              [ngModel]="editorProfitMargin"
-              readonly
-              tabindex="-1" />
-          </div>
         </div>
 
         <p class="usm-editor-hint">
-          Unit sell = bundle price ÷ units in bundle. Profit margin = unit sell − unit cost.
+          Enter a profit and the bundle price fills in, or enter a bundle price and the profit fills in.
+          Unit sell = unit cost + profit. Bundle price = unit sell × units.
         </p>
         <p class="usm-editor-error" *ngIf="error">{{ error }}</p>
       </div>

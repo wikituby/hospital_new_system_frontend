@@ -101,7 +101,16 @@ export class DepartmentRequestRealtimeService implements OnDestroy {
           haystack.includes('mch') ||
           haystack.includes('antenatal') ||
           haystack.includes('postnatal') ||
-          haystack.includes('obstetric')
+          haystack.includes('immunisation') ||
+          haystack.includes('immunization') ||
+          haystack.includes('maternal child') ||
+          haystack.includes('maternal and child') ||
+          haystack.includes('obstetric') ||
+          haystack.includes('gynaecolog') ||
+          haystack.includes('gynecolog') ||
+          haystack.includes('gynae') ||
+          haystack.includes('obs and gyn') ||
+          haystack.includes('obs & gyn')
         );
       default:
         return true;

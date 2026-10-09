@@ -1,14 +1,24 @@
-<div class="pd-dsp-adm" [class.pd-dsp-adm--dispensed-only]="mode === 'dispensed-only'" title="PD paid · DSP dispensed · ADM administered">
-  <label *ngIf="showPaid" [attr.for]="inputIdPrefix + '-pd-' + (item?.id || 'x')" title="Paid (on invoice)">
+<div class="pd-dsp-adm" [class.pd-dsp-adm--dispensed-only]="mode === 'dispensed-only'" [attr.title]="showPrescribed ? 'PSD prescribed · PD paid · DSP dispensed · ADM administered' : 'PD paid · DSP dispensed · ADM administered'">
+  <label *ngIf="showPrescribed" class="pd-flag--psd" [attr.for]="inputIdPrefix + '-psd-' + (item?.id || 'x')" title="Prescribed">
+    <input
+      type="checkbox"
+      [id]="inputIdPrefix + '-psd-' + (item?.id || 'x')"
+      [checked]="prescribed"
+      [disabled]="disabled"
+      (change)="onPrescribed($event)" />
+    <span>PSD</span>
+  </label>
+  <label *ngIf="showPaid" class="pd-flag--pd" [attr.for]="inputIdPrefix + '-pd-' + (item?.id || 'x')" [title]="paidReadonly ? 'Paid — checked when payment for this drug has been received' : 'Paid (on invoice)'">
     <input
       type="checkbox"
       [id]="inputIdPrefix + '-pd-' + (item?.id || 'x')"
       [checked]="paid"
-      [disabled]="disabled"
+      [disabled]="paidDisabled"
       (change)="onPaid($event)" />
     <span>PD</span>
   </label>
   <label
+    class="pd-flag--dsp"
     [attr.for]="inputIdPrefix + '-dsp-' + (item?.id || 'x')"
     [title]="dispensedReadonly ? 'Dispensed from pharmacy (set automatically)' : 'Dispensed from pharmacy'">
     <input
@@ -21,6 +31,7 @@
   </label>
   <label
     *ngIf="showAdministered"
+    class="pd-flag--adm"
     [attr.for]="inputIdPrefix + '-adm-' + (item?.id || 'x')"
     [title]="administeredReadonly ? 'Administered on treatment chart (set automatically)' : 'Administered / given to patient'">
     <input

@@ -19,6 +19,8 @@ export class MainDashboardComponent implements OnInit, OnDestroy, AfterViewInit 
   errorMessage: string = '';
   isDarkMode: boolean = false;
   chartsReady: boolean = false;
+  summaryFromDate: string = '';
+  summaryToDate: string = '';
 
   totalServices: number = 0;
   totalCategories: number = 0;
@@ -90,9 +92,9 @@ export class MainDashboardComponent implements OnInit, OnDestroy, AfterViewInit 
   private readonly dashboardSectionsStorageKey = 'mainDashboardSectionExpanded';
   private readonly allDashboardSectionIds = [
     'summary',
+    'hospitalMetrics',
     'pendingTasks',
     'quickLinks',
-    'hospitalMetrics',
     'charts',
     'appointments',
     'activities',
@@ -112,6 +114,10 @@ export class MainDashboardComponent implements OnInit, OnDestroy, AfterViewInit 
     { label: 'Stock Initializer', icon: 'bi-box-arrow-in-right', route: '/overview/stock-initializer', color: '#2563eb' },
     { label: 'Services', icon: 'bi-heart-pulse', route: '/overview/services-management', color: '#4f46e5' },
   ];
+
+  get metricQuickLinks() {
+    return this.quickLinks.slice(0, 4);
+  }
 
   private themeSubscription?: Subscription;
   private apiReadySub?: Subscription;
@@ -280,12 +286,28 @@ export class MainDashboardComponent implements OnInit, OnDestroy, AfterViewInit 
     });
   }
 
-  private loadCounts(): void {
-    this.isLoading = true;
-    this.errorMessage = '';
+  onSummaryDateChange(): void {
+    this.loadCounts(false);
+  }
+
+  clearSummaryDates(): void {
+    this.summaryFromDate = '';
+    this.summaryToDate = '';
+    this.loadCounts(false);
+  }
+
+  get summaryDateFilterActive(): boolean {
+    return !!(this.summaryFromDate || this.summaryToDate);
+  }
+
+  private loadCounts(initial: boolean = true): void {
+    if (initial) {
+      this.isLoading = true;
+      this.errorMessage = '';
+    }
     this.lastLoadedApiBase = this.apiConfig.getBaseUrl();
 
-    this.api.getDashboardSummary().subscribe({
+    this.api.getDashboardSummary(this.summaryFromDate, this.summaryToDate).subscribe({
       next: (summary) => {
         this.applySummaryResponse(summary || {});
         this.loadStockVerificationAlerts();
@@ -294,7 +316,15 @@ export class MainDashboardComponent implements OnInit, OnDestroy, AfterViewInit 
         this.cdr.detectChanges();
         this.scheduleChartRender();
       },
-      error: (err) => this.handleDashboardLoadError(err),
+      error: (err) => {
+        if (initial) {
+          this.handleDashboardLoadError(err);
+          return;
+        }
+        console.error('API Error:', err);
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
     });
   }
 

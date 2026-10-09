@@ -56,7 +56,34 @@
           [alt]="facilityDisplayName"
           (error)="onFacilityLogoError($event)" />
       </button>
-      <span class="brand-title">{{ facilityDisplayName }}</span>
+      <div class="brand-text">
+        <span class="brand-title">{{ facilityDisplayName }}</span>
+        <span class="brand-tagline">healthcare for all</span>
+      </div>
+    </div>
+
+    <div class="sidebar-search-section">
+      <div class="sidebar-menu-search">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input
+          type="search"
+          name="sidebarMenuSearch"
+          placeholder="Search menu"
+          aria-label="Search sidebar"
+          [(ngModel)]="sidebarMenuQuery"
+          (ngModelChange)="onSidebarMenuSearch()"
+          (focus)="onSidebarSearchFocus()"
+          (blur)="onSidebarSearchBlur()" />
+        <button
+          type="button"
+          class="sidebar-search-clear"
+          *ngIf="sidebarMenuQuery"
+          (click)="clearSidebarMenuSearch()"
+          aria-label="Clear menu search">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <p class="sidebar-search-empty" hidden>No menu items found</p>
     </div>
 
     <nav class="nav">
@@ -83,7 +110,7 @@
           <li *ngIf="canAccessPage('all-patients')" (click)="navigateTo('overview/all-patients')" [class.active]="activeSubmenu==='all-patients'">Registry</li>
           <li *ngIf="canAccessPage('patient-groups')" (click)="navigateTo('overview/patient-groups')" [class.active]="activeSubmenu==='patient-groups'">Patient Groups</li>
           <li *ngIf="canAccessPage('queue-management')" (click)="navigateTo('overview/queue-management')" [class.active]="activeSubmenu==='queue-management'">Queue Management</li>
-          <li *ngIf="canAccessPage('patient-visit') || canAccessPage('consultations-center')" (click)="navigateTo('overview/consultations-center', $event)" [class.active]="activeSubmenu==='consultations-center'">Patient Visit</li>
+          <li *ngIf="canAccessPage('patient-visit') || canAccessPage('consultation-v2')" (click)="navigateTo('overview/consultation-v2', $event)" [class.active]="activeSubmenu==='consultation-v2'">Patient Visit</li>
           <li *ngIf="canAccessPage('patient-visits-list')" (click)="navigateTo('patient-visits-list', $event)" [class.active]="activeSubmenu==='patient-visits-list'">Patient Visits List</li>
           <li *ngIf="canAccessPage('doctor-assistant')" (click)="navigateTo('doctor-assistant', $event)" [class.active]="activeSubmenu==='doctor-assistant'">Doctor Assistant Chat</li>
         </ul>

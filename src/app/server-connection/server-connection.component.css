@@ -23,9 +23,37 @@
 }
 
 .server-connection-header {
+  position: relative;
   flex-shrink: 0;
   padding: 1.5rem 1.75rem 1rem;
+  padding-right: 6.5rem;
   border-bottom: 1px solid #e2e8f0;
+}
+
+.server-connection-cancel {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  min-height: 44px;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.server-connection-cancel:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.server-connection-cancel:focus-visible {
+  outline: 3px solid #0b6e7a;
+  outline-offset: 2px;
 }
 
 .server-connection-body {

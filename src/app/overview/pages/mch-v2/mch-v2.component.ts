@@ -11,7 +11,9 @@ import { PatientDisplayService } from '../../../services/patient-display.service
 import { userHasAnyRole } from '../../../utils/user-roles.util';
 import {
   isMaternityProcedureRequest,
+  mchClinicalFormKind,
   usesAntenatalStructuredMchReport,
+  usesDeliveryStructuredMchReport,
 } from '../../../utils/lab-results-docx.util';
 import { formatPulsePressureDisplay } from '../../../utils/vitals-calculations.util';
 
@@ -141,17 +143,55 @@ export class MchV2Component implements OnInit, OnDestroy {
   mchForm: Record<string, string> = {
     gravida: '',
     para: '',
+    abortions: '',
+    livingChildren: '',
+    lnmp: '',
+    edd: '',
     gestationalAge: '',
+    weight: '',
+    muac: '',
     bloodPressure: '',
     fundalHeight: '',
-    fetalHeartRate: '',
+    liePresentation: '',
     presentation: '',
+    fetalHeartRate: '',
     edema: '',
+    bloodGroupRh: '',
     hemoglobin: '',
+    hivStatus: '',
+    syphilisTest: '',
     urinalysis: '',
+    urineProtein: '',
+    urineSugar: '',
+    tdDose: '',
+    iptDose: '',
+    ironFolate: '',
+    deworming: '',
+    insecticideNet: '',
+    dangerSigns: '',
+    riskStatus: '',
+    nextVisitDate: '',
     immunizationStatus: '',
+    admissionDateTime: '',
+    labourOnset: '',
+    modeOfDelivery: '',
+    deliveryDateTime: '',
+    labourDuration: '',
+    deliveryIndication: '',
+    perineum: '',
+    placenta: '',
+    bloodLoss: '',
+    motherCondition: '',
+    babySex: '',
     newbornWeight: '',
+    apgar1: '',
+    apgar5: '',
+    resuscitation: '',
     feeding: '',
+    vitaminK: '',
+    eyeProphylaxis: '',
+    motherOutcome: '',
+    babyOutcome: '',
     complications: '',
     clinicalSummary: ''
   };
@@ -179,7 +219,16 @@ export class MchV2Component implements OnInit, OnDestroy {
     'mch',
     'antenatal',
     'postnatal',
+    'immunisation',
+    'immunization',
+    'maternal child',
+    'maternal and child',
     'obstetric',
+    'gynaecolog',
+    'gynecolog',
+    'gynae',
+    'obs and gyn',
+    'obs & gyn',
   ];
 
   private readonly mchDeptRoleKeywords = [
@@ -460,20 +509,7 @@ export class MchV2Component implements OnInit, OnDestroy {
   }
 
   private isMchCatalogItem(item: any): boolean {
-    const fields = [
-      item?.categoryParent,
-      item?.parentCategory,
-      item?.parentCategoryName,
-      item?.category,
-      item?.categoryName,
-      item?.parentPage,
-      item?.procedureCategory,
-      item?.parentProcedureCategory,
-      item?.procedureName,
-      item?.title,
-      item?.name,
-    ];
-    return fields.some((field) => this.matchesMchServiceKeyword(field));
+    return isMaternityProcedureRequest(item);
   }
 
   private extractProcedureServiceName(item: any): string {
@@ -481,11 +517,17 @@ export class MchV2Component implements OnInit, OnDestroy {
   }
 
   private matchesMchServiceKeyword(value: any): boolean {
-    const text = (value || '').toString().toLowerCase();
+    const text = (value || '')
+      .toString()
+      .toLowerCase()
+      .replace(/&/g, ' and ')
+      .replace(/\s+/g, ' ');
     if (!text) {
       return false;
     }
-    return this.mchDeptServiceKeywords.some((keyword) => text.includes(keyword));
+    return this.mchDeptServiceKeywords.some((keyword) =>
+      text.includes(keyword.replace(/&/g, ' and ').replace(/\s+/g, ' '))
+    );
   }
 
   private matchesMchDeptKeyword(value: any): boolean {
@@ -736,8 +778,20 @@ export class MchV2Component implements OnInit, OnDestroy {
     return (this.mchRequestsList || []).length;
   }
 
+  get selectedMchFormKind(): 'antenatal' | 'delivery' | 'general' {
+    return mchClinicalFormKind(this.selectedMchRequest);
+  }
+
   get selectedUsesAntenatalMchForm(): boolean {
     return usesAntenatalStructuredMchReport(this.selectedMchRequest);
+  }
+
+  get selectedUsesDeliveryMchForm(): boolean {
+    return usesDeliveryStructuredMchReport(this.selectedMchRequest);
+  }
+
+  get selectedUsesStructuredMchForm(): boolean {
+    return this.selectedMchFormKind !== 'general';
   }
 
   loadMchRequests(preserveSelectedId?: any, silent = false): void {
@@ -1255,7 +1309,7 @@ export class MchV2Component implements OnInit, OnDestroy {
         this.generalUs.recommendation = report.recommendation || '';
         const text = report.result || report.report || report.findings || '';
 
-        if (usesAntenatalStructuredMchReport(mchRequest)) {
+        if (this.selectedUsesStructuredMchForm) {
           if (text && String(text).trim().startsWith('{')) {
             try {
               const parsed = JSON.parse(text);
@@ -1297,7 +1351,7 @@ export class MchV2Component implements OnInit, OnDestroy {
       return;
     }
 
-    const body = this.selectedUsesAntenatalMchForm
+    const body = this.selectedUsesStructuredMchForm
       ? {
           doneBy: this.userName,
           result: JSON.stringify(this.mchForm),

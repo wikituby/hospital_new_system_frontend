@@ -15,10 +15,8 @@
                                 <form #usersForm="ngForm" (ngSubmit)="getUserFormData(usersForm.value)">
 
                                     <div class="d-flex align-items-center mb-3 pb-1 login-brand-row">
-                                        <img src="assets/images/kmc.jpeg" alt="Kavuma Medical Clinic logo" class="login-brand-logo" />
-                                        <span class="login-brand-title">
-                                            Kavuma Medical<strong class="login-brand-subtitle">Clinic</strong>
-                                        </span>
+                                        <img [src]="facilityLogoUrl" [alt]="facilityName + ' logo'" class="login-brand-logo" (error)="onFacilityLogoError()" />
+                                        <span class="login-brand-title">{{ facilityName }}</span>
                                     </div>
 
                                     <h5 class="fw-normal mb-3 pb-3" style="letter-spacing: 1px;font-size: 20px;">
@@ -52,7 +50,7 @@
 
                                     <a class="small text-muted">Terms of use.</a>
                                     <a class="small text-muted">Privacy policy</a>
-                                    <a class="small text-muted">Kavuma Medical Clinic</a>
+                                    <a class="small text-muted">{{ facilityName }}</a>
                                 </form>
                                 <br>
                             </div>

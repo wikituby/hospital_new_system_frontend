@@ -43,7 +43,7 @@
                                     <h3 *ngIf="loginForm.controls['email'].dirty && loginForm.hasError('required','email')" class="text-danger">*email is required</h3>
                               
                                 
-                                    <div class="form-group input-group">
+                                    <div class="form-group input-group login-password-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text">
                                                 <i class="bi bi-person-fill-lock"
@@ -52,9 +52,8 @@
                                         </div>
                                         <input formControlName="password" class="form-control form-control-lg" placeholder="Enter password"
                                             [type]="type" />
-                                        <span class="input-group-text">
-                                            <i class="{{eyeIcon}}" style="font-size:20px; color: #5181da;"
-                                                (click)="hideShowPassword()"></i>
+                                        <span class="input-group-text password-toggle" (click)="hideShowPassword()">
+                                            <i class="{{eyeIcon}}" style="font-size:20px; color: #5181da;"></i>
                                         </span>
                                        
                                     </div>
@@ -101,42 +100,11 @@
                                         <u><a style="color: #5181da;margin-left: 20px;" [routerLink]="['/signup']">Register here</a></u>
                                     </span><br><br>
 
-                                    <!--<span style="color: #165047;">
-                                        or <span class="finger" style="color: #39a58e;" (click)="noLogin()">Continue
-                                            without Login</span>
-                                    </span>-->
-
-                                    <!--                  
-                                    <div class="row">
-                                        <div class="col">
-                                            <br>
-                                            <a target="_blank" class="text-decoration-none">
-                                                <img src="assets/images/new.png" alt="login form" class="img-fluid"
-                                                style="width: 40px;height: 40px;margin-right: 15px;" />
-                                            </a>
-                                            <a  target="_blank" class="text-decoration-none">
-                                                <img src="assets/images/facebook.png" alt="login form" class="img-fluid"
-                                                style="width: 36px;height: 36px; margin-right: 15px;" />
-                                            </a>
-                                            <a  target="_blank" class="text-decoration-none">
-                                                <img src="assets/images/instagram.png" alt="login form" class="img-fluid"
-                                                style="width: 36px;height: 36px; margin-right: 15px;" />
-                                            </a>
-                                            <a  target="_blank" class="text-decoration-none">
-                                                <img src="assets/images/linkedin.png" alt="login form" class="img-fluid"
-                                                style="width: 36px;height: 36px; margin-right: 15px;" />                                                </a>
-                                       </div>
-                                    </div>-->
-                                    <br>
-
                                     <a class="small text-muted">Terms of use.</a>
                                     <a class="small text-muted">Privacy policy</a>
-                                    <a class="small text-muted">Kavuma Medical Clinic</a>
+                                    <a class="small text-muted">{{ facilityName }}</a>
                                 </form>
                                 <br>
-                                
-
-
                             </div>
                         </div>
 

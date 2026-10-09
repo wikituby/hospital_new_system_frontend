@@ -1568,6 +1568,31 @@
   border-top-right-radius: 8px;
 }
 
+.cv2-billing-head {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.cv2-billing-pay-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
+}
+
+.cv2-billing-pay-btn:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
 .cv2-billing-summary-table thead th::before {
   border-bottom-color: #fff !important;
   opacity: 0.9 !important;
@@ -1682,6 +1707,55 @@
 .cv2-panel-head h2 i {
   font-size: 1.05em;
   color: var(--cv2-primary-dark, #4f46e5);
+}
+
+.cv2-entry-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.cv2-entry-switch-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  flex: 0 0 auto;
+  transition: background 0.15s ease;
+}
+
+.cv2-entry-switch.on .cv2-entry-switch-track {
+  background: #4f46e5;
+}
+
+.cv2-entry-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.cv2-entry-switch.on .cv2-entry-switch-thumb {
+  transform: translateX(16px);
+}
+
+.cv2-entry-switch-label {
+  white-space: nowrap;
 }
 
 .cv2-panel-head p {
@@ -2131,7 +2205,7 @@ td.cv2-vital-tone,
 .cv2-treatment-plan-table th:nth-child(2),
 .cv2-treatment-plan-table td:nth-child(2),
 .cv2-treatment-name-cell {
-  width: 34%; /* Treatment — widest */
+  width: 86%;
   padding-left: 12px;
   white-space: normal;
   overflow: hidden;
@@ -2142,53 +2216,56 @@ td.cv2-vital-tone,
 
 .cv2-treatment-plan-table th:nth-child(3),
 .cv2-treatment-plan-table td:nth-child(3) {
-  width: 8%; /* Dosage */
+  width: 68px; /* Dosage */
 }
 
 .cv2-treatment-plan-table th:nth-child(4),
 .cv2-treatment-plan-table td:nth-child(4) {
-  width: 12%; /* Freq */
+  width: 84px; /* Freq */
 }
 
 .cv2-treatment-plan-table th:nth-child(5),
 .cv2-treatment-plan-table td:nth-child(5) {
-  width: 7%; /* Dur */
+  width: 84px; /* Dur */
+  padding-right: 2px !important;
 }
 
 .cv2-treatment-plan-table th:nth-child(6),
 .cv2-treatment-plan-table td:nth-child(6) {
-  width: 5%; /* Qty */
+  width: 38px; /* Qty */
+  padding-left: 2px !important;
 }
 
 .cv2-treatment-plan-table th:nth-child(7),
 .cv2-treatment-plan-table td:nth-child(7),
 .cv2-treatment-plan-table th:nth-child(8),
 .cv2-treatment-plan-table td:nth-child(8) {
-  width: 6%; /* Cost / Sell */
+  width: 52px; /* Cost / Sell */
 }
 
 .cv2-treatment-plan-table th:nth-child(9),
 .cv2-treatment-plan-table td:nth-child(9),
 .cv2-treatment-plan-table th:nth-child(10),
 .cv2-treatment-plan-table td:nth-child(10) {
-  width: 7%; /* TT Cost / TT Sell */
+  width: 60px; /* TT Cost / TT Sell */
 }
 
 .cv2-treatment-plan-table th:nth-child(11),
 .cv2-treatment-plan-table td:nth-child(11) {
-  width: 40px;
-  max-width: 40px;
+  width: 58px;
+  min-width: 58px;
+  max-width: 58px;
   overflow: visible;
   text-align: right;
-  padding-left: 2px !important;
-  padding-right: 10px !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
 }
 
-.cv2-treatment-plan-table td:nth-child(11).cv2-row-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 0;
+.cv2-treatment-plan-table td:nth-child(11).cv2-row-actions,
+.cv2-services-table td.cv2-line-pay-cell.cv2-row-actions,
+.cv2-treatment-plan-table td.cv2-line-pay-cell.cv2-row-actions {
+  display: table-cell;
+  text-align: right;
 }
 
 .cv2-treatment-plan-table td:nth-child(11) .cv2-action-menu {
@@ -2197,10 +2274,22 @@ td.cv2-vital-tone,
 }
 
 .cv2-treatment-plan-table th:nth-child(12),
-.cv2-treatment-plan-table td:nth-child(12) {
-  width: 88px;
-  text-align: center;
+.cv2-treatment-plan-table td:nth-child(12),
+.cv2-treatment-plan-table th.cv2-lifecycle-cell,
+.cv2-treatment-plan-table td.cv2-lifecycle-cell {
+  width: 112px !important;
+  min-width: 112px;
+  max-width: 112px;
+  text-align: right;
   overflow: visible;
+  padding-left: 2px !important;
+  padding-right: 0 !important;
+}
+
+.cv2-treatment-plan-table .cv2-lifecycle-cell .pd-dsp-adm {
+  width: 100%;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .cv2-services-wrap {
@@ -2426,10 +2515,16 @@ td.cv2-vital-tone,
 }
 
 .cv2-services-table th:nth-child(8),
-.cv2-services-table td:nth-child(8),
+.cv2-services-table td:nth-child(8) {
+  width: 72px;
+  text-align: right;
+  padding-left: 2px;
+  padding-right: 4px;
+}
+
 .cv2-services-table th:nth-child(9),
 .cv2-services-table td:nth-child(9) {
-  width: 72px;
+  width: 84px;
   text-align: right;
   padding-left: 2px;
   padding-right: 4px;
@@ -2437,11 +2532,108 @@ td.cv2-vital-tone,
 
 .cv2-services-table th:nth-child(10),
 .cv2-services-table td:nth-child(10) {
-  width: 64px;
+  width: 132px;
   text-align: right;
   overflow: visible;
-  padding-left: 2px;
-  padding-right: 10px;
+  padding-left: 16px;
+  padding-right: 8px;
+}
+
+.cv2-treatment-plan-table th.cv2-dur-cell,
+.cv2-treatment-plan-table td.cv2-dur-cell,
+.cv2-treatment-plan-table th.cv2-tt-cost,
+.cv2-treatment-plan-table td.cv2-tt-cost,
+.cv2-treatment-plan-table th.cv2-tt-sell,
+.cv2-treatment-plan-table td.cv2-tt-sell,
+.cv2-services-table th.cv2-tt-cost,
+.cv2-services-table td.cv2-tt-cost,
+.cv2-services-table th.cv2-tt-sell,
+.cv2-services-table td.cv2-tt-sell {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.cv2-treatment-plan-table th.cv2-dur-cell,
+.cv2-treatment-plan-table td.cv2-dur-cell {
+  width: 84px !important;
+  min-width: 84px;
+  max-width: 84px;
+  padding-right: 2px !important;
+}
+
+.cv2-stock-warn {
+  display: block;
+  margin-top: 2px;
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: normal;
+}
+
+.cv2-qty-short {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.cv2-services-table th.cv2-tt-sell,
+.cv2-services-table td.cv2-tt-sell,
+.cv2-services-table th.cv2-tt-cost,
+.cv2-services-table td.cv2-tt-cost {
+  width: 108px !important;
+  min-width: 108px;
+  max-width: none;
+  padding-right: 8px !important;
+}
+
+.cv2-treatment-plan-table th.cv2-unit-sell,
+.cv2-treatment-plan-table td.cv2-unit-sell {
+  width: 72px !important;
+  min-width: 72px;
+  max-width: 72px;
+  text-align: right;
+  padding-left: 2px !important;
+  padding-right: 16px !important;
+}
+
+.cv2-treatment-plan-table th.cv2-tt-sell,
+.cv2-treatment-plan-table td.cv2-tt-sell,
+.cv2-treatment-plan-table th.cv2-tt-cost,
+.cv2-treatment-plan-table td.cv2-tt-cost {
+  width: 60px !important;
+  min-width: 60px;
+  max-width: 60px;
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+  text-align: right;
+}
+
+.cv2-treatment-plan-table th.cv2-tt-cost,
+.cv2-treatment-plan-table td.cv2-tt-cost {
+  text-align: left;
+  padding-left: 12px !important;
+  padding-right: 2px !important;
+}
+
+.cv2-treatment-plan-table th.cv2-line-pay-cell,
+.cv2-treatment-plan-table td.cv2-line-pay-cell {
+  width: 58px !important;
+  min-width: 58px;
+  max-width: 58px !important;
+  padding-left: 4px !important;
+}
+
+.cv2-treatment-plan-table .cv2-services-act-row {
+  margin-left: 0;
+}
+
+.cv2-treatment-plan-table .cv2-line-pay-cell .cv2-kebab-btn {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border-radius: 7px;
+  border-color: #e2e8f0;
 }
 
 .cv2-services-table .cv2-kebab-btn {
@@ -2450,10 +2642,11 @@ td.cv2-vital-tone,
 }
 
 .cv2-services-act-row {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 2px;
+  gap: 6px;
+  margin-left: 10px;
 }
 
 .cv2-kebab-btn--danger {
@@ -2511,6 +2704,24 @@ td.cv2-vital-tone,
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--cv2-muted);
+}
+
+.cv2-report-input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--cv2-text, #0f172a);
+  font: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.cv2-clinical-report-title {
+  margin: 0 0 10px;
+  font-size: 15px;
 }
 
 .cv2-result-grid {
@@ -2702,6 +2913,133 @@ td.cv2-vital-tone,
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
 }
 
+.cv2-items-used-lead {
+  margin: 0 0 12px;
+  color: #475569;
+  font-size: 13px;
+}
+
+.cv2-items-used-add {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.cv2-items-used-add > label {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.cv2-items-used-add > label:nth-child(2) {
+  width: 88px;
+}
+
+.cv2-items-used-add > label:nth-child(3) {
+  width: 120px;
+}
+
+.cv2-items-used-add input,
+.cv2-items-used-add > .cv2-btn {
+  height: 34px;
+  min-height: 34px;
+  max-height: 34px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.cv2-items-used-add input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 8px;
+}
+
+.cv2-items-used-add > .cv2-btn {
+  flex: 0 0 auto;
+  align-self: flex-end;
+  width: 108px;
+  padding: 0 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cv2-items-used-search {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.cv2-items-used-search > label {
+  display: block;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #334155;
+}
+
+.cv2-items-used-results {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  max-height: 220px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.cv2-items-used-results button {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cv2-items-used-results button:hover {
+  background: #f8fafc;
+}
+
+.cv2-items-used-results p,
+.cv2-items-used-empty {
+  margin: 8px 10px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.cv2-items-used-table {
+  margin-top: 8px;
+}
+
+.cv2-items-used-total {
+  margin: 12px 0 0;
+  font-weight: 800;
+  color: #0f172a;
+}
+
 .cv2-action-menu-item {
   width: 100%;
   display: flex;
@@ -2828,7 +3166,7 @@ td.cv2-vital-tone,
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 7px 13px;
   border-radius: 12px;
   border: 1px solid transparent;
   font-size: 14px;
@@ -3855,6 +4193,57 @@ td.cv2-vital-tone,
   align-items: center;
 }
 
+.cv2-rx-fields-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cv2-rx-fields-switch input {
+  appearance: none;
+  width: 36px;
+  height: 20px;
+  margin: 0;
+  border-radius: 999px;
+  background: #cbd5e1;
+  position: relative;
+  cursor: pointer;
+  flex: 0 0 36px;
+}
+
+.cv2-rx-fields-switch input::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.15s ease;
+}
+
+.cv2-rx-fields-switch input:checked {
+  background: #4f46e5;
+}
+
+.cv2-rx-fields-switch input:checked::after {
+  transform: translateX(16px);
+}
+
+.cv2-pharmacy-prescribing-field--off input,
+.cv2-pharmacy-prescribing-field--off select {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
 .cv2-pharmacy-unit-sell-model ::ng-deep .usm-picker--compact {
   width: auto;
   max-width: 100%;
@@ -4732,7 +5121,7 @@ td.cv2-vital-tone,
 }
 
 .cv2-btn-sm {
-  padding: 6px 10px;
+  padding: 3px 7px;
   font-size: 0.82rem;
 }
 

@@ -2451,7 +2451,9 @@
   color: #60a5fa;
 }
 
-.patient-management-page.dark .item-title {
+.patient-management-page.dark .item-title,
+.patient-management-page.dark .patient-name-text,
+.patient-management-page.dark .patient-id {
   color: #e2e8f0;
 }
 

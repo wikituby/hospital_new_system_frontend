@@ -46,7 +46,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   private pickerScrollListener: (() => void) | null = null;
   rolePickerSearch = '';
   showNewRoleModal = false;
-  newRoleModalContext: 'create' | 'edit' | null = null;
+  newRoleModalContext: 'create' | 'edit' | 'page' | null = null;
   newRoleName = '';
   showEditRoleModal = false;
   editRoleModalContext: 'create' | 'edit' | null = null;
@@ -680,6 +680,12 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     );
   }
 
+  openNewRoleFromPage(): void {
+    this.newRoleModalContext = 'page';
+    this.newRoleName = '';
+    this.showNewRoleModal = true;
+  }
+
   openNewRoleModal(context: 'create' | 'edit', event: Event): void {
     event.stopPropagation();
     this.newRoleModalContext = context;
@@ -709,7 +715,9 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         this.isRoleActionInProgress = false;
         this.applyRolesFromMutationResponse(response);
-        this.selectRole(context, name);
+        if (context === 'create' || context === 'edit') {
+          this.selectRole(context, name);
+        }
         this.closeNewRoleModal();
         this.showFeedback(response?.message || 'Role created.', 'success');
       },

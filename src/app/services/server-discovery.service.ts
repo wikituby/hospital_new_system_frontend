@@ -5,6 +5,7 @@ import {
   API_CONTEXT_PATH,
   API_DEFAULT_PORT,
   API_HEALTH_PATH,
+  API_LOCALHOST_BASE,
   HEALTH_CHECK_TIMEOUT_MS,
   getDevProxyBase,
   isAngularDevServer,
@@ -213,7 +214,7 @@ export class ServerDiscoveryService {
       add(getDevProxyBase());
     }
 
-    add('http://127.0.0.1:8080/health_care');
+    add(API_LOCALHOST_BASE);
 
     return bases;
   }

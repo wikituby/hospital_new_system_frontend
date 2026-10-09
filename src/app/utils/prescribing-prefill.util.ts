@@ -228,7 +228,24 @@ export function formatFrequencyDisplay(
   return `${tu} X ${fv}${period ? ` (${period})` : ''}`;
 }
 
+/** Once-only dose. Stored as -1 so it does not match Minute/Hour/Day/Week/Month. */
+export const STAT_PERIOD_UNIT = -1;
+
+export function isStatPeriodUnit(unit: unknown): boolean {
+  if (unit == null || unit === '') {
+    return false;
+  }
+  const n = Number(unit);
+  if (Number.isFinite(n) && n < 0) {
+    return true;
+  }
+  return /^stat/i.test(String(unit).trim());
+}
+
 export function formatTreatmentPeriodUnit(unit: unknown): string {
+  if (isStatPeriodUnit(unit)) {
+    return 'Stat';
+  }
   const n = Number(unit);
   if (Number.isFinite(n) && Math.abs(n - 1 / 1440) < 0.000001) {
     return 'Minute(s)';
@@ -274,6 +291,9 @@ export function formatTreatmentPeriodUnit(unit: unknown): string {
 export function parseTreatmentPeriodUnitToDayFraction(unit: unknown): number | null {
   if (unit == null || unit === '') {
     return null;
+  }
+  if (isStatPeriodUnit(unit)) {
+    return STAT_PERIOD_UNIT;
   }
   const n = Number(unit);
   if (Number.isFinite(n) && n > 0) {

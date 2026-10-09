@@ -10,14 +10,6 @@ import { FilterPipeModule } from 'ngx-filter-pipe';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { DEFAULT_DRUG_CATEGORY_TREE } from '../../../../config/default-drug-categories.config';
-import {
-  countMissingDrugCategories,
-  DrugCategorySyncMode,
-  hasDrugParentCategory,
-  isDrugCategoryTreeIncomplete,
-  syncDefaultDrugCategories
-} from '../../../../utils/seed-drug-categories.util';
 import { findCreatedInList } from '../../../../utils/inventory-dropdown.util';
 import {
   PRESCRIBING_DOSAGE_PROFILE_LABELS,
@@ -195,9 +187,6 @@ export class ConsumableItemsComponent implements OnInit {
   expandedCategoryIds: Set<number> = new Set<number>();
   expandedItemModalCategoryIds: Set<number> = new Set<number>();
   expandedCategoryParentIds: Set<number> = new Set<number>();
-  isSeedingDrugCategories = false;
-  drugCategorySyncMode: DrugCategorySyncMode = 'incremental';
-  drugCategorySeedProgress = { current: 0, total: 0, name: '' };
   
   // Add category modal properties
   isCollapsedNewCategory: boolean = true;
@@ -321,6 +310,11 @@ export class ConsumableItemsComponent implements OnInit {
   /** Multiple indication entities for the consumable item modal */
   indicationRows: { rowId: number; id: number | null; text: string }[] = [];
   private indicationRowSeq = 1;
+  otherBarcodeRows: { rowId: number; id: number | null; code: string }[] = [];
+  private otherBarcodeRowSeq = 1;
+  stockItemActionMenuId: number | null = null;
+  stockItemActionMenuItem: any = null;
+  stockItemActionMenuStyle: Record<string, string> = {};
   itemList: any[] = [];
   filteredItemList: any[] = [];
   ingredientUnitList: any[] = [];
@@ -452,7 +446,9 @@ export class ConsumableItemsComponent implements OnInit {
     this.api.getAllStockItems().subscribe({
       next: (res) => {
         this.isLoadingService = false;
-        this.stockItemList = res || [];
+        this.stockItemList = (res || []).slice().sort(
+          (a: any, b: any) => Number(b?.id || 0) - Number(a?.id || 0)
+        );
         this.data = res || [];
         console.log("Stock items loaded: ", this.stockItemList);
         this.page = 1;
@@ -470,6 +466,11 @@ export class ConsumableItemsComponent implements OnInit {
         }, 5000);
       }
     });
+  }
+
+  stockItemSerialNumber(indexOnPage: number): number {
+    const total = this.filteredStockItemList?.length || 0;
+    return total - ((this.page - 1) * this.itemsPerPage + indexOnPage);
   }
 
   get filteredStockItemList(): any[] {
@@ -554,7 +555,7 @@ export class ConsumableItemsComponent implements OnInit {
       this.loadBrands(),
       this.loadFormulations(),
       this.loadLowestPackages(),
-      this.loadCategories({ skipDrugSync: true }),
+      this.loadCategories(),
       this.loadRoutesOfAdmin(),
       this.loadStrengthUnits(),
       this.loadItems(),
@@ -1137,6 +1138,7 @@ export class ConsumableItemsComponent implements OnInit {
       this.currentStockItem.brandId = brand.id;
       this.isBrandDropdownOpen = false; // Close dropdown after selection
       this.brandSearchQuery = ''; // Clear search
+      this.refreshDrugStockItemName();
       console.log('Selected brand name:', this.currentBrandName);
       console.log('Selected brand ID:', this.currentBrandId);
     } else {
@@ -1156,6 +1158,7 @@ export class ConsumableItemsComponent implements OnInit {
     this.currentBrandName = 'Select brand';
     this.currentBrandId = null;
     this.currentStockItem.brandId = null;
+    this.refreshDrugStockItemName();
   }
 
   // Manufacturer methods
@@ -1710,7 +1713,8 @@ export class ConsumableItemsComponent implements OnInit {
       descriptionAfterReconstitution: null,
       // Storage and antidote
       storage: null,
-      antiDote: null
+      antiDote: null,
+      barcode: this.generateStockItemBarcode()
     };
     this.clearBrandSelection();
     this.clearFormulationSelection();
@@ -1741,6 +1745,8 @@ export class ConsumableItemsComponent implements OnInit {
     this.ingredients = [];
     this.indicationRowSeq = 1;
     this.indicationRows = [];
+    this.otherBarcodeRowSeq = 1;
+    this.otherBarcodeRows = [];
     // Reset editing state
     this.isEditingStockItem = false;
     this.editingStockItemId = null;
@@ -1868,11 +1874,14 @@ export class ConsumableItemsComponent implements OnInit {
           descriptionAfterReconstitution: data?.descriptionAfterReconstitution || null,
           // Storage and antidote
           storage: data?.storage || null,
-          antiDote: data?.antiDote || null
+          antiDote: data?.antiDote || null,
+          barcode: data?.barcode || this.generateStockItemBarcode(),
+          stockItemName: data?.stockItemName || ''
         };
 
         this.hydratePrescribingProfileFromData(data);
         this.setIndicationRowsFromData(data);
+        this.setOtherBarcodeRowsFromData(data);
         this.loadStockItemDosageRules(stockItem.id);
         
         console.log("=== FORM FIELDS POPULATED ===");
@@ -2099,7 +2108,7 @@ export class ConsumableItemsComponent implements OnInit {
                       itemName: item ? (item.genericName || item.title || item.name) : '',
                       strength: strengthValue,
                       unitId: unitId,
-                      unitName: unit ? unit.title : '',
+                      unitName: unit ? (unit.standardAbbreviation || unit.title || '') : '',
                     }));
                   }
                 });
@@ -2108,6 +2117,7 @@ export class ConsumableItemsComponent implements OnInit {
                 if (this.ingredients.length === 0) {
                   this.addIngredient();
                 }
+                this.refreshDrugStockItemName();
               },
               error: (err) => {
                 console.error("Error loading strengths:", err);
@@ -2189,13 +2199,23 @@ export class ConsumableItemsComponent implements OnInit {
   }
 
   saveStockItem(data: any) {
+    this.refreshDrugStockItemName();
+    const identityError = this.validateStockItemIdentity();
+    if (identityError) {
+      this.isButtonDisabled = false;
+      this.showDivUpdatedLoaderNewStockItem = false;
+      this.responseColor = 'rgb(238, 16, 16)';
+      this.responseMessage = identityError;
+      this.showDivAddToDataBaseNewStockItem = true;
+      return;
+    }
+
     this.isButtonDisabled = true;
     this.showDivUpdatedLoaderNewStockItem = true;
     this.showDivAddToDataBaseNewStockItem = false;
 
-    // Prepare the data - convert empty strings to null for numeric fields
-    // Note: stockItemName is auto-generated by the backend
     const stockItemData: any = {
+      stockItemName: (this.currentStockItem?.stockItemName || '').trim() || null,
       brandId: data.brandId ? Number(data.brandId) : null,
       formulationId: data.formulationId ? Number(data.formulationId) : null,
       lowestPackageId: data.lowestPackageId ? Number(data.lowestPackageId) : null,
@@ -2220,6 +2240,8 @@ export class ConsumableItemsComponent implements OnInit {
       // Medical information fields
       indication: this.buildIndicationSummary() || data.indication || null,
       indications: this.buildIndicationsPayload(),
+      barcode: this.currentStockItem?.barcode || null,
+      otherBarcodes: this.buildOtherBarcodesPayload(),
       contraIndication: data.contraIndication || null,
       drugIteractions: data.drugIteractions || null,
       pharmacodynamics: data.pharmacodynamics || null,
@@ -2725,7 +2747,6 @@ export class ConsumableItemsComponent implements OnInit {
 
   // Category methods
   loadCategories(options?: {
-    skipDrugSync?: boolean;
     preserveExpandState?: boolean;
     removeDeletedIds?: Set<number>;
     focusParentId?: number | null;
@@ -2733,17 +2754,7 @@ export class ConsumableItemsComponent implements OnInit {
     return new Promise((resolve) => {
       this.api.getAllItemCategoriesHospitalItem().subscribe({
         next: (res) => {
-          const categories = res || [];
-          if (
-            !options?.skipDrugSync &&
-            this.shouldSyncDefaultDrugCategories(categories) &&
-            !this.isSeedingDrugCategories
-          ) {
-            this.syncDefaultDrugCategoriesTree();
-            resolve();
-            return;
-          }
-          this.applyLoadedCategories(categories, options);
+          this.applyLoadedCategories(res || [], options);
           resolve();
         },
         error: (err) => {
@@ -2785,18 +2796,11 @@ export class ConsumableItemsComponent implements OnInit {
         this.expandCategoryAncestors(options.focusParentId, 'main');
         this.expandCategoryAncestors(options.focusParentId, 'item');
         this.expandCategoryAncestors(options.focusParentId, 'parent');
-      } else {
-        this.expandRootCategories(this.expandedCategoryIds);
-        this.expandRootCategories(this.expandedItemModalCategoryIds);
-        this.expandRootCategories(this.expandedCategoryParentIds);
       }
     } else {
       this.expandedCategoryIds.clear();
       this.expandedItemModalCategoryIds.clear();
       this.expandedCategoryParentIds.clear();
-      this.expandRootCategories(this.expandedCategoryIds);
-      this.expandRootCategories(this.expandedItemModalCategoryIds);
-      this.expandRootCategories(this.expandedCategoryParentIds);
     }
 
     this.filteredCategoryList = this.categoryList;
@@ -2838,14 +2842,6 @@ export class ConsumableItemsComponent implements OnInit {
       const current = this.categoryList.find((cat) => Number(cat.id) === currentId);
       currentId = current ? this.getCategoryParentId(current) : null;
     }
-    this.expandRootCategories(targetSet);
-  }
-
-  private shouldSyncDefaultDrugCategories(categories: any[]): boolean {
-    if (!categories?.length) {
-      return true;
-    }
-    return isDrugCategoryTreeIncomplete(categories, DEFAULT_DRUG_CATEGORY_TREE);
   }
 
   private getCategoryParentId(cat: any): number | null {
@@ -2922,7 +2918,6 @@ export class ConsumableItemsComponent implements OnInit {
     removeDeletedIds?: Set<number>
   ): Promise<void> {
     await this.loadCategories({
-      skipDrugSync: true,
       preserveExpandState: true,
       removeDeletedIds,
       focusParentId,
@@ -2984,80 +2979,6 @@ export class ConsumableItemsComponent implements OnInit {
       return;
     }
     this.selectCategory(resolved);
-  }
-
-  syncMissingDrugCategories(manual = false): void {
-    if (this.isSeedingDrugCategories) {
-      return;
-    }
-
-    const isFreshCatalogue = !this.categoryList.length || !hasDrugParentCategory(this.categoryList);
-    const workCount = countMissingDrugCategories(
-      this.categoryList,
-      DEFAULT_DRUG_CATEGORY_TREE
-    );
-
-    if (!manual && workCount === 0) {
-      return;
-    }
-
-    this.drugCategorySyncMode = isFreshCatalogue ? 'fresh' : 'incremental';
-    this.isSeedingDrugCategories = true;
-    this.drugCategorySeedProgress = { current: 0, total: workCount, name: '' };
-
-    syncDefaultDrugCategories(this.api, DEFAULT_DRUG_CATEGORY_TREE, (progress) => {
-      this.drugCategorySeedProgress = progress;
-    })
-      .then((result) => {
-        this.isSeedingDrugCategories = false;
-        this.drugCategorySyncMode = result.mode;
-        this.drugCategorySeedProgress = { current: 0, total: 0, name: '' };
-
-        if (result.failed > 0) {
-          this.responseColor = 'rgb(238, 16, 16)';
-          this.responseMessage = result.added > 0
-            ? `Added ${result.added} DRUG categories, but ${result.failed} could not be created.`
-            : `Could not add DRUG categories (${result.failed} failed).`;
-          this.showDivAddToDataBaseNewCategory = true;
-          setTimeout(() => {
-            this.showDivAddToDataBaseNewCategory = false;
-          }, 5000);
-        } else if (result.added > 0) {
-          this.responseColor = 'rgb(11, 155, 112)';
-          this.responseMessage = result.mode === 'fresh'
-            ? `Created DRUG category catalogue (${result.added} categories).`
-            : `Added ${result.added} missing DRUG categories.`;
-          this.showDivAddToDataBaseNewCategory = true;
-          setTimeout(() => {
-            this.showDivAddToDataBaseNewCategory = false;
-          }, 3000);
-        } else if (manual) {
-          this.responseColor = 'rgb(11, 155, 112)';
-          this.responseMessage = 'DRUG category tree is already complete.';
-          this.showDivAddToDataBaseNewCategory = true;
-          setTimeout(() => {
-            this.showDivAddToDataBaseNewCategory = false;
-          }, 2500);
-        }
-
-        return this.loadCategories({ skipDrugSync: true });
-      })
-      .catch((err) => {
-        console.error('Error syncing default drug categories:', err);
-        this.isSeedingDrugCategories = false;
-        this.drugCategorySeedProgress = { current: 0, total: 0, name: '' };
-        this.responseColor = 'rgb(238, 16, 16)';
-        this.responseMessage = err?.error?.message || err?.message || 'Error syncing DRUG categories.';
-        this.showDivAddToDataBaseNewCategory = true;
-        this.loadCategories({ skipDrugSync: true });
-        setTimeout(() => {
-          this.showDivAddToDataBaseNewCategory = false;
-        }, 4000);
-      });
-  }
-
-  private syncDefaultDrugCategoriesTree(): void {
-    this.syncMissingDrugCategories(false);
   }
 
   // Get category name by ID
@@ -3216,6 +3137,29 @@ export class ConsumableItemsComponent implements OnInit {
     }
     const stored = String(item.stockItemName || '').trim();
     return stored || 'N/A';
+  }
+
+  getStockItemInitials(item: any): string {
+    const name = this.getStockItemDisplayName(item).trim();
+    if (!name || name === 'N/A') {
+      return '?';
+    }
+    const parts = name.split(/[\s,]+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+    }
+    const word = parts[0];
+    return (word.charAt(0) + (word.charAt(1) || word.charAt(0))).toUpperCase();
+  }
+
+  getStockItemAvatarColor(item: any): string {
+    const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#6366f1', '#14b8a6'];
+    const name = this.getStockItemDisplayName(item).trim();
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
   }
 
   private buildStockItemDisplayName(item: any): string {
@@ -3558,7 +3502,6 @@ export class ConsumableItemsComponent implements OnInit {
         // Refresh filtered list even if already loaded
         this.filteredCategoryList = this.categoryList;
         this.filteredCategoryTree = [...this.categoryTree];
-        this.expandRootCategories(this.expandedCategoryIds);
         if (this.categorySearchQuery.trim()) {
           this.filterCategories();
         }
@@ -3623,16 +3566,21 @@ export class ConsumableItemsComponent implements OnInit {
     this.selectedCategory = resolved;
     this.selectedCategoryName = resolved.name || '';
     this.currentStockItem.itemCategoryId = resolved.id;
+    const localTop = this.resolveTopParentCategoryById(resolved.id) || resolved;
+    this.selectedCategoryTopParentName = (localTop?.name || resolved.name || '').toString();
+    this.refreshDrugStockItemName();
 
     this.api.getHighestParentItemCategoryHospitalItem(Number(resolved.id)).subscribe({
       next: (highestParent: any) => {
         const topCategory = highestParent || this.resolveTopParentCategoryById(resolved.id) || resolved;
         this.selectedCategoryTopParentName = (topCategory?.name || resolved.name || '').toString();
+        this.refreshDrugStockItemName();
       },
       error: (err) => {
         console.error('Error loading highest parent category: ', err);
         const topCategory = this.resolveTopParentCategoryById(resolved.id) || resolved;
         this.selectedCategoryTopParentName = (topCategory?.name || resolved.name || '').toString();
+        this.refreshDrugStockItemName();
       }
     });
   }
@@ -3696,15 +3644,6 @@ export class ConsumableItemsComponent implements OnInit {
     });
 
     console.log("Category selected:", this.selectedCategoryName);
-  }
-
-  private expandRootCategories(targetSet: Set<number>): void {
-    if (targetSet.size > 0) return;
-    this.categoryTree.forEach((node: any) => {
-      if (node?.id != null) {
-        targetSet.add(Number(node.id));
-      }
-    });
   }
 
   private expandAllFromTree(tree: any[], targetSet: Set<number>): void {
@@ -3822,8 +3761,6 @@ export class ConsumableItemsComponent implements OnInit {
     // Ensure categories are loaded
     if (this.categoryList.length === 0) {
       this.loadCategories();
-    } else if (this.isCategoryModalParentDropdownOpen) {
-      this.expandRootCategories(this.expandedCategoryParentIds);
     }
   }
 
@@ -4921,6 +4858,63 @@ export class ConsumableItemsComponent implements OnInit {
       this.isItemModalCategoryDropdownOpen = false;
       this.isCategoryModalParentDropdownOpen = false;
     }
+    if (
+      this.stockItemActionMenuId != null &&
+      !target.closest('.stock-item-action-pop') &&
+      !target.closest('.stock-item-action-btn')
+    ) {
+      this.closeStockItemActionMenu();
+    }
+  }
+
+  onStockItemsPageChange(page: number): void {
+    this.page = page;
+    this.closeStockItemActionMenu();
+  }
+
+  toggleStockItemActionMenu(item: any, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const id = Number(item?.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return;
+    }
+    if (this.stockItemActionMenuId === id) {
+      this.closeStockItemActionMenu();
+      return;
+    }
+    const trigger = (event.currentTarget as HTMLElement) || null;
+    const rect = trigger?.getBoundingClientRect();
+    if (!rect) {
+      return;
+    }
+    const popWidth = 168;
+    const popHeight = 132;
+    const gap = 4;
+    let top = rect.bottom + gap;
+    if (top + popHeight > window.innerHeight - 8) {
+      top = Math.max(8, rect.top - popHeight - gap);
+    }
+    let left = rect.right - popWidth;
+    if (left < 8) {
+      left = 8;
+    }
+    if (left + popWidth > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - popWidth - 8);
+    }
+    this.stockItemActionMenuId = id;
+    this.stockItemActionMenuItem = item;
+    this.stockItemActionMenuStyle = {
+      position: 'fixed',
+      top: `${top}px`,
+      left: `${left}px`,
+      zIndex: '150030',
+    };
+  }
+
+  closeStockItemActionMenu(): void {
+    this.stockItemActionMenuId = null;
+    this.stockItemActionMenuItem = null;
   }
 
   // Active Ingredients & Strengths methods
@@ -5021,6 +5015,102 @@ export class ConsumableItemsComponent implements OnInit {
     return row.rowId;
   }
 
+  addOtherBarcodeRow(): void {
+    this.otherBarcodeRows.push({
+      rowId: this.otherBarcodeRowSeq++,
+      id: null,
+      code: '',
+    });
+  }
+
+  removeOtherBarcodeRow(index: number): void {
+    if (index < 0 || index >= this.otherBarcodeRows.length) {
+      return;
+    }
+    this.otherBarcodeRows.splice(index, 1);
+  }
+
+  trackOtherBarcodeRow(_index: number, row: { rowId: number }): number {
+    return row.rowId;
+  }
+
+  private generateStockItemBarcode(): string {
+    const time = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).slice(2, 5).toUpperCase();
+    return `VH${time}${rand}`;
+  }
+
+  skuBarcode(value: string): { bars: { x: number; w: number }[]; width: number } | null {
+    const raw = String(value || '').trim().toUpperCase();
+    if (!raw) {
+      return null;
+    }
+    const patterns: Record<string, string> = {
+      '0': 'nnnwwnwnn', '1': 'wnnwnnnnw', '2': 'nnwwnnnnw', '3': 'wnwwnnnnn',
+      '4': 'nnnwwnnnw', '5': 'wnnwwnnnn', '6': 'nnwwwnnnn', '7': 'nnnwnnwnw',
+      '8': 'wnnwnnwnn', '9': 'nnwwnnwnn', 'A': 'wnnnnwnnw', 'B': 'nnwnnwnnw',
+      'C': 'wnwnnwnnn', 'D': 'nnnnwwnnw', 'E': 'wnnnwwnnn', 'F': 'nnwnwwnnn',
+      'G': 'nnnnnwwnw', 'H': 'wnnnnwwnn', 'I': 'nnwnnwwnn', 'J': 'nnnnwwwnn',
+      'K': 'wnnnnnnww', 'L': 'nnwnnnnww', 'M': 'wnwnnnnwn', 'N': 'nnnnwnnww',
+      'O': 'wnnnwnnwn', 'P': 'nnwnwnnwn', 'Q': 'nnnnnnwww', 'R': 'wnnnnnwwn',
+      'S': 'nnwnnnwwn', 'T': 'nnnnwnwwn', 'U': 'wwnnnnnnw', 'V': 'nwwnnnnnw',
+      'W': 'wwwnnnnnn', 'X': 'nwnnwnnnw', 'Y': 'wwnnwnnnn', 'Z': 'nwwnwnnnn',
+      '-': 'nwnnnnwnw', '.': 'wwnnnnwnn', ' ': 'nwwnnnwnn', '*': 'nwnnwnwnn',
+    };
+    const narrow = 1;
+    const wide = 2.5;
+    const chars = `*${raw}*`;
+    const bars: { x: number; w: number }[] = [];
+    let x = 8;
+    for (let i = 0; i < chars.length; i++) {
+      const pattern = patterns[chars.charAt(i)];
+      if (!pattern) {
+        continue;
+      }
+      for (let j = 0; j < pattern.length; j++) {
+        const width = pattern.charAt(j) === 'w' ? wide : narrow;
+        if (j % 2 === 0) {
+          bars.push({ x, w: width });
+        }
+        x += width;
+      }
+      x += narrow;
+    }
+    return { bars, width: x + 8 };
+  }
+
+  private setOtherBarcodeRowsFromData(data: any): void {
+    this.otherBarcodeRowSeq = 1;
+    this.otherBarcodeRows = [];
+    const list = Array.isArray(data?.otherBarcodes) ? data.otherBarcodes : [];
+    for (const row of list) {
+      const code = String(row?.code || '').trim();
+      if (!code) {
+        continue;
+      }
+      this.otherBarcodeRows.push({
+        rowId: this.otherBarcodeRowSeq++,
+        id: row?.id != null ? Number(row.id) : null,
+        code,
+      });
+    }
+  }
+
+  private buildOtherBarcodesPayload(): { code: string }[] {
+    const seen = new Set<string>();
+    const rows: { code: string }[] = [];
+    for (const row of this.otherBarcodeRows || []) {
+      const code = String(row?.code || '').trim();
+      const key = code.toUpperCase();
+      if (!code || seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      rows.push({ code });
+    }
+    return rows;
+  }
+
   private setIndicationRowsFromData(data: any): void {
     this.indicationRowSeq = 1;
     this.indicationRows = [];
@@ -5100,6 +5190,80 @@ export class ConsumableItemsComponent implements OnInit {
 
   removeIngredient(index: number) {
     this.ingredients.splice(index, 1);
+    this.refreshDrugStockItemName();
+  }
+
+  refreshDrugStockItemName(): void {
+    if (!this.isDrugCategory()) {
+      return;
+    }
+    const parts: string[] = [];
+    const brand = (this.currentBrandName || '').trim();
+    if (brand && brand !== 'Select brand') {
+      parts.push(brand);
+    }
+    for (const ingredient of this.ingredients || []) {
+      const name = String(ingredient?.itemName || '').trim();
+      if (!name) {
+        continue;
+      }
+      const bits = [name];
+      if (ingredient.strength != null && String(ingredient.strength).trim() !== '') {
+        bits.push(String(ingredient.strength));
+      }
+      const unit = String(ingredient.unitName || '').trim();
+      if (unit) {
+        bits.push(unit);
+      }
+      parts.push(bits.join(' '));
+    }
+    this.currentStockItem.stockItemName = parts.join(', ');
+  }
+
+  private validateStockItemIdentity(): string | null {
+    if (this.isDrugCategory()) {
+      const complete = (this.ingredients || []).filter((ingredient) =>
+        ingredient?.itemId && ingredient.strength != null && String(ingredient.strength).trim() !== '' && ingredient.unitId
+      );
+      if (!complete.length) {
+        return 'A drug needs at least one active ingredient with its strength and unit.';
+      }
+      const signature = this.compositionSignature(complete);
+      const match = (this.stockItemList || []).find((item) =>
+        item?.compositionKey &&
+        item.compositionKey === signature &&
+        Number(item.id) !== Number(this.editingStockItemId)
+      );
+      if (match) {
+        const name = this.getStockItemDisplayName(match);
+        return `A drug with the same active ingredients and composition already exists${name && name !== 'N/A' ? ': ' + name : ''}.`;
+      }
+      return null;
+    }
+
+    const name = String(this.currentStockItem?.stockItemName || '').trim();
+    if (!name) {
+      return 'Stock item name is required.';
+    }
+    const match = (this.stockItemList || []).find((item) =>
+      String(item?.stockItemName || '').trim().toLowerCase() === name.toLowerCase() &&
+      Number(item.id) !== Number(this.editingStockItemId)
+    );
+    if (match) {
+      return 'A consumable item with this name already exists.';
+    }
+    return null;
+  }
+
+  private compositionSignature(ingredients: any[]): string {
+    return ingredients
+      .map((ingredient) => {
+        const strength = Number(ingredient.strength);
+        const strengthText = Number.isFinite(strength) ? String(strength) : String(ingredient.strength).trim();
+        return `${Number(ingredient.itemId)}|${strengthText}|${Number(ingredient.unitId)}`;
+      })
+      .sort()
+      .join('||');
   }
 
   toggleIngredientItemDropdown(index: number) {
@@ -5157,6 +5321,7 @@ export class ConsumableItemsComponent implements OnInit {
     this.ingredients[index].isItemDropdownOpen = false;
     this.ingredients[index].itemSearchQuery = '';
     this.filterIngredientItems(index);
+    this.refreshDrugStockItemName();
   }
 
   openItemModal(index: number) {
@@ -5195,9 +5360,6 @@ export class ConsumableItemsComponent implements OnInit {
     this.isItemModalCategoryDropdownOpen = !this.isItemModalCategoryDropdownOpen;
     // Close main category dropdown if open
     this.isCategoryDropdownOpen = false;
-    if (this.isItemModalCategoryDropdownOpen) {
-      this.expandRootCategories(this.expandedItemModalCategoryIds);
-    }
   }
 
   filterItemModalCategories() {
@@ -5325,10 +5487,11 @@ export class ConsumableItemsComponent implements OnInit {
 
   selectIngredientUnit(index: number, unit: any) {
     this.ingredients[index].unitId = unit.id;
-    this.ingredients[index].unitName = unit.title || '';
+    this.ingredients[index].unitName = unit.standardAbbreviation || unit.title || '';
     this.ingredients[index].isUnitDropdownOpen = false;
     this.ingredients[index].unitSearchQuery = '';
     this.filterIngredientUnits(index);
+    this.refreshDrugStockItemName();
   }
 
   clearIngredientItemSelection(index: number) {

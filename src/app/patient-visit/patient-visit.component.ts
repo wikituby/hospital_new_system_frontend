@@ -519,6 +519,8 @@ export class PatientVisitComponent implements AfterViewInit, OnDestroy {
   sundryCatalogLoading = false;
   private sundryStockItemIdSet = new Set<number>();
   private sundryCategoryIdSet = new Set<number>();
+  private sundryStockItems: any[] = [];
+  private sundryShopItems: any[] = [];
 
   procedureName: any;
 
@@ -3402,6 +3404,7 @@ openOtherProcedureDropdown() {
           this.getRequestedTreatmentByVisitSeparately();
           this.getCostsRegularySeparately();
           this.loadDrugList();
+          this.pharmacyVisitSync.notifyPrescriptionChanged({ visitId: Number(this.visitId) });
           console.log("Treatment added successfully");
   
           setTimeout(() => {
@@ -3484,6 +3487,7 @@ openOtherProcedureDropdown() {
           this.getRequestedTreatmentByVisitSeparately();
           this.getCostsRegularySeparately();
           this.loadDrugList();
+          this.pharmacyVisitSync.notifyPrescriptionChanged({ visitId: Number(this.visitId) });
           console.log("Treatment Request updated successfully");
           this.showDivUpdatedLoaderPharmacy = false;
           this.isLoadingNewPatientPharmacy = false;
@@ -3875,6 +3879,7 @@ openVisitSundriesModal(): void {
   this.sundryDropdownOpen = false;
   this.selectedSundryBatch = null;
   this.sundryQuantity = 1;
+  this.applyPharmacyTreatmentSourceFromBusinessSettings();
   if (!this.allStockBatchesCache.length) {
     this.loadDrugList();
   }
@@ -3889,10 +3894,12 @@ openVisitSundriesModal(): void {
     visitSundries: visitSundries$,
     stockItems: this.api.getAllStockItems().pipe(catchError(() => of([]))),
     categories: this.api.getAllItemCategories().pipe(catchError(() => of([]))),
+    shopItems: this.api.getAllItems().pipe(catchError(() => of([]))),
   }).subscribe({
-    next: ({ visitSundries, stockItems, categories }) => {
+    next: ({ visitSundries, stockItems, categories, shopItems }) => {
       this.visitSundriesList = Array.isArray(visitSundries) ? visitSundries : [];
       this.visitSundriesLoading = false;
+      this.sundryShopItems = Array.isArray(shopItems) ? shopItems : [];
       this.rebuildSundryCatalog(stockItems, categories);
       this.sundryCatalogLoading = false;
     },
@@ -3901,6 +3908,8 @@ openVisitSundriesModal(): void {
       this.visitSundriesLoading = false;
       this.sundryStockItemIdSet.clear();
       this.sundryCategoryIdSet.clear();
+      this.sundryStockItems = [];
+      this.sundryShopItems = [];
       this.sundryCatalogLoading = false;
     },
   });
@@ -3939,6 +3948,7 @@ private isSundriesParentCategoryName(name: string | null | undefined): boolean {
 private rebuildSundryCatalog(stockItems: any[], categories: any[]): void {
   this.sundryStockItemIdSet.clear();
   this.sundryCategoryIdSet.clear();
+  this.sundryStockItems = [];
 
   const cats = Array.isArray(categories) ? categories : [];
   const byId = new Map<number, any>();
@@ -3994,14 +4004,24 @@ private rebuildSundryCatalog(stockItems: any[], categories: any[]): void {
       item?.topParentCategoryName ??
       '';
     if (this.isSundriesParentCategoryName(parentLabel)) {
-      this.sundryStockItemIdSet.add(stockItemId);
+      this.rememberSundryStockItem(item, stockItemId);
       continue;
     }
 
     const categoryId = Number(item?.itemCategoryId ?? item?.lastCategoryId);
     if (Number.isFinite(categoryId) && this.sundryCategoryIdSet.has(categoryId)) {
-      this.sundryStockItemIdSet.add(stockItemId);
+      this.rememberSundryStockItem(item, stockItemId);
     }
+  }
+}
+
+private rememberSundryStockItem(item: any, stockItemId: number): void {
+  this.sundryStockItemIdSet.add(stockItemId);
+  const already = this.sundryStockItems.some(
+    (row) => Number(row?.id ?? row?.stockItemId) === stockItemId
+  );
+  if (!already) {
+    this.sundryStockItems.push(item);
   }
 }
 
@@ -4024,16 +4044,71 @@ allSundryBatches(): any[] {
 
 filteredSundryBatches(): any[] {
   const q = String(this.sundrySearchText || '').trim().toLowerCase();
-  const batches = this.allSundryBatches();
+  const rows = this.pharmacyUseStockBatch ? this.allSundryBatches() : this.allSundryItems();
   if (!q) {
-    return batches;
+    return rows;
   }
-  return batches.filter((batch) => {
-    const name = String(batch?.stockItemName ?? '').toLowerCase();
-    const batchNo = String(batch?.batchNumber ?? '').toLowerCase();
-    const storeName = String(batch?.storeName ?? batch?.store_name ?? '').toLowerCase();
+  return rows.filter((row) => {
+    const name = String(
+      row?.stockItemName ?? row?.itemName ?? row?.title ?? row?.name ?? ''
+    ).toLowerCase();
+    const batchNo = String(row?.batchNumber ?? '').toLowerCase();
+    const storeName = String(row?.storeName ?? row?.store_name ?? '').toLowerCase();
     return name.includes(q) || batchNo.includes(q) || storeName.includes(q);
   });
+}
+
+private allSundryItems(): any[] {
+  const inStock = (item: any) => {
+    const onHand = this.sundryOnHand(item);
+    return onHand == null || onHand > 0;
+  };
+  const shop = (this.sundryShopItems || []).filter(
+    (item) => this.isSundrySelectableItem(item) && inStock(item)
+  );
+  if (shop.length) {
+    return shop;
+  }
+  return (this.sundryStockItems || []).filter((item) => inStock(item));
+}
+
+private isSundrySelectableItem(item: any): boolean {
+  const categoryName =
+    item?.lastCategoryName ??
+    item?.parentCategoryName ??
+    item?.topParentCategoryName ??
+    item?.itemCategoryName ??
+    item?.categoryName ??
+    item?.itemCategory?.name;
+  if (this.isSundriesParentCategoryName(categoryName)) {
+    return true;
+  }
+  const categoryId = Number(
+    item?.itemCategoryId ?? item?.lastCategoryId ?? item?.categoryId ?? item?.itemCategory?.id
+  );
+  if (Number.isFinite(categoryId) && categoryId > 0 && this.sundryCategoryIdSet.has(categoryId)) {
+    return true;
+  }
+  const linkedStockItemId = Number(item?.stockItemId ?? item?.stockItem?.id);
+  return (
+    Number.isFinite(linkedStockItemId) &&
+    linkedStockItemId > 0 &&
+    this.sundryStockItemIdSet.has(linkedStockItemId)
+  );
+}
+
+private sundryOnHand(row: any): number | null {
+  const raw =
+    row?.stockAtHand ??
+    row?.stock_at_hand ??
+    row?.quantityOnHand ??
+    row?.qtyOnHand ??
+    row?.quantity;
+  if (raw == null || raw === '') {
+    return null;
+  }
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
 }
 
 toggleSundryDropdown(event?: Event): void {
@@ -4050,9 +4125,16 @@ sundryBatchLabel(batch: any | null): string {
   if (!batch) {
     return 'Choose sundry item';
   }
-  const name = String(batch.stockItemName || 'Item').toUpperCase();
+  const name = String(
+    batch.stockItemName || batch.itemName || batch.title || batch.name || 'Item'
+  ).toUpperCase();
+  if (!this.pharmacyUseStockBatch) {
+    const qty = this.sundryOnHand(batch);
+    const uom = batch.uintOfMeasure || batch.unitOfMeasure || 'unit(s)';
+    return qty == null ? name : `${name} — ${qty} ${uom}`;
+  }
   const qty = this.batchQtyOnHand(batch);
-  const uom = batch.unitOfMeasure || 'unit(s)';
+  const uom = batch.unitOfMeasure || batch.uintOfMeasure || 'unit(s)';
   const batchNo = batch.batchNumber ? ` · ${batch.batchNumber}` : '';
   const storeId = Number(batch?.storeId ?? batch?.store_id);
   const storeName = this.resolveStoreDisplayName(
@@ -4062,16 +4144,34 @@ sundryBatchLabel(batch: any | null): string {
   return `${name}${batchNo} — ${qty} ${uom} · ${storeName}`;
 }
 
+/** Business setting decides the id: stock batch id, or the selected item's own id. */
+private sundrySelectionReference(
+  selected: any
+): { stockBatchId: number } | { itemId: number } | null {
+  if (!selected) {
+    return null;
+  }
+  if (this.pharmacyUseStockBatch) {
+    const stockBatchId = Number(
+      selected._stockBatchId ?? selected.stockBatchId ?? selected.stock_batch_id ?? selected.id
+    );
+    return Number.isFinite(stockBatchId) && stockBatchId > 0 ? { stockBatchId } : null;
+  }
+  const itemId = Number(selected.id ?? selected.itemId);
+  return Number.isFinite(itemId) && itemId > 0 ? { itemId } : null;
+}
+
 addVisitSundry(): void {
   const visitId = Number(this.visitId);
-  const batchId = Number(this.selectedSundryBatch?.id);
+  const selected = this.selectedSundryBatch;
   const qty = Number(this.sundryQuantity);
   if (!Number.isFinite(visitId) || visitId <= 0) {
     this.visitSundriesMessage = 'Open a patient visit first.';
     this.visitSundriesMessageOk = false;
     return;
   }
-  if (!Number.isFinite(batchId) || batchId <= 0) {
+  const reference = this.sundrySelectionReference(selected);
+  if (!reference) {
     this.visitSundriesMessage = 'Select a sundry item.';
     this.visitSundriesMessageOk = false;
     return;
@@ -4081,14 +4181,20 @@ addVisitSundry(): void {
     this.visitSundriesMessageOk = false;
     return;
   }
-  const available = this.batchQtyOnHand(this.selectedSundryBatch);
-  if (qty > available) {
-    const storeId = Number(this.selectedSundryBatch?.storeId ?? this.selectedSundryBatch?.store_id);
-    const storeName = this.resolveStoreDisplayName(
-      storeId,
-      this.selectedSundryBatch?.storeName ?? this.selectedSundryBatch?.store_name
-    );
-    this.visitSundriesMessage = `Only ${available} available in ${storeName}.`;
+  const available = this.pharmacyUseStockBatch
+    ? this.batchQtyOnHand(selected)
+    : this.sundryOnHand(selected);
+  if (available != null && qty > available) {
+    if (this.pharmacyUseStockBatch) {
+      const storeId = Number(selected?.storeId ?? selected?.store_id);
+      const storeName = this.resolveStoreDisplayName(
+        storeId,
+        selected?.storeName ?? selected?.store_name
+      );
+      this.visitSundriesMessage = `Only ${available} available in ${storeName}.`;
+    } else {
+      this.visitSundriesMessage = `Only ${available} available.`;
+    }
     this.visitSundriesMessageOk = false;
     return;
   }
@@ -4096,7 +4202,7 @@ addVisitSundry(): void {
   this.visitSundriesSaving = true;
   this.visitSundriesMessage = '';
   const usedBy = (sessionStorage.getItem('username') || '').trim();
-  this.api.createVisitSundry(visitId, { stockBatchId: batchId, quantity: qty, usedBy }).subscribe({
+  this.api.createVisitSundry(visitId, { ...reference, quantity: qty, usedBy }).subscribe({
     next: () => {
       this.visitSundriesSaving = false;
       this.visitSundriesMessageOk = true;
@@ -4107,6 +4213,7 @@ addVisitSundry(): void {
       this.loadVisitSundries();
       this.loadDrugList();
       this.getCostsRegularySeparately();
+      this.pharmacyVisitSync.notifyPrescriptionChanged({ visitId: Number(this.visitId) });
       if (this.isPharmacist) {
         this.applyVisitPharmacyStockAvailability();
       }
@@ -4134,6 +4241,7 @@ removeVisitSundry(row: any): void {
       this.loadVisitSundries();
       this.loadDrugList();
       this.getCostsRegularySeparately();
+      this.pharmacyVisitSync.notifyPrescriptionChanged({ visitId: Number(this.visitId) });
       if (this.isPharmacist) {
         this.applyVisitPharmacyStockAvailability();
       }
@@ -7609,6 +7717,7 @@ deleteTreatmentRequest(itemOrId: any) {
 
       this.getRequestedTreatmentByVisitSeparately();
       this.getCostsRegularySeparately();
+      this.pharmacyVisitSync.notifyPrescriptionChanged({ visitId: Number(this.visitId) });
       if (Number(this.treatmentId) === treatmentId) {
         this.treatmentId = null;
         this.saveButtonStatusTreatment = "Save Drug";

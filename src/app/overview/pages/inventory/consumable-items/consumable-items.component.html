@@ -1,15 +1,3 @@
-<!-- DRUG category sync loader -->
-<div class="drug-category-seed-overlay" *ngIf="isSeedingDrugCategories">
-  <div class="drug-category-seed-content">
-    <div class="category-loader"></div>
-    <p>{{ drugCategorySyncMode === 'fresh' ? 'Creating DRUG catalogue...' : 'Syncing missing DRUG categories...' }}</p>
-    <p class="drug-category-seed-detail" *ngIf="drugCategorySeedProgress.total > 0">
-      {{ drugCategorySyncMode === 'fresh' ? 'Creating' : 'Adding' }} {{ drugCategorySeedProgress.current }} of {{ drugCategorySeedProgress.total }}
-      <span *ngIf="drugCategorySeedProgress.name"> — {{ drugCategorySeedProgress.name }}</span>
-    </p>
-  </div>
-</div>
-
 <!-- Delete Confirmation Modal -->
 <div class="delete-confirm-modal-overlay" *ngIf="showDeleteConfirmModal" (click)="closeDeleteConfirmModal()">
   <div class="delete-confirm-modal-container" (click)="$event.stopPropagation()">
@@ -967,12 +955,11 @@
                       Add New
                     </button>
                     <button type="button"
-                            class="category-sync-drug-button"
-                            (click)="syncMissingDrugCategories(true)"
-                            [disabled]="isSeedingDrugCategories"
-                            title="Add any missing DRUG sub-categories from the default catalogue">
-                      <i class="bi bi-arrow-repeat"></i>
-                      Sync DRUG List
+                            class="category-bulk-load-button"
+                            (click)="$event.stopPropagation()"
+                            title="Bulk load categories">
+                      <i class="bi bi-upload"></i>
+                      Bulk load
                     </button>
                   </div>
                   
@@ -993,6 +980,19 @@
               <input type="hidden" 
                      [(ngModel)]="currentStockItem.itemCategoryId" 
                      name="itemCategoryId">
+            </div>
+
+            <div class="stock-item-form-field full-width">
+              <label for="stockItemName" class="stock-item-form-label">Stock Item Name</label>
+              <input type="text"
+                     id="stockItemName"
+                     class="stock-item-form-input"
+                     [class.stock-item-barcode-input]="isDrugCategory()"
+                     [(ngModel)]="currentStockItem.stockItemName"
+                     name="stockItemName"
+                     [readonly]="isDrugCategory()"
+                     [required]="!isDrugCategory()"
+                     [placeholder]="isDrugCategory() ? 'Filled from brand and active ingredients' : 'Enter stock item name'">
             </div>
 
             <div class="stock-item-form-field">
@@ -1474,6 +1474,7 @@
                   <input type="number" 
                          step="0.01"
                          [(ngModel)]="ingredient.strength" 
+                         (ngModelChange)="refreshDrugStockItemName()"
                          [name]="'ingredientStrength_' + ingredient.rowId"
                          class="ingredient-input" 
                          placeholder="0.00">
@@ -1722,11 +1723,9 @@
 
               <div class="stock-item-form-field-group-fields prescribing-rule-grid">
                 <div class="stock-item-form-field full-width prescribing-rule-header">
-                  <div>
-                    <div class="stock-item-form-label prescribing-profile-subtitle">Standard dosage rules</div>
-                  </div>
-                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="addStockDosageRuleRow()">
-                    <i class="bi bi-plus-lg"></i> Add Dosage Rule
+                  <button type="button" class="standard-dosage-rule-btn" (click)="addStockDosageRuleRow()">
+                    <i class="bi bi-plus-lg"></i>
+                    Standard dosage rule
                   </button>
                 </div>
 
@@ -1920,13 +1919,8 @@
             </div>
           </div>
 
-          <!-- Medical Information Section -->
-          <div class="stock-item-form-section-divider info-section-divider" *ngIf="isDrugCategory()">
-            <h3 class="section-title">Medical Information</h3>
-          </div>
-
-          <div class="info-section-grid indication-section-start">
-            <!-- Indication Field - multiple indication entities -->
+          <div class="stock-form-card">
+            <h3 class="section-title">Indications</h3>
             <div class="stock-item-form-field info-section-field stock-item-indications-field">
               <div class="indications-header">
                 <label class="stock-item-form-label">Indications</label>
@@ -1953,8 +1947,12 @@
                 <p class="indications-empty">No indications yet. Click “Add indication” to create one.</p>
               </ng-template>
             </div>
+          </div>
 
-            <div class="stock-item-form-field info-section-field" *ngIf="isDrugCategory()">
+          <div class="stock-form-card" *ngIf="isDrugCategory()">
+            <h3 class="section-title">Medical Information</h3>
+            <div class="info-section-grid">
+            <div class="stock-item-form-field info-section-field">
               <label for="contraIndication" class="stock-item-form-label">Contraindication</label>
               <textarea [(ngModel)]="currentStockItem.contraIndication" 
                         name="contraIndication" 
@@ -2024,13 +2022,11 @@
                         rows="2"></textarea>
             </div>
           </div>
-
-          <!-- Reconstitution Information Section -->
-          <div class="stock-item-form-section-divider info-section-divider" *ngIf="isDrugCategory()">
-            <h3 class="section-title">Reconstitution Information</h3>
           </div>
 
-          <div class="info-section-grid" *ngIf="isDrugCategory()">
+          <div class="stock-form-card" *ngIf="isDrugCategory()">
+            <h3 class="section-title">Reconstitution Information</h3>
+            <div class="info-section-grid">
             <div class="stock-item-form-field info-section-field">
               <label for="methodOfReconstitution" class="stock-item-form-label">Method of Reconstitution</label>
               <textarea [(ngModel)]="currentStockItem.methodOfReconstitution" 
@@ -2060,47 +2056,83 @@
                         placeholder="Description after reconstitution"
                         rows="2"></textarea>
             </div>
+            </div>
           </div>
 
-          <!-- Storage Section -->
-          <div class="stock-item-form-section-divider" *ngIf="!isSundriesCategory()">
-            <h3 class="section-title">Storage</h3>
-          </div>
-
-          <div class="stock-item-form-field full-width" *ngIf="!isSundriesCategory()">
-            <label for="storage" class="stock-item-form-label">Storage</label>
-            <textarea [(ngModel)]="currentStockItem.storage" 
-                      name="storage" 
-                      class="stock-item-form-textarea" 
-                      id="storage" 
-                      placeholder="Storage conditions and requirements"
-                      rows="3"></textarea>
-          </div>
-
-          <!-- Description and Notes (Last) -->
-          <div class="stock-item-form-section-divider info-section-divider">
-            <h3 class="section-title">Additional Information</h3>
-          </div>
-
-          <div class="info-section-grid">
-            <div class="stock-item-form-field info-section-field">
-              <label for="description" class="stock-item-form-label">Description</label>
-              <textarea [(ngModel)]="currentStockItem.description" 
-                        name="description" 
-                        class="stock-item-form-textarea info-section-textarea" 
-                        id="description" 
-                        placeholder="Additional notes or description"
-                        rows="2"></textarea>
+          <div class="stock-form-card">
+            <h3 class="section-title">Barcode / SKU</h3>
+            <div class="stock-item-form-field full-width">
+              <label class="stock-item-form-label">Barcode / SKU</label>
+              <ng-container *ngTemplateOutlet="skuBarcodeGraphic; context: { value: currentStockItem.barcode }"></ng-container>
+              <input type="hidden"
+                     id="stockItemBarcode"
+                     [ngModel]="currentStockItem.barcode"
+                     name="barcode">
             </div>
 
-            <div class="stock-item-form-field info-section-field">
-              <label for="notes" class="stock-item-form-label">Notes</label>
-              <textarea [(ngModel)]="currentStockItem.notes" 
-                        name="notes" 
-                        class="stock-item-form-textarea info-section-textarea" 
-                        id="notes" 
-                        placeholder="Additional notes"
-                        rows="2"></textarea>
+            <div class="stock-item-form-field full-width stock-item-indications-field stock-item-other-barcodes">
+              <div class="indications-header">
+                <label class="stock-item-form-label">Other barcodes</label>
+                <button type="button" class="ingredients-add-btn" (click)="addOtherBarcodeRow()">
+                  <i class="bi bi-plus-lg"></i> Add barcode
+                </button>
+              </div>
+              <div class="indications-list" *ngIf="otherBarcodeRows.length; else noOtherBarcodesYet">
+                <div class="indication-row" *ngFor="let row of otherBarcodeRows; let i = index; trackBy: trackOtherBarcodeRow">
+                  <span class="indication-sn">{{ i + 1 }}</span>
+                  <input
+                    type="text"
+                    class="stock-item-form-input indication-input"
+                    [(ngModel)]="row.code"
+                    [name]="'otherBarcode' + row.rowId"
+                    placeholder="Manufacturer or pack barcode"
+                    [ngModelOptions]="{standalone: true}" />
+                  <button type="button" class="ingredient-remove-btn" title="Remove" (click)="removeOtherBarcodeRow(i)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+              <ng-template #noOtherBarcodesYet>
+                <p class="indications-empty">No other barcodes. The barcode above is the one generated for this item.</p>
+              </ng-template>
+            </div>
+          </div>
+
+          <div class="stock-form-card" *ngIf="!isSundriesCategory()">
+            <h3 class="section-title">Storage</h3>
+            <div class="stock-item-form-field full-width">
+              <label for="storage" class="stock-item-form-label">Storage</label>
+              <textarea [(ngModel)]="currentStockItem.storage" 
+                        name="storage" 
+                        class="stock-item-form-textarea" 
+                        id="storage" 
+                        placeholder="Storage conditions and requirements"
+                        rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="stock-form-card">
+            <h3 class="section-title">Additional Information</h3>
+            <div class="info-section-grid">
+              <div class="stock-item-form-field info-section-field">
+                <label for="description" class="stock-item-form-label">Description</label>
+                <textarea [(ngModel)]="currentStockItem.description" 
+                          name="description" 
+                          class="stock-item-form-textarea info-section-textarea" 
+                          id="description" 
+                          placeholder="Additional notes or description"
+                          rows="2"></textarea>
+              </div>
+
+              <div class="stock-item-form-field info-section-field">
+                <label for="notes" class="stock-item-form-label">Notes</label>
+                <textarea [(ngModel)]="currentStockItem.notes" 
+                          name="notes" 
+                          class="stock-item-form-textarea info-section-textarea" 
+                          id="notes" 
+                          placeholder="Additional notes"
+                          rows="2"></textarea>
+              </div>
             </div>
           </div>
 
@@ -2445,6 +2477,23 @@
               </div>
 
               <div class="details-row">
+                <div class="details-label">Barcode / SKU:</div>
+                <div class="details-value">
+                  <ng-container *ngIf="selectedStockItemDetails.barcode; else noStockItemBarcode">
+                    <ng-container *ngTemplateOutlet="skuBarcodeGraphic; context: { value: selectedStockItemDetails.barcode }"></ng-container>
+                  </ng-container>
+                  <ng-template #noStockItemBarcode>N/A</ng-template>
+                </div>
+              </div>
+
+              <div class="details-row" *ngIf="selectedStockItemDetails.otherBarcodes?.length">
+                <div class="details-label">Other barcodes:</div>
+                <div class="details-value">
+                  <div *ngFor="let code of selectedStockItemDetails.otherBarcodes">{{ code.code }}</div>
+                </div>
+              </div>
+
+              <div class="details-row">
                 <div class="details-label">Brand:</div>
                 <div class="details-value">{{ getBrandName(selectedStockItemDetails.brandId) }}</div>
               </div>
@@ -2772,7 +2821,7 @@
           <tr>
             <th>SN</th>
             <th>Stock Item Name</th>
-            <th style="width: 140px;">Last Category</th>
+            <th style="width: 140px;">Top Category</th>
             <th style="width: 140px;">Category</th>
             <th>Actions</th>
           </tr>
@@ -2780,11 +2829,17 @@
         <tbody>
           <tr *ngFor="let item of filteredStockItemList | paginate: { itemsPerPage: itemsPerPage, currentPage: page }; let i = index">
             <td>
-              <span class="shelf-number">{{ i + 1 }}</span>
+              <span class="shelf-number">{{ stockItemSerialNumber(i) }}</span>
             </td>
             <td>
-              <div class="item-details">
-                <div class="item-title">{{ getStockItemDisplayName(item) }}</div>
+              <div class="stock-item-name-cell">
+                <div class="stock-item-avatar" [style.background-color]="getStockItemAvatarColor(item)">
+                  {{ getStockItemInitials(item) }}
+                </div>
+                <div class="item-details">
+                  <div class="item-title">{{ getStockItemDisplayName(item) }}</div>
+                  <div class="item-sku" *ngIf="item.barcode">{{ item.barcode }}</div>
+                </div>
               </div>
             </td>
             <td style="width: 140px;">
@@ -2793,18 +2848,16 @@
             <td style="width: 140px;">
               <span class="badge">{{ getItemCategoryLabel(item) }}</span>
             </td>
-            <td>
-              <div class="action-buttons">
-                <button class="btn-icon" title="View Details" (click)="viewStockItemDetails(item)">
-                  <i class="bi bi-info-circle"></i>
-                </button>
-                <button class="btn-icon edit" title="Edit Item" (click)="editStockItem(item)">
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn-icon delete" title="Delete Item" (click)="deleteStockItem(item)">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
+            <td class="stock-item-action-cell">
+              <button
+                type="button"
+                class="stock-item-action-btn"
+                [class.stock-item-action-btn--active]="stockItemActionMenuId === item.id"
+                (click)="toggleStockItemActionMenu(item, $event)"
+                title="Actions"
+                aria-label="Actions">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
             </td>
           </tr>
           <tr *ngIf="filteredStockItemList.length === 0">
@@ -2821,9 +2874,9 @@
       <div class="pagination-info">
         Showing {{ (page - 1) * itemsPerPage + 1 }} - {{ page * itemsPerPage > filteredStockItemList.length ? filteredStockItemList.length : page * itemsPerPage }} of {{ filteredStockItemList.length }} items
       </div>
-      <pagination-controls (pageChange)="page = $event"></pagination-controls>
+      <pagination-controls (pageChange)="onStockItemsPageChange($event)"></pagination-controls>
       <div class="pagination-size">
-        <select [(ngModel)]="itemsPerPage" class="page-size-select">
+        <select [(ngModel)]="itemsPerPage" (ngModelChange)="closeStockItemActionMenu()" class="page-size-select">
           <option [ngValue]="10">10 per page</option>
           <option [ngValue]="15">15 per page</option>
           <option [ngValue]="25">25 per page</option>
@@ -2833,4 +2886,29 @@
       </div>
     </div>
   </div>
+
+  <div
+    class="stock-item-action-pop"
+    *ngIf="stockItemActionMenuItem as item"
+    [ngStyle]="stockItemActionMenuStyle"
+    (click)="$event.stopPropagation()">
+    <button type="button" (click)="viewStockItemDetails(item); closeStockItemActionMenu()">
+      <i class="bi bi-info-circle"></i> Info
+    </button>
+    <button type="button" (click)="editStockItem(item); closeStockItemActionMenu()">
+      <i class="bi bi-pencil"></i> Edit
+    </button>
+    <button type="button" class="danger" (click)="deleteStockItem(item); closeStockItemActionMenu()">
+      <i class="bi bi-trash"></i> Delete
+    </button>
+  </div>
+
+  <ng-template #skuBarcodeGraphic let-value="value" let-compact="compact">
+    <div class="sku-barcode" [class.sku-barcode--compact]="compact" *ngIf="skuBarcode(value) as code">
+      <svg class="sku-barcode-svg" [attr.viewBox]="'0 0 ' + code.width + ' 48'" role="img" [attr.aria-label]="value">
+        <rect *ngFor="let bar of code.bars" [attr.x]="bar.x" y="0" [attr.width]="bar.w" height="48" fill="#111827"></rect>
+      </svg>
+      <div class="sku-barcode-caption">{{ value }}</div>
+    </div>
+  </ng-template>
 </div>

@@ -27,3 +27,31 @@
   margin-left: 30px;
   margin-top: 50px;
 }
+
+.signup-card-body {
+  padding-top: 0.65rem !important;
+  padding-bottom: 0.35rem !important;
+}
+
+@media (min-width: 992px) {
+  .signup-card-body {
+    padding-top: 2.25rem !important;
+    padding-bottom: 0.85rem !important;
+  }
+}
+
+.login-password-group > .form-control {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.login-password-group > .password-toggle {
+  display: flex;
+  align-items: center;
+  margin-left: -1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 0.3rem;
+  border-bottom-right-radius: 0.3rem;
+  cursor: pointer;
+}

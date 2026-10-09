@@ -68,6 +68,14 @@ export class ServicesManagementComponent implements OnInit, OnDestroy {
   editingServiceId: number | null = null;
   selectedUnitSellingModelId: number | null = null;
   selectedUnitSellingModel: any = null;
+  reportRoleOptions: string[] = [];
+  reportRoleSearch = '';
+  selectedReportRoles: string[] = [];
+  showNewReportRole = false;
+  newReportRoleName = '';
+  isCreatingReportRole = false;
+  reportRoleMessage = '';
+  reportRoleMessageError = false;
   
   // Delete confirmation modal properties
   showDeleteConfirmModal: boolean = false;
@@ -98,6 +106,29 @@ export class ServicesManagementComponent implements OnInit, OnDestroy {
   showCategoryDeleteConfirm: boolean = false;
   categoryToDelete: any = null;
 
+  /** Items used for a catalog service. Their total becomes the service unit cost. */
+  showItemsUsedModal = false;
+  itemsUsedTarget: any = null;
+  itemsUsedModel: any = null;
+  itemsUsedRows: any[] = [];
+  itemsUsedLoading = false;
+  itemsUsedSaving = false;
+  itemsUsedMessage = '';
+  shopItemList: any[] = [];
+  shopItemsLoading = false;
+  itemSearch = '';
+  itemPick: any = null;
+  itemQty = 1;
+  itemUnitCost = 0;
+  feeName = '';
+  feeQty = 1;
+  feeUnitCost = 0;
+
+  /** Actions menu in the services table */
+  serviceActionMenuId: number | null = null;
+  serviceActionMenuService: any = null;
+  serviceActionMenuStyle: Record<string, string> = {};
+
   /** Unit sell models popover in services table */
   openUnitSellMenuServiceId: number | null = null;
   openUnitSellMenuService: any = null;
@@ -117,6 +148,7 @@ export class ServicesManagementComponent implements OnInit, OnDestroy {
   @ViewChild('serviceModalOverlay') serviceModalOverlay?: ElementRef<HTMLElement>;
   @ViewChild('categoryActionModalOverlay') categoryActionModalOverlay?: ElementRef<HTMLElement>;
   @ViewChild('unitSellModelsModalOverlay') unitSellModelsModalOverlay?: ElementRef<HTMLElement>;
+  @ViewChild('itemsUsedModalOverlay') itemsUsedModalOverlay?: ElementRef<HTMLElement>;
   @ViewChild('unitSellModelsPicker') unitSellModelsPicker?: UnitSellingModelPickerComponent;
 
   constructor(
@@ -147,9 +179,13 @@ export class ServicesManagementComponent implements OnInit, OnDestroy {
     }
     
     this.initializeTableData();
+    this.loadReportRoles();
     this.routerSub = this.router.events
       .pipe(filter((event): event is NavigationStart => event instanceof NavigationStart))
-      .subscribe(() => this.closeUnitSellModelsMenu());
+      .subscribe(() => {
+        this.closeUnitSellModelsMenu();
+        this.closeServiceActionMenu();
+      });
   }
 
   @HostListener('document:click', ['$event'])
@@ -159,10 +195,27 @@ export class ServicesManagementComponent implements OnInit, OnDestroy {
       this.isCategoryDropdownOpen = false;
       this.visibleCategoryTreeRows = [];
     }
+    if (
+      this.serviceActionMenuId != null &&
+      !target.closest('.service-action-pop') &&
+      !target.closest('.service-action-menu-btn')
+    ) {
+      this.closeServiceActionMenu();
+    }
   }
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscapeKey(event: KeyboardEvent): void {
+    if (this.serviceActionMenuId != null && !this.showItemsUsedModal) {
+      event.preventDefault();
+      this.closeServiceActionMenu();
+      return;
+    }
+    if (this.showItemsUsedModal) {
+      event.preventDefault();
+      this.closeItemsUsed();
+      return;
+    }
     if (this.openUnitSellMenuServiceId == null) {
       return;
     }
@@ -1095,6 +1148,12 @@ export class ServicesManagementComponent implements OnInit, OnDestroy {
     };
     this.selectedUnitSellingModelId = null;
     this.selectedUnitSellingModel = null;
+    this.selectedReportRoles = [];
+    this.reportRoleSearch = '';
+    this.showNewReportRole = false;
+    this.newReportRoleName = '';
+    this.reportRoleMessage = '';
+    this.reportRoleMessageError = false;
     this.selectedCategory = null;
     this.currentCategoryName = 'Select category';
     this.currentCategoryId = null;
@@ -1111,6 +1170,88 @@ export class ServicesManagementComponent implements OnInit, OnDestroy {
     this.isCollapsedNewService = true;
     document.body.style.overflow = '';
     this.clearFormNewService();
+  }
+
+  loadReportRoles(): void {
+    this.api.getAllRoles().subscribe({
+      next: (roles: any) => {
+        const list = Array.isArray(roles) ? roles : [];
+        this.reportRoleOptions = list
+          .map((role) => String(role?.name || role?.role || role || '').trim())
+          .filter((role) => !!role)
+          .filter((role, index, all) => all.findIndex((item) => item.toLowerCase() === role.toLowerCase()) === index)
+          .sort((a, b) => a.localeCompare(b));
+      },
+      error: () => {
+        this.reportRoleOptions = [];
+      },
+    });
+  }
+
+  filteredReportRoles(): string[] {
+    const query = this.reportRoleSearch.trim().toLowerCase();
+    if (!query) {
+      return this.reportRoleOptions;
+    }
+    return this.reportRoleOptions.filter((role) => role.toLowerCase().includes(query));
+  }
+
+  isReportRoleSelected(role: string): boolean {
+    const key = role.toLowerCase();
+    return this.selectedReportRoles.some((item) => item.toLowerCase() === key);
+  }
+
+  toggleReportRole(role: string): void {
+    if (this.isReportRoleSelected(role)) {
+      this.selectedReportRoles = this.selectedReportRoles.filter((item) => item.toLowerCase() !== role.toLowerCase());
+      return;
+    }
+    this.selectedReportRoles = [...this.selectedReportRoles, role];
+  }
+
+  addNewReportRole(): void {
+    const name = this.newReportRoleName.trim();
+    if (!name) {
+      this.reportRoleMessage = 'Enter a role name.';
+      this.reportRoleMessageError = true;
+      return;
+    }
+    const existing = this.reportRoleOptions.find((role) => role.toLowerCase() === name.toLowerCase());
+    if (existing) {
+      if (!this.isReportRoleSelected(existing)) {
+        this.toggleReportRole(existing);
+      }
+      this.newReportRoleName = '';
+      this.showNewReportRole = false;
+      this.reportRoleMessage = `${existing} is already a role and is selected.`;
+      this.reportRoleMessageError = false;
+      return;
+    }
+    this.isCreatingReportRole = true;
+    this.reportRoleMessage = '';
+    this.api.createRole(name).subscribe({
+      next: (response: any) => {
+        this.isCreatingReportRole = false;
+        this.reportRoleOptions = [...this.reportRoleOptions, name].sort((a, b) => a.localeCompare(b));
+        this.toggleReportRole(name);
+        this.newReportRoleName = '';
+        this.showNewReportRole = false;
+        this.reportRoleMessage = response?.message || 'Role added.';
+        this.reportRoleMessageError = false;
+      },
+      error: (error: any) => {
+        this.isCreatingReportRole = false;
+        this.reportRoleMessage = error?.error?.message || 'Could not add the role.';
+        this.reportRoleMessageError = true;
+      },
+    });
+  }
+
+  private parseReportRoles(raw: unknown): string[] {
+    return String(raw || '')
+      .split(',')
+      .map((role) => role.trim())
+      .filter((role) => !!role);
   }
 
   editService(service: any) {
@@ -1132,6 +1273,7 @@ export class ServicesManagementComponent implements OnInit, OnDestroy {
       unitCostPrice: service.unitCostPrice || '',
       description: service.description || ''
     };
+    this.selectedReportRoles = this.parseReportRoles(service.reportEditorRoles);
     this.selectedUnitSellingModelId = service.unitSellingModelId ?? null;
     this.selectedUnitSellingModel = null;
 
@@ -1240,6 +1382,408 @@ export class ServicesManagementComponent implements OnInit, OnDestroy {
     this.serviceToDelete = null;
     this.isButtonDisabled = false;
     document.body.style.overflow = '';
+  }
+
+  openServiceItemsUsed(service: any): void {
+    this.closeServiceActionMenu();
+    this.itemsUsedModel = null;
+    this.openItemsUsed(service);
+  }
+
+  openModelItemsUsed(model: any, event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+    const modelId = Number(model?.id);
+    if (!Number.isFinite(modelId) || modelId <= 0) {
+      this.responseColor = '#dc2626';
+      this.responseMessage = 'Save this unit sell model before adding items used.';
+      this.showDivUpdatedOut = true;
+      setTimeout(() => {
+        this.showDivUpdatedOut = false;
+      }, 4000);
+      return;
+    }
+    const service = this.openUnitSellMenuService || {
+      id: this.editingServiceId,
+      procedureName: this.currentService?.procedureName,
+      unitCostPrice: this.currentService?.unitCostPrice,
+    };
+    this.itemsUsedModel = model;
+    this.openItemsUsed(service);
+  }
+
+  openItemsUsed(service: any): void {
+    const procedureId = Number(service?.id);
+    if (!Number.isFinite(procedureId) || procedureId <= 0) {
+      return;
+    }
+    this.itemsUsedTarget = service;
+    this.itemsUsedRows = [];
+    this.itemSearch = '';
+    this.itemPick = null;
+    this.itemQty = 1;
+    this.itemUnitCost = 0;
+    this.feeName = '';
+    this.feeQty = 1;
+    this.feeUnitCost = 0;
+    this.itemsUsedMessage = '';
+    this.showItemsUsedModal = true;
+    document.body.style.overflow = 'hidden';
+    this.scheduleOverlayAttach(() => this.itemsUsedModalOverlay);
+    if (!this.shopItemList.length) {
+      this.loadShopItems();
+    }
+    this.loadItemsUsed();
+  }
+
+  closeItemsUsed(): void {
+    if (this.itemsUsedSaving) {
+      return;
+    }
+    this.showItemsUsedModal = false;
+    this.itemsUsedTarget = null;
+    this.itemsUsedModel = null;
+    this.itemPick = null;
+    this.itemSearch = '';
+    this.feeName = '';
+    if (this.openUnitSellMenuServiceId == null && this.isCollapsedNewService) {
+      document.body.style.overflow = '';
+    }
+  }
+
+  onItemSearch(value: string): void {
+    this.itemPick = null;
+    this.itemSearch = value || '';
+  }
+
+  itemLabel(item: any): string {
+    return String(item?.title ?? item?.name ?? item?.itemName ?? 'Item').trim();
+  }
+
+  itemCost(item: any): number {
+    return Number(item?.costPrice ?? item?.unitCostPrice ?? item?.unitBuy ?? 0) || 0;
+  }
+
+  filteredItemOptions(): any[] {
+    const q = this.itemSearch.trim().toLowerCase();
+    if (!q) {
+      return [];
+    }
+    return (this.shopItemList || [])
+      .filter((item) => this.itemLabel(item).toLowerCase().includes(q))
+      .slice(0, 12);
+  }
+
+  pickItem(item: any): void {
+    this.itemPick = item;
+    this.itemSearch = '';
+    this.itemUnitCost = this.itemCost(item);
+    if (!(Number(this.itemQty) > 0)) {
+      this.itemQty = 1;
+    }
+  }
+
+  itemUsedLineCost(row: any): number {
+    return (Number(row?.quantityUsed) || 0) * (Number(row?.unitCostPrice) || 0);
+  }
+
+  itemsUsedTotal(): number {
+    return this.itemsUsedRows.reduce((sum, row) => sum + this.itemUsedLineCost(row), 0);
+  }
+
+  addFee(): void {
+    const procedureId = Number(this.itemsUsedTarget?.id);
+    const modelId = Number(this.itemsUsedModel?.id);
+    const name = this.feeName.trim();
+    const qty = Math.floor(Number(this.feeQty) || 0);
+    const unitCost = Number(this.feeUnitCost);
+    if (!Number.isFinite(procedureId) || procedureId <= 0) {
+      return;
+    }
+    if (!name) {
+      this.itemsUsedMessage = 'Enter the fee name.';
+      return;
+    }
+    if (qty <= 0) {
+      this.itemsUsedMessage = 'Enter a quantity greater than zero.';
+      return;
+    }
+    if (!Number.isFinite(unitCost) || unitCost < 0) {
+      this.itemsUsedMessage = 'Enter a unit cost of zero or more.';
+      return;
+    }
+    this.itemsUsedSaving = true;
+    this.itemsUsedMessage = '';
+    this.api
+      .saveItemUsedInService({
+        procedureId,
+        unitSellingModelId: Number.isFinite(modelId) && modelId > 0 ? modelId : null,
+        feeName: name,
+        lineType: 'FEE',
+        quantityUsed: qty,
+        unitCostPrice: unitCost,
+      })
+      .subscribe({
+        next: () => {
+          this.itemsUsedSaving = false;
+          this.feeName = '';
+          this.feeQty = 1;
+          this.feeUnitCost = 0;
+          this.loadItemsUsed();
+        },
+        error: (err) => {
+          this.itemsUsedSaving = false;
+          this.itemsUsedMessage = err?.error?.message || err?.message || 'Could not add this fee.';
+        },
+      });
+  }
+
+  addItemUsed(): void {
+    const procedureId = Number(this.itemsUsedTarget?.id);
+    const modelId = Number(this.itemsUsedModel?.id);
+    const itemId = Number(this.itemPick?.id);
+    const qty = Math.floor(Number(this.itemQty) || 0);
+    const unitCost = Number(this.itemUnitCost);
+    if (!Number.isFinite(procedureId) || procedureId <= 0 || !Number.isFinite(itemId) || itemId <= 0) {
+      this.itemsUsedMessage = 'Select an item first.';
+      return;
+    }
+    if (qty <= 0) {
+      this.itemsUsedMessage = 'Enter a quantity greater than zero.';
+      return;
+    }
+    if (!Number.isFinite(unitCost) || unitCost < 0) {
+      this.itemsUsedMessage = 'Enter a unit cost of zero or more.';
+      return;
+    }
+    this.itemsUsedSaving = true;
+    this.itemsUsedMessage = '';
+    this.api
+      .saveItemUsedInService({
+        procedureId,
+        unitSellingModelId: Number.isFinite(modelId) && modelId > 0 ? modelId : null,
+        itemId,
+        quantityUsed: qty,
+        unitCostPrice: unitCost,
+      })
+      .subscribe({
+        next: () => {
+          this.itemsUsedSaving = false;
+          this.itemPick = null;
+          this.itemSearch = '';
+          this.itemQty = 1;
+          this.itemUnitCost = 0;
+          this.loadItemsUsed();
+        },
+        error: (err) => {
+          this.itemsUsedSaving = false;
+          this.itemsUsedMessage = err?.error?.message || err?.message || 'Could not add this item.';
+        },
+      });
+  }
+
+  saveItemUsedLine(row: any): void {
+    const procedureId = Number(this.itemsUsedTarget?.id);
+    const isFee = row?.lineType === 'FEE';
+    const itemId = Number(row?.itemId);
+    const qty = Math.floor(Number(row?.quantityUsed) || 0);
+    const unitCost = Number(row?.unitCostPrice);
+    const modelId = Number(this.itemsUsedModel?.id);
+    if (!Number.isFinite(procedureId) || procedureId <= 0 || this.itemsUsedSaving) {
+      return;
+    }
+    if (!isFee && (!Number.isFinite(itemId) || itemId <= 0)) {
+      return;
+    }
+    if (isFee && !String(row?.itemName || '').trim()) {
+      return;
+    }
+    if (qty <= 0) {
+      this.itemsUsedMessage = 'Enter a quantity greater than zero.';
+      return;
+    }
+    if (!Number.isFinite(unitCost) || unitCost < 0) {
+      this.itemsUsedMessage = 'Enter a unit cost of zero or more.';
+      return;
+    }
+    this.itemsUsedSaving = true;
+    this.itemsUsedMessage = '';
+    this.api
+      .saveItemUsedInService({
+        procedureId,
+        unitSellingModelId: Number.isFinite(modelId) && modelId > 0 ? modelId : null,
+        itemId: isFee ? null : itemId,
+        feeName: isFee ? String(row.itemName).trim() : null,
+        lineType: isFee ? 'FEE' : 'ITEM',
+        quantityUsed: qty,
+        unitCostPrice: unitCost,
+      })
+      .subscribe({
+        next: () => {
+          this.itemsUsedSaving = false;
+          this.loadItemsUsed();
+        },
+        error: (err) => {
+          this.itemsUsedSaving = false;
+          this.itemsUsedMessage = err?.error?.message || err?.message || 'Could not save this line.';
+        },
+      });
+  }
+
+  removeItemUsed(row: any): void {
+    if (this.itemsUsedSaving) {
+      return;
+    }
+    const modelId = Number(this.itemsUsedModel?.id);
+    if (Number.isFinite(modelId) && modelId > 0 && row?.fromServiceDefault) {
+      this.itemsUsedSaving = true;
+      this.itemsUsedMessage = '';
+      this.api
+        .saveItemUsedInService({
+          procedureId: Number(this.itemsUsedTarget?.id),
+          unitSellingModelId: modelId,
+          itemId: row?.lineType === 'FEE' ? null : Number(row.itemId),
+          feeName: row?.lineType === 'FEE' ? String(row.itemName || '').trim() : null,
+          lineType: row?.lineType === 'FEE' ? 'FEE' : 'ITEM',
+          quantityUsed: 0,
+          unitCostPrice: 0,
+          excluded: true,
+        })
+        .subscribe({
+          next: () => {
+            this.itemsUsedSaving = false;
+            this.loadItemsUsed();
+          },
+          error: (err) => {
+            this.itemsUsedSaving = false;
+            this.itemsUsedMessage = err?.error?.message || 'Could not remove this item.';
+          },
+        });
+      return;
+    }
+    const id = Number(row?.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return;
+    }
+    this.itemsUsedSaving = true;
+    this.itemsUsedMessage = '';
+    this.api.deleteItemUsedById(id).subscribe({
+      next: () => {
+        this.itemsUsedSaving = false;
+        this.loadItemsUsed();
+      },
+      error: (err) => {
+        this.itemsUsedSaving = false;
+        this.itemsUsedMessage = err?.error?.message || 'Could not remove this item.';
+      },
+    });
+  }
+
+  private loadShopItems(): void {
+    this.shopItemsLoading = true;
+    this.api.getAllItems().subscribe({
+      next: (items) => {
+        this.shopItemList = Array.isArray(items) ? items : [];
+        this.shopItemsLoading = false;
+      },
+      error: () => {
+        this.shopItemList = [];
+        this.shopItemsLoading = false;
+      },
+    });
+  }
+
+  private loadItemsUsed(): void {
+    const procedureId = Number(this.itemsUsedTarget?.id);
+    const modelId = Number(this.itemsUsedModel?.id);
+    if (!Number.isFinite(procedureId) || procedureId <= 0) {
+      this.itemsUsedRows = [];
+      return;
+    }
+    this.itemsUsedLoading = true;
+    this.api.getAllItemsUsedInProcedure(procedureId, modelId).subscribe({
+      next: (rows: any) => {
+        this.itemsUsedRows = Array.isArray(rows) ? rows : [];
+        this.itemsUsedLoading = false;
+        const total = this.itemsUsedTotal();
+        if (this.itemsUsedModel) {
+          this.itemsUsedModel.unitCostPrice = total;
+        }
+        if (this.itemsUsedTarget && (this.isActiveUnitSellModel(this.itemsUsedModel) || !this.itemsUsedTarget.unitSellingModelId)) {
+          this.itemsUsedTarget.unitCostPrice = total;
+        }
+        this.reloadUnitSellModelsForModal();
+        this.refreshServiceListQuietly();
+      },
+      error: () => {
+        this.itemsUsedRows = [];
+        this.itemsUsedLoading = false;
+        this.itemsUsedMessage = 'Could not load items used.';
+      },
+    });
+  }
+
+  private refreshServiceListQuietly(): void {
+    this.api.getAllServices().subscribe({
+      next: (res) => {
+        const list = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : null);
+        if (!list) {
+          return;
+        }
+        this.serviceList = list;
+        this.data = list;
+        this.serviceListDataEpoch++;
+        const procedureId = Number(this.itemsUsedTarget?.id);
+        if (Number.isFinite(procedureId) && procedureId > 0) {
+          this.itemsUsedTarget = list.find((service: any) => Number(service?.id) === procedureId) || this.itemsUsedTarget;
+        }
+      },
+    });
+  }
+
+  toggleServiceActionMenu(service: any, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const id = Number(service?.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return;
+    }
+    if (this.serviceActionMenuId === id) {
+      this.closeServiceActionMenu();
+      return;
+    }
+    const trigger = (event.currentTarget as HTMLElement) || null;
+    const rect = trigger?.getBoundingClientRect();
+    if (!rect) {
+      return;
+    }
+    const popWidth = 210;
+    const popHeight = 148;
+    const gap = 4;
+    let top = rect.bottom + gap;
+    if (top + popHeight > window.innerHeight - 8) {
+      top = Math.max(8, rect.top - popHeight - gap);
+    }
+    let left = rect.right - popWidth;
+    if (left < 8) {
+      left = 8;
+    }
+    if (left + popWidth > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - popWidth - 8);
+    }
+    this.serviceActionMenuId = id;
+    this.serviceActionMenuService = service;
+    this.serviceActionMenuStyle = {
+      position: 'fixed',
+      top: `${top}px`,
+      left: `${left}px`,
+      zIndex: '150030',
+    };
+  }
+
+  closeServiceActionMenu(): void {
+    this.serviceActionMenuId = null;
+    this.serviceActionMenuService = null;
   }
 
   onServiceUnitSellChange(price: number): void {
@@ -1358,8 +1902,10 @@ export class ServicesManagementComponent implements OnInit, OnDestroy {
       ? bundle
       : (Number(model?.unitSellingPrice) || 0) * bundleUnits;
     const unitSell = Number(model?.unitSellingPrice) || 0;
+    const cost = Number(model?.unitCostPrice);
+    const costText = Number.isFinite(cost) ? `Cost ${this.formatServiceMoney(cost)} · ` : '';
     const margin = model?.profitMargin != null ? ` · Margin ${this.formatServiceMoney(model.profitMargin)}` : '';
-    return `${bundleUnits} @ ${this.formatServiceMoney(bundleAmount)} → ${this.formatServiceMoney(unitSell)}/unit${margin}`;
+    return `${costText}${bundleUnits} @ ${this.formatServiceMoney(bundleAmount)} → ${this.formatServiceMoney(unitSell)}/unit${margin}`;
   }
 
   formatServiceMoney(value: number | null | undefined): string {
@@ -1451,7 +1997,8 @@ export class ServicesManagementComponent implements OnInit, OnDestroy {
           : null,
       unitSellingPrice: this.currentService.unitSellingPrice ? Number(this.currentService.unitSellingPrice) : 0,
       unitCostPrice: this.currentService.unitCostPrice ? Number(this.currentService.unitCostPrice) : 0,
-      description: this.currentService.description || ''
+      description: this.currentService.description || '',
+      reportEditorRoles: this.selectedReportRoles.join(',')
     };
 
     if (this.selectedUnitSellingModelId > 0) {

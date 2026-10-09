@@ -35,15 +35,19 @@
   flex-shrink: 0;
 }
 
-.pd-dsp-adm label:nth-child(1) input {
+.pd-dsp-adm label.pd-flag--psd input {
+  color: #7c3aed;
+}
+
+.pd-dsp-adm label.pd-flag--pd input {
   color: #16a34a;
 }
 
-.pd-dsp-adm label:nth-child(2) input {
+.pd-dsp-adm label.pd-flag--dsp input {
   color: #2563eb;
 }
 
-.pd-dsp-adm label:nth-child(3) input {
+.pd-dsp-adm label.pd-flag--adm input {
   color: #0f766e;
 }
 

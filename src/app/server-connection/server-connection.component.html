@@ -1,6 +1,9 @@
 <div class="server-connection-overlay" role="dialog" aria-labelledby="server-connection-title">
   <div class="server-connection-card" role="document">
     <header class="server-connection-header">
+      <button type="button" class="server-connection-cancel" (click)="cancelDialog()" aria-label="Cancel">
+        Cancel
+      </button>
       <h2 id="server-connection-title">Connect to server</h2>
       <p class="server-connection-lead">
         Choose which server to connect to before signing in. Use the cloud API,

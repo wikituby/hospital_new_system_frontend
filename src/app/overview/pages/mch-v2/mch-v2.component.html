@@ -341,7 +341,7 @@
             <div class="mv2-panel-head-row">
               <div>
                 <h2><i class="bi bi-file-earmark-medical"></i> MCH Clinical Report</h2>
-                <p>Document antenatal, postnatal and newborn findings for this maternity visit</p>
+                <p>Antenatal and delivery reports follow Uganda Ministry of Health maternal records. Other maternity services use the general report.</p>
               </div>
               <div class="mv2-head-actions mv2-no-print">
                 <button type="button" class="mv2-btn mv2-btn-ghost" (click)="printMchReport()">
@@ -359,70 +359,84 @@
 
             <form *ngIf="!isLoadingReport" class="mv2-report-form">
               <div class="mv2-report-section" *ngIf="selectedUsesAntenatalMchForm">
-                <h3>Antenatal assessment</h3>
+                <h3>Antenatal visit — Uganda Ministry of Health</h3>
+                <p class="mv2-muted">Obstetric history, examination, tests and preventive care for this ANC contact.</p>
                 <div class="mv2-form-grid mv2-form-grid-3">
-                  <div class="mv2-field">
-                    <label>Gravida</label>
-                    <input type="text" name="gravida" [(ngModel)]="mchForm.gravida" placeholder="Gravida" />
+                  <div class="mv2-field"><label>Gravida</label><input type="text" name="gravida" [(ngModel)]="mchForm.gravida" /></div>
+                  <div class="mv2-field"><label>Para</label><input type="text" name="para" [(ngModel)]="mchForm.para" /></div>
+                  <div class="mv2-field"><label>Abortions</label><input type="text" name="abortions" [(ngModel)]="mchForm.abortions" /></div>
+                  <div class="mv2-field"><label>Living children</label><input type="text" name="livingChildren" [(ngModel)]="mchForm.livingChildren" /></div>
+                  <div class="mv2-field"><label>LNMP</label><input type="date" name="lnmp" [(ngModel)]="mchForm.lnmp" /></div>
+                  <div class="mv2-field"><label>EDD</label><input type="date" name="edd" [(ngModel)]="mchForm.edd" /></div>
+                  <div class="mv2-field"><label>Gestational age</label><input type="text" name="gestationalAge" [(ngModel)]="mchForm.gestationalAge" placeholder="weeks" /></div>
+                  <div class="mv2-field"><label>Weight (kg)</label><input type="text" name="weight" [(ngModel)]="mchForm.weight" /></div>
+                  <div class="mv2-field"><label>MUAC (cm)</label><input type="text" name="muac" [(ngModel)]="mchForm.muac" /></div>
+                  <div class="mv2-field"><label>Blood pressure</label><input type="text" name="bloodPressure" [(ngModel)]="mchForm.bloodPressure" placeholder="e.g. 120/80" /></div>
+                  <div class="mv2-field"><label>Fundal height (cm)</label><input type="text" name="fundalHeight" [(ngModel)]="mchForm.fundalHeight" /></div>
+                  <div class="mv2-field"><label>Lie and presentation</label><input type="text" name="liePresentation" [(ngModel)]="mchForm.liePresentation" /></div>
+                  <div class="mv2-field"><label>Fetal heart rate</label><input type="text" name="fetalHeartRate" [(ngModel)]="mchForm.fetalHeartRate" placeholder="bpm" /></div>
+                  <div class="mv2-field"><label>Oedema</label><input type="text" name="edema" [(ngModel)]="mchForm.edema" /></div>
+                  <div class="mv2-field"><label>Blood group and Rh</label><input type="text" name="bloodGroupRh" [(ngModel)]="mchForm.bloodGroupRh" /></div>
+                  <div class="mv2-field"><label>Haemoglobin</label><input type="text" name="hemoglobin" [(ngModel)]="mchForm.hemoglobin" /></div>
+                  <div class="mv2-field"><label>HIV status / eMTCT</label><input type="text" name="hivStatus" [(ngModel)]="mchForm.hivStatus" /></div>
+                  <div class="mv2-field"><label>Syphilis test</label><input type="text" name="syphilisTest" [(ngModel)]="mchForm.syphilisTest" /></div>
+                  <div class="mv2-field"><label>Urine protein</label><input type="text" name="urineProtein" [(ngModel)]="mchForm.urineProtein" /></div>
+                  <div class="mv2-field"><label>Urine sugar</label><input type="text" name="urineSugar" [(ngModel)]="mchForm.urineSugar" /></div>
+                  <div class="mv2-field"><label>Tetanus-diphtheria dose</label><input type="text" name="tdDose" [(ngModel)]="mchForm.tdDose" /></div>
+                  <div class="mv2-field"><label>IPT malaria dose</label><input type="text" name="iptDose" [(ngModel)]="mchForm.iptDose" /></div>
+                  <div class="mv2-field"><label>Iron and folate</label><input type="text" name="ironFolate" [(ngModel)]="mchForm.ironFolate" /></div>
+                  <div class="mv2-field"><label>Deworming</label><input type="text" name="deworming" [(ngModel)]="mchForm.deworming" /></div>
+                  <div class="mv2-field"><label>Insecticide-treated net</label><input type="text" name="insecticideNet" [(ngModel)]="mchForm.insecticideNet" /></div>
+                  <div class="mv2-field"><label>Risk</label>
+                    <select name="riskStatus" [(ngModel)]="mchForm.riskStatus">
+                      <option value="">Select</option>
+                      <option value="Low risk">Low risk</option>
+                      <option value="High risk">High risk</option>
+                    </select>
                   </div>
-                  <div class="mv2-field">
-                    <label>Para</label>
-                    <input type="text" name="para" [(ngModel)]="mchForm.para" placeholder="Para" />
-                  </div>
-                  <div class="mv2-field">
-                    <label>Gestational age</label>
-                    <input type="text" name="gestationalAge" [(ngModel)]="mchForm.gestationalAge" placeholder="e.g. 32 weeks" />
-                  </div>
-                  <div class="mv2-field">
-                    <label>Blood pressure</label>
-                    <input type="text" name="bloodPressure" [(ngModel)]="mchForm.bloodPressure" placeholder="e.g. 120/80" />
-                  </div>
-                  <div class="mv2-field">
-                    <label>Fundal height (cm)</label>
-                    <input type="text" name="fundalHeight" [(ngModel)]="mchForm.fundalHeight" placeholder="cm" />
-                  </div>
-                  <div class="mv2-field">
-                    <label>Fetal heart rate</label>
-                    <input type="text" name="fetalHeartRate" [(ngModel)]="mchForm.fetalHeartRate" placeholder="bpm" />
-                  </div>
+                  <div class="mv2-field"><label>Next visit</label><input type="date" name="nextVisitDate" [(ngModel)]="mchForm.nextVisitDate" /></div>
+                  <div class="mv2-field mv2-span-2"><label>Danger signs discussed</label><input type="text" name="dangerSigns" [(ngModel)]="mchForm.dangerSigns" placeholder="Bleeding, severe headache, fits, reduced fetal movement, fever" /></div>
                 </div>
               </div>
 
-              <div class="mv2-report-section" *ngIf="selectedUsesAntenatalMchForm">
-                <h3>Postnatal &amp; newborn</h3>
+              <div class="mv2-report-section" *ngIf="selectedUsesDeliveryMchForm">
+                <h3>Delivery — Uganda Ministry of Health maternity record</h3>
+                <p class="mv2-muted">Labour, birth, mother and newborn outcome for this delivery.</p>
                 <div class="mv2-form-grid mv2-form-grid-3">
-                  <div class="mv2-field">
-                    <label>Presentation</label>
-                    <input type="text" name="presentation" [(ngModel)]="mchForm.presentation" />
+                  <div class="mv2-field"><label>Admission date and time</label><input type="text" name="admissionDateTime" [(ngModel)]="mchForm.admissionDateTime" /></div>
+                  <div class="mv2-field"><label>Onset of labour</label><input type="text" name="labourOnset" [(ngModel)]="mchForm.labourOnset" /></div>
+                  <div class="mv2-field"><label>Mode of delivery</label>
+                    <select name="modeOfDelivery" [(ngModel)]="mchForm.modeOfDelivery">
+                      <option value="">Select</option>
+                      <option value="Spontaneous vaginal">Spontaneous vaginal</option>
+                      <option value="Assisted vaginal">Assisted vaginal</option>
+                      <option value="Caesarean section">Caesarean section</option>
+                    </select>
                   </div>
-                  <div class="mv2-field">
-                    <label>Edema</label>
-                    <input type="text" name="edema" [(ngModel)]="mchForm.edema" />
+                  <div class="mv2-field"><label>Date and time of birth</label><input type="text" name="deliveryDateTime" [(ngModel)]="mchForm.deliveryDateTime" /></div>
+                  <div class="mv2-field"><label>Duration of labour</label><input type="text" name="labourDuration" [(ngModel)]="mchForm.labourDuration" /></div>
+                  <div class="mv2-field"><label>Indication if not spontaneous</label><input type="text" name="deliveryIndication" [(ngModel)]="mchForm.deliveryIndication" /></div>
+                  <div class="mv2-field"><label>Perineum</label><input type="text" name="perineum" [(ngModel)]="mchForm.perineum" placeholder="Intact, tear, or episiotomy" /></div>
+                  <div class="mv2-field"><label>Placenta and membranes</label><input type="text" name="placenta" [(ngModel)]="mchForm.placenta" placeholder="Complete or incomplete" /></div>
+                  <div class="mv2-field"><label>Estimated blood loss</label><input type="text" name="bloodLoss" [(ngModel)]="mchForm.bloodLoss" /></div>
+                  <div class="mv2-field"><label>Mother after delivery</label><input type="text" name="motherCondition" [(ngModel)]="mchForm.motherCondition" /></div>
+                  <div class="mv2-field"><label>Baby sex</label>
+                    <select name="babySex" [(ngModel)]="mchForm.babySex">
+                      <option value="">Select</option>
+                      <option value="Female">Female</option>
+                      <option value="Male">Male</option>
+                    </select>
                   </div>
-                  <div class="mv2-field">
-                    <label>Hemoglobin</label>
-                    <input type="text" name="hemoglobin" [(ngModel)]="mchForm.hemoglobin" />
-                  </div>
-                  <div class="mv2-field">
-                    <label>Urinalysis</label>
-                    <input type="text" name="urinalysis" [(ngModel)]="mchForm.urinalysis" />
-                  </div>
-                  <div class="mv2-field">
-                    <label>Immunization status</label>
-                    <input type="text" name="immunizationStatus" [(ngModel)]="mchForm.immunizationStatus" />
-                  </div>
-                  <div class="mv2-field">
-                    <label>Newborn weight (kg)</label>
-                    <input type="text" name="newbornWeight" [(ngModel)]="mchForm.newbornWeight" />
-                  </div>
-                  <div class="mv2-field">
-                    <label>Feeding</label>
-                    <input type="text" name="feeding" [(ngModel)]="mchForm.feeding" />
-                  </div>
-                  <div class="mv2-field mv2-span-2">
-                    <label>Complications</label>
-                    <input type="text" name="complications" [(ngModel)]="mchForm.complications" />
-                  </div>
+                  <div class="mv2-field"><label>Birth weight (kg)</label><input type="text" name="newbornWeight" [(ngModel)]="mchForm.newbornWeight" /></div>
+                  <div class="mv2-field"><label>Apgar at 1 minute</label><input type="text" name="apgar1" [(ngModel)]="mchForm.apgar1" /></div>
+                  <div class="mv2-field"><label>Apgar at 5 minutes</label><input type="text" name="apgar5" [(ngModel)]="mchForm.apgar5" /></div>
+                  <div class="mv2-field"><label>Resuscitation</label><input type="text" name="resuscitation" [(ngModel)]="mchForm.resuscitation" /></div>
+                  <div class="mv2-field"><label>Breastfeeding within 1 hour</label><input type="text" name="feeding" [(ngModel)]="mchForm.feeding" /></div>
+                  <div class="mv2-field"><label>Vitamin K</label><input type="text" name="vitaminK" [(ngModel)]="mchForm.vitaminK" /></div>
+                  <div class="mv2-field"><label>Eye prophylaxis</label><input type="text" name="eyeProphylaxis" [(ngModel)]="mchForm.eyeProphylaxis" /></div>
+                  <div class="mv2-field"><label>Outcome of mother</label><input type="text" name="motherOutcome" [(ngModel)]="mchForm.motherOutcome" /></div>
+                  <div class="mv2-field"><label>Outcome of baby</label><input type="text" name="babyOutcome" [(ngModel)]="mchForm.babyOutcome" /></div>
+                  <div class="mv2-field mv2-span-2"><label>Complications</label><input type="text" name="complications" [(ngModel)]="mchForm.complications" placeholder="Postpartum haemorrhage, eclampsia, obstructed labour, sepsis" /></div>
                 </div>
               </div>
 
@@ -449,7 +463,7 @@
                 </div>
               </div>
 
-              <div class="mv2-form-grid" *ngIf="selectedUsesAntenatalMchForm">
+              <div class="mv2-form-grid" *ngIf="selectedUsesStructuredMchForm">
                 <div class="mv2-field mv2-span-2">
                   <label>Additional notes</label>
                   <textarea name="notes" rows="3" [(ngModel)]="generalUs.notes" placeholder="Additional notes"></textarea>

@@ -14,6 +14,8 @@ import { ApiConfigService } from 'src/app/services/api-config.service';
 import {
   clearUserRolesFromSession,
   persistUserRolesToSession,
+  userHasAssignedRole,
+  NO_ROLE_ASSIGNED_MESSAGE,
 } from 'src/app/utils/user-roles.util';
 import { notifyAuthSessionChanged } from 'src/app/utils/auth-session.util';
 import { AccessControlService } from 'src/app/services/access-control.service';
@@ -66,6 +68,7 @@ export class LoginMobileComponent implements OnInit, OnDestroy {
 
   changeServer(): void {
     this.apiConfig.resetPreLoginServerSelection();
+    this.apiConfig.openServerConnectionDialog();
   }
 
   ngOnInit(): void {
@@ -143,6 +146,13 @@ export class LoginMobileComponent implements OnInit, OnDestroy {
       console.log('username', result.user.username);
       
       this.userRole = result.user.role;
+      if (!userHasAssignedRole(result.user)) {
+        this.showDivUpdatedLoaderDeletePatient = false;
+        this.isLoadingNewPatient = false;
+        this.notFound = false;
+        this.loginErrorMessage = NO_ROLE_ASSIGNED_MESSAGE;
+        return;
+      }
       console.log(result.user.profilePic);
       
       console.log('user role', this.userRole);

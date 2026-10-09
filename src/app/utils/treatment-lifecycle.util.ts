@@ -1,8 +1,9 @@
-/** Shared PD / DSP / ADM flags for treatment-plan and prescription rows. */
-export type TreatmentLifecycleFlag = 'paid' | 'dispensed' | 'administered';
+/** Shared PSD / PD / DSP / ADM flags for treatment-plan and prescription rows. */
+export type TreatmentLifecycleFlag = 'prescribed' | 'paid' | 'dispensed' | 'administered';
 
 export interface TreatmentLifecycleRow {
   status?: string;
+  prescribed?: boolean;
   paid?: boolean;
   dispensed?: boolean;
   administered?: boolean;
@@ -15,10 +16,11 @@ export function applyTreatmentLifecycleFlags<T extends TreatmentLifecycleRow>(ro
   }
   const status = String(row.status ?? '').toLowerCase();
   const dispensedFromStatus = status === 'given' || status === 'dispensed';
+  row.prescribed = row.prescribed !== false;
   row.paid = row.paid !== false;
   row.dispensed = row.dispensed === true || dispensedFromStatus;
   row.administered = row.administered === true;
-  row.given = row.paid !== false;
+  row.given = row.given !== false;
   return row;
 }
 
@@ -36,7 +38,10 @@ export function isTreatmentDispensed(row: TreatmentLifecycleRow | null | undefin
 export function treatmentLifecyclePatch(
   flag: TreatmentLifecycleFlag,
   checked: boolean
-): { paid?: boolean; dispensed?: boolean; administered?: boolean; status?: string } {
+): { prescribed?: boolean; paid?: boolean; dispensed?: boolean; administered?: boolean; status?: string } {
+  if (flag === 'prescribed') {
+    return { prescribed: checked };
+  }
   if (flag === 'paid') {
     return { paid: checked };
   }

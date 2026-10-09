@@ -429,7 +429,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-width: 350px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .item-title {
@@ -437,23 +438,35 @@
   color: #0f172a;
   font-size: 14px;
   text-transform: capitalize;
-  max-width: 350px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* Column width styles for Stock Item, Store, Supplier, and Expiry */
 .modern-table th.stock-item-column,
 .modern-table td:nth-child(1) {
   min-width: 220px;
-  width: 220px;
+  width: 240px;
+  max-width: 280px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .modern-table th.store-column,
 .modern-table td:nth-child(2) {
-  min-width: 95px;
-  width: 95px;
+  min-width: 110px;
+  width: 140px;
+  max-width: 160px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* UNCOST column */
@@ -883,6 +896,68 @@
   color: #fca5a5;
 }
 
+.stock-batch-menu-cell {
+  text-align: center;
+}
+
+.stock-batch-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+}
+
+.stock-batch-menu-btn:hover,
+.stock-batch-menu-btn--active {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1d4ed8;
+}
+
+.stock-batch-pop {
+  width: 168px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+}
+
+.stock-batch-pop button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stock-batch-pop button:hover {
+  background: #f1f5f9;
+}
+
+.stock-batch-pop button.danger {
+  color: #dc2626;
+}
+
+.stock-batch-pop button.danger:hover {
+  background: #fef2f2;
+}
+
 .stock-batch-page.dark .btn-icon {
   background: #1e293b;
   color: #94a3b8;
@@ -901,6 +976,40 @@
 .stock-batch-page.dark .btn-icon.delete:hover {
   background: #450a0a;
   color: #fca5a5;
+}
+
+.stock-batch-page.dark .stock-batch-menu-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+.stock-batch-page.dark .stock-batch-menu-btn:hover,
+.stock-batch-page.dark .stock-batch-menu-btn--active {
+  background: #334155;
+  border-color: #475569;
+  color: #93c5fd;
+}
+
+.stock-batch-page.dark .stock-batch-pop {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.stock-batch-page.dark .stock-batch-pop button {
+  color: #e2e8f0;
+}
+
+.stock-batch-page.dark .stock-batch-pop button:hover {
+  background: #334155;
+}
+
+.stock-batch-page.dark .stock-batch-pop button.danger {
+  color: #fca5a5;
+}
+
+.stock-batch-page.dark .stock-batch-pop button.danger:hover {
+  background: #450a0a;
 }
 
 .stock-batch-page.dark .no-data {

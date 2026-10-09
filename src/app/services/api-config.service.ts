@@ -31,6 +31,8 @@ export const SKIP_CONNECTION_HEADER = 'X-Skip-Connection-Modal';
 export class ApiConfigService {
   private activeBaseUrl = API_DEFAULT_LAN_BASE;
   private connectionState: ApiConnectionState = 'resolving';
+  /** User closed the picker without choosing a server. */
+  private serverDialogDismissed = false;
 
   private readonly stateSubject = new BehaviorSubject<ApiConnectionState>('resolving');
   readonly state$ = this.stateSubject.asObservable();
@@ -225,16 +227,30 @@ export class ApiConfigService {
 
   /** Whether the global server connection overlay should be visible. */
   shouldShowServerConnection(): boolean {
+    if (this.serverDialogDismissed) {
+      return false;
+    }
+    if (this.connectionState === 'needs_input') {
+      return true;
+    }
     if (this.hasPreLoginServerConfirmed() && this.getSavedActiveBase()) {
       return false;
     }
-    return this.connectionState === 'needs_input' || this.requiresPreLoginServerSelection();
+    return this.requiresPreLoginServerSelection();
+  }
+
+  /** Hide the server picker without selecting a host. */
+  dismissServerConnectionDialog(): void {
+    this.stopRecoveryPolling();
+    this.serverDialogDismissed = true;
+    this.stateSubject.next(this.connectionState);
   }
 
   /** Clear pre-login server choice (e.g. on logout) and prompt again. */
   resetPreLoginServerSelection(): void {
     sessionStorage.removeItem(STORAGE_KEY_PRE_LOGIN_SERVER_CONFIRMED);
     localStorage.removeItem(STORAGE_KEY_PRE_LOGIN_SERVER_CONFIRMED);
+    this.serverDialogDismissed = false;
     this.stopRecoveryPolling();
     try {
       this.injector.get(FacilityBrandingService).hydrateFromLocalAssets();
@@ -246,6 +262,7 @@ export class ApiConfigService {
 
   /** Open the global server connection overlay so the user can pick another API host. */
   openServerConnectionDialog(): void {
+    this.serverDialogDismissed = false;
     this.stopRecoveryPolling();
     this.setState('needs_input');
   }
